@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+/* Base Styles */
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: #f7f7f7;
+    min-height: 100vh;
+}
+
+body.hindi {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+/* Gradient text */
+.gradient-text {
+    background: linear-gradient(135deg, #D4A853 0%, #B8922F 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Glass effect */
+.glass {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Line clamp */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Prose styles for blog content */
+.prose {
+    max-width: 65ch;
+    color: #374151;
+}
+
+.prose h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: #1E3A5F;
+}
+
+.prose h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: #1E3A5F;
+}
+
+.prose h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #1E3A5F;
+}
+
+.prose p {
+    margin-bottom: 1.25rem;
+    line-height: 1.75;
+}
+
+.prose img {
+    border-radius: 0.75rem;
+    margin: 1.5rem 0;
+    width: 100%;
+}
+
+.prose a {
+    color: #D4A853;
+    text-decoration: underline;
+}
+
+.prose ul,
+.prose ol {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+}
+
+.prose li {
+    margin-bottom: 0.5rem;
+}
+
+.prose blockquote {
+    border-left: 4px solid #D4A853;
+    padding-left: 1rem;
+    font-style: italic;
+    color: #6b7280;
+    margin: 1.5rem 0;
+}
+
+.prose strong {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* TipTap Editor Styles */
+.tiptap-editor {
+    min-height: 300px;
+    outline: none;
+}
+
+.tiptap-editor:focus {
+    outline: none;
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #adb5bd;
+    pointer-events: none;
+    height: 0;
+}
+
+/* Animation delays */
+.stagger-1 {
+    animation-delay: 0.1s;
+}
+
+.stagger-2 {
+    animation-delay: 0.2s;
+}
+
+.stagger-3 {
+    animation-delay: 0.3s;
+}
+
+.stagger-4 {
+    animation-delay: 0.4s;
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}

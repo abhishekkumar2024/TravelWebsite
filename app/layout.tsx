@@ -1,0 +1,79 @@
+import type { Metadata } from 'next';
+import './globals.css';
+import { LanguageProvider } from '@/components/LanguageProvider';
+
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+
+
+export const metadata: Metadata = {
+    title: {
+        default: 'CamelThar - Travel Stories from the Land of Kings',
+        template: '%s | CamelThar',
+    },
+    description:
+        'CamelThar - Your gateway to Rajasthan travel stories, destination guides, and insider tips. Discover Jaipur, Udaipur, Jaisalmer, Jodhpur, and more.',
+    keywords: [
+        'CamelThar',
+        'Rajasthan travel',
+        'Thar Desert',
+        'India tourism',
+        'Jaipur',
+        'Udaipur',
+        'Jaisalmer',
+        'travel blog',
+        'राजस्थान यात्रा',
+        'desert safari',
+    ],
+    authors: [{ name: 'CamelThar' }],
+    openGraph: {
+        type: 'website',
+        locale: 'en_IN',
+        url: 'https://camelthar.com',
+        siteName: 'CamelThar',
+        title: 'CamelThar - Travel Stories from the Land of Kings',
+        description:
+            'Explore Rajasthan through travel stories, destination guides, and insider tips.',
+        images: [
+            {
+                url: '/camelthar_logo.png',
+                width: 512,
+                height: 512,
+                alt: 'CamelThar Logo',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'CamelThar - Travel Stories from the Land of Kings',
+        description:
+            'Explore Rajasthan through travel stories, destination guides, and insider tips.',
+        images: ['/camelthar_logo.png'],
+    },
+    robots: {
+        index: true,
+        follow: true,
+    },
+};
+
+export default function RootLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return (
+        <html lang="en">
+            <head>
+                <link rel="canonical" href="https://camelthar.com" />
+                <meta name="referrer" content="strict-origin-when-cross-origin" />
+            </head>
+            <body className="bg-gray-50">
+                <LanguageProvider>
+                    <Navbar />
+                    <main>{children}</main>
+                    <Footer />
+                </LanguageProvider>
+            </body>
+        </html>
+    );
+}

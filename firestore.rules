@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow anyone to read blogs (needed for public site and admin)
+    // Allow anyone to create blogs (needed for public submission)
+    // Allow anyone to update blogs (needed for admin approval)
+    // Note: In a real app, you would add Authentication to restrict 'update' to admins
+    match /blogs/{blog} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+    }
+    
+    // Destinations are read-only for public
+    match /destinations/{destination} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
