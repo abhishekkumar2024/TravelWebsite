@@ -83,7 +83,8 @@ export default function LivePreview({
                 <div className="p-4">
                     {content ? (
                         <div
-                            className="prose prose-sm max-w-none"
+                            // Match editor sizing: larger, more readable preview text.
+                            className="prose prose-lg md:prose-xl max-w-none"
                             dangerouslySetInnerHTML={{ __html: content }}
                         />
                     ) : (

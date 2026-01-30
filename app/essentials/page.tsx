@@ -1,9 +1,7 @@
 
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import EssentialsContent, { AffiliateProduct } from './EssentialsContent';
 
-// Define demo products here as fallback/initial data if needed
+// Static demo products for now (no Firebase)
 const demoProducts: AffiliateProduct[] = [
     {
         id: '1',
@@ -38,32 +36,5 @@ const demoProducts: AffiliateProduct[] = [
 ];
 
 export default async function TripEssentialsPage() {
-    let products: AffiliateProduct[] = [];
-
-    try {
-        // Attempt to fetch from Firestore at build time
-        const productsQuery = query(
-            collection(db, 'affiliateProducts'),
-            where('isActive', '==', true)
-        );
-        const snapshot = await getDocs(productsQuery);
-
-        const realProducts = snapshot.docs.map((doc: any) => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as AffiliateProduct[];
-
-        if (realProducts.length > 0) {
-            products = realProducts;
-        } else {
-            console.log('No products found in Firestore, using demo products.');
-            products = demoProducts;
-        }
-    } catch (error) {
-        console.error('Error fetching products during build:', error);
-        // Fallback to demo data
-        products = demoProducts;
-    }
-
-    return <EssentialsContent products={products} />;
+    return <EssentialsContent products={demoProducts} />;
 }

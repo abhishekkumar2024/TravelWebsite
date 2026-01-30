@@ -6,15 +6,9 @@ import { useLanguage } from '@/components/LanguageProvider';
 import BlogCard from '@/components/BlogCard';
 import AffiliateProducts from '@/components/AffiliateProducts';
 import { demoBlogs, BlogPost } from '@/lib/data';
-import { collection, getDocs, query, where, orderBy, limit, startAfter } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { dataCache, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
+import { fetchPublishedBlogs } from '@/lib/supabaseBlogs';
 
 const destinations = ['all', 'jaipur', 'udaipur', 'jaisalmer', 'jodhpur', 'pushkar'];
-
-// Optimized batch sizes for faster initial load
-const INITIAL_BATCH_SIZE = 3; // Reduced to 3 for ultra-fast first load
-const SUBSEQUENT_BATCH_SIZE = 9;
 
 // Skeleton loader component for fast initial render
 function BlogCardSkeleton() {
@@ -44,121 +38,44 @@ export default function BlogsPage() {
 
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
-    const [blogs, setBlogs] = useState<BlogPost[]>([]);
+    const [blogs, setBlogs] = useState<BlogPost[]>(demoBlogs);
     const [loading, setLoading] = useState(true);
-    const [lastVisible, setLastVisible] = useState<any>(null);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
+        let mounted = true;
 
-        fetchBlogs();
-    }, []);
-
-    const fetchBlogs = async () => {
-        console.log('=== fetchBlogs called ===');
-        setLoading(true);
-
-        try {
-
-
+        async function load() {
             try {
-                // BACKGROUND FETCH: Fetch real blogs without blocking UI
-                // Add timeout to prevent long waits
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Query timeout')), 5000); // 5 second timeout
-                });
+                const supabaseBlogs = await fetchPublishedBlogs();
+                if (!mounted) return;
 
-                const queryPromise = getDocs(query(
-                    collection(db, 'blogs'),
-                    where('status', '==', 'approved'),
-                    orderBy('createdAt', 'desc'),
-                    limit(INITIAL_BATCH_SIZE)
-                ));
-
-                const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
-                console.log('Firestore query completed, docs:', snapshot.docs.length);
-
-                // Get the last visible document for pagination
-                const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
-                setLastVisible(lastVisibleDoc);
-                setHasMore(snapshot.docs.length === INITIAL_BATCH_SIZE);
-
-                const firestoreBlogs = snapshot.docs.map((doc: any) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    publishedAt: doc.data().createdAt?.toDate() || new Date(),
-                })) as BlogPost[];
-
-                // Replace demo blogs with real blogs if we have them
-                if (firestoreBlogs.length > 0) {
-                    console.log('=== Replacing with real blogs ===');
-                    console.log('Real blogs count:', firestoreBlogs.length);
-                    // Deduplicate by ID
-                    const uniqueBlogs = firestoreBlogs.filter((blog, index, self) =>
-                        index === self.findIndex((b) => b.id === blog.id)
-                    );
-                    setBlogs(uniqueBlogs);
-                    // Store in cache for 10 minutes
-                    dataCache.set(CACHE_KEYS.BLOGS, uniqueBlogs, CACHE_DURATION.MEDIUM);
-                    console.log('Real blogs set in state');
+                if (supabaseBlogs.length > 0) {
+                    setBlogs(supabaseBlogs);
                 } else {
-                    console.log('=== No real blogs found, using demo blogs ===');
                     setBlogs(demoBlogs);
                 }
-            } catch (error) {
-                console.error('=== Error fetching blogs, using fallback ===', error);
-                setBlogs(demoBlogs);
-                setHasMore(false);
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.error('Error loading blogs from Supabase, using demoBlogs:', e);
+                if (mounted) {
+                    setBlogs(demoBlogs);
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
             }
-            console.log('=== fetchBlogs complete ===');
-        } catch (error) {
-            console.error('=== Critical error in fetchBlogs, using fallback ===', error);
-            setBlogs(demoBlogs);
-            setLoading(false);
-            setHasMore(false);
         }
-        setLoading(false);
-    };
 
-    const loadMoreBlogs = async () => {
-        if (!lastVisible) return;
-        setLoadingMore(true);
+        load();
 
-        try {
-            const nextQuery = query(
-                collection(db, 'blogs'),
-                where('status', '==', 'approved'),
-                orderBy('createdAt', 'desc'),
-                startAfter(lastVisible),
-                limit(SUBSEQUENT_BATCH_SIZE)
-            );
-
-            const snapshot = await getDocs(nextQuery);
-            const lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
-            setLastVisible(lastVisibleDoc);
-            setHasMore(snapshot.docs.length === SUBSEQUENT_BATCH_SIZE);
-
-            const newBlogs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                publishedAt: doc.data().createdAt?.toDate() || new Date(),
-            })) as BlogPost[];
-
-            setBlogs(prev => [...prev, ...newBlogs]);
-        } catch (error) {
-            console.error('Error loading more blogs:', error);
-        }
-        setLoadingMore(false);
-    };
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // Memoize filtered blogs to prevent unnecessary re-renders
     const filteredBlogs = useMemo(() => {
-        console.log('=== Filtering blogs ===');
-        console.log('Current blogs in state:', blogs.length);
-        console.log('Current blog IDs:', blogs.map(b => b.id));
-        console.log('Filter:', filter, 'Search:', search);
-
         const result = blogs.filter((blog) => {
             const matchesFilter = filter === 'all' || blog.destination === filter;
             const title = lang === 'hi' ? blog.title_hi : blog.title_en;
@@ -169,10 +86,6 @@ export default function BlogsPage() {
                 excerpt.toLowerCase().includes(search.toLowerCase());
             return matchesFilter && matchesSearch;
         });
-
-        console.log('Filtered blogs count:', result.length);
-        console.log('Filtered blog IDs:', result.map(b => b.id));
-        console.log('=== Filtering complete ===');
 
         return result;
     }, [blogs, filter, search, lang]);
@@ -259,31 +172,6 @@ export default function BlogsPage() {
                             {filteredBlogs.map((blog) => (
                                 <BlogCard key={blog.id} blog={blog} />
                             ))}
-                        </div>
-                    )}
-
-                    {/* Load More Button */}
-                    {!loading && hasMore && filter === 'all' && !search && (
-                        <div className="mt-12 text-center">
-                            <button
-                                onClick={loadMoreBlogs}
-                                disabled={loadingMore}
-                                className="px-8 py-3 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
-                            >
-                                {loadingMore ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-                                        {t('Loading...', 'लोड हो रहा है...')}
-                                    </>
-                                ) : (
-                                    <>
-                                        {t('Load More', 'और लोड करें')}
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </>
-                                )}
-                            </button>
                         </div>
                     )}
 

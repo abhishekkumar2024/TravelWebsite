@@ -2,15 +2,33 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from './LanguageProvider';
 
 export default function Navbar() {
     const { lang, setLang, t } = useLanguage();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const navRef = useRef<HTMLDivElement | null>(null);
+
+    // Close mobile menu when clicking outside
+    useEffect(() => {
+        if (!mobileMenuOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (!navRef.current) return;
+            if (!navRef.current.contains(event.target as Node)) {
+                setMobileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [mobileMenuOpen]);
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300">
+        <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2">

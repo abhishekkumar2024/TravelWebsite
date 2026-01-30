@@ -14,11 +14,15 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'firebasestorage.googleapis.com',
             },
+            {
+                protocol: 'https',
+                hostname: 'res.cloudinary.com',
+            },
         ],
         unoptimized: true,
     },
     // Enable static export for Firebase Hosting
-    output: 'export',
+    // output: 'export',
 };
 
 module.exports = nextConfig;

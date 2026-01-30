@@ -30,7 +30,8 @@ export default function TipTapEditor({
             }),
             TiptapImage.configure({
                 HTMLAttributes: {
-                    class: 'rounded-lg max-w-full',
+                    // Keep images responsive but visually constrained for better reading.
+                    class: 'rounded-xl max-w-full md:max-w-[700px] mx-auto my-4 shadow-sm',
                 },
             }),
             Link.configure({
@@ -45,12 +46,14 @@ export default function TipTapEditor({
             }),
         ],
         content,
+        immediatelyRender: false,
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
         editorProps: {
             attributes: {
-                class: 'tiptap-editor prose prose-lg max-w-none focus:outline-none min-h-[300px] p-4',
+                // Slightly larger base font size for better readability.
+                class: 'tiptap-editor prose prose-lg md:prose-xl max-w-none focus:outline-none min-h-[260px] p-4',
             },
         },
     });
@@ -93,20 +96,36 @@ export default function TipTapEditor({
 
     if (!editor) {
         return (
-            <div className="border-2 border-gray-200 rounded-lg p-4 min-h-[400px] flex items-center justify-center">
+            <div className="border border-gray-200 rounded-2xl p-4 min-h-[320px] flex items-center justify-center bg-white">
                 <div className="w-8 h-8 border-4 border-desert-gold border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="border-2 border-gray-200 rounded-lg overflow-hidden focus-within:border-desert-gold transition-colors">
-            <Toolbar
-                editor={editor}
-                onImageClick={handleImageSelect}
-                onLinkClick={addLink}
-            />
-            <EditorContent editor={editor} />
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden focus-within:border-desert-gold/80 focus-within:shadow-md transition-all">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <div className="flex flex-col">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Editor
+                    </span>
+                    <span className="text-xs text-gray-400">
+                        Format your story with headings, lists, images and more.
+                    </span>
+                </div>
+            </div>
+
+            <div className="border-b border-gray-100 bg-white">
+                <Toolbar
+                    editor={editor}
+                    onImageClick={handleImageSelect}
+                    onLinkClick={addLink}
+                />
+            </div>
+
+            <div className="bg-white">
+                <EditorContent editor={editor} />
+            </div>
         </div>
     );
 }

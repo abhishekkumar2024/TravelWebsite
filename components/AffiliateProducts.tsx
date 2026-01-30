@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useLanguage } from './LanguageProvider';
 import { dataCache, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
 
@@ -28,49 +26,40 @@ export default function AffiliateProducts({ destination, limit = 4 }: AffiliateP
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchProducts();
-    }, [destination]);
+        // Simple demo products for now instead of Firebase
+        const demoProducts: AffiliateProduct[] = [
+            {
+                id: '1',
+                name: 'Rajasthan Travel Guide Book',
+                price: '₹799',
+                imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
+                affiliateLink: '#',
+                destinations: ['jaipur', 'udaipur'],
+                isActive: true,
+            },
+            {
+                id: '2',
+                name: 'Desert Safari Hat',
+                price: '₹499',
+                imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=300',
+                affiliateLink: '#',
+                destinations: ['jaisalmer'],
+                isActive: true,
+            },
+        ];
 
-    const fetchProducts = async () => {
-        // Check cache first
-        const cachedProducts = dataCache.get<AffiliateProduct[]>(CACHE_KEYS.PRODUCTS);
-
-        let allProducts: AffiliateProduct[] = [];
-
-        if (cachedProducts) {
-            allProducts = cachedProducts;
-        } else {
-            try {
-                const productsQuery = query(
-                    collection(db, 'affiliateProducts'),
-                    where('isActive', '==', true)
-                );
-                const snapshot = await getDocs(productsQuery);
-                allProducts = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                })) as AffiliateProduct[];
-
-                // Cache for 5 minutes
-                dataCache.set(CACHE_KEYS.PRODUCTS, allProducts, CACHE_DURATION.MEDIUM);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-                setLoading(false);
-                return;
-            }
-        }
-
-        // Filter by destination if specified
-        let filteredProducts = allProducts;
+        let filtered = demoProducts;
         if (destination) {
-            filteredProducts = allProducts.filter(p =>
+            filtered = demoProducts.filter(p =>
                 p.destinations.includes(destination) || p.destinations.length === 0
             );
         }
 
-        setProducts(filteredProducts.slice(0, limit));
+        const limited = filtered.slice(0, limit);
+        dataCache.set(CACHE_KEYS.PRODUCTS, limited, CACHE_DURATION.MEDIUM);
+        setProducts(limited);
         setLoading(false);
-    };
+    }, [destination, limit]);
 
     if (loading) {
         return (

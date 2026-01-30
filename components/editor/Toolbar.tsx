@@ -118,6 +118,24 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                 </svg>
             </ToolbarButton>
 
+            <ToolbarButton
+                onClick={() => editor.chain().focus().toggleCode().run()}
+                isActive={editor.isActive('code')}
+                title="Inline code"
+            >
+                <span className="text-xs font-mono">{'</>'}</span>
+            </ToolbarButton>
+
+            <ToolbarButton
+                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                isActive={editor.isActive('codeBlock')}
+                title="Code block"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 18l4-4-4-4M8 6l-4 4 4 4" />
+                </svg>
+            </ToolbarButton>
+
             <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
             {/* Media */}
@@ -144,6 +162,18 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                         strokeWidth="2"
                         d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                     />
+                </svg>
+            </ToolbarButton>
+
+            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+
+            {/* Clear formatting */}
+            <ToolbarButton
+                onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+                title="Clear formatting"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M9 5h10M5 9v10" />
                 </svg>
             </ToolbarButton>
 

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { demoBlogs, BlogPost } from '@/lib/data';
 import { dataCache, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
+import { fetchBlogById } from '@/lib/supabaseBlogs';
 import BlogContent from './BlogContent';
 
 export default function ClientBlogPage() {
@@ -35,25 +34,18 @@ export default function ClientBlogPage() {
                 return;
             }
 
-            // 3. Check Firestore
+            // 3. Check Supabase
             try {
-                const docRef = doc(db, 'blogs', id);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const blogData = {
-                        id: docSnap.id,
-                        ...docSnap.data(),
-                        publishedAt: docSnap.data().createdAt?.toDate() || new Date(),
-                    } as BlogPost;
-
-                    setBlog(blogData);
-                    dataCache.set(cacheKey, blogData, CACHE_DURATION.MEDIUM);
+                const supabaseBlog = await fetchBlogById(id);
+                if (supabaseBlog) {
+                    setBlog(supabaseBlog);
+                    dataCache.set(cacheKey, supabaseBlog, CACHE_DURATION.MEDIUM);
                 } else {
                     setBlog(null);
                 }
             } catch (error) {
-                console.error('Error fetching blog:', error);
+                console.error('Error fetching blog from Supabase:', error);
+                setBlog(null);
             }
             setLoading(false);
         };

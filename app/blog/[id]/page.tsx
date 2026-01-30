@@ -1,34 +1,12 @@
 
 import { notFound } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { demoBlogs, BlogPost } from '@/lib/data';
+import { fetchBlogById } from '@/lib/supabaseBlogs';
 import BlogContent from '../BlogContent';
 
-// Generate static params for all known blogs at build time
+// Generate static params for all known demo blogs at build time
 export async function generateStaticParams() {
-    // 1. Get demo blog IDs
-    const demoIds = demoBlogs.map(blog => ({ id: blog.id }));
-
-    // 2. Get Firestore blog IDs (only approved ones)
-    // Note: In a real build environment, we need to ensure Firebase is accessible
-    // For "export" output, this runs at build time.
-    let firestoreIds: { id: string }[] = [];
-    try {
-        const q = query(collection(db, 'blogs'), where('status', '==', 'approved'));
-        const querySnapshot = await getDocs(q);
-        firestoreIds = querySnapshot.docs.map(doc => ({ id: doc.id }));
-    } catch (error) {
-        console.error('Error fetching blog IDs for static params:', error);
-        // Fallback to just demo IDs if Firestore fails (e.g. no creds during build)
-    }
-
-    // Combine and deduplicate
-    const allIds = [...demoIds, ...firestoreIds];
-    // dedupe by id just in case
-    const uniqueIds = Array.from(new Set(allIds.map(item => item.id))).map(id => ({ id }));
-
-    return uniqueIds;
+    return demoBlogs.map(blog => ({ id: blog.id }));
 }
 
 async function getBlogData(id: string): Promise<BlogPost | null> {
@@ -38,20 +16,10 @@ async function getBlogData(id: string): Promise<BlogPost | null> {
         return demoBlog;
     }
 
-    // 2. Check Firestore
-    try {
-        const docRef = doc(db, 'blogs', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            return {
-                id: docSnap.id,
-                ...docSnap.data(),
-                publishedAt: docSnap.data().createdAt?.toDate() || new Date(),
-            } as BlogPost;
-        }
-    } catch (error) {
-        console.error(`Error fetching blog ${id}:`, error);
+    // 2. Check Supabase
+    const supabaseBlog = await fetchBlogById(id);
+    if (supabaseBlog) {
+        return supabaseBlog;
     }
 
     return null;
