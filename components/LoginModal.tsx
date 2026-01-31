@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useLanguage } from './LanguageProvider';
+import { ensureAuthorExists } from '@/lib/supabaseAuthors';
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -96,22 +97,8 @@ export default function LoginModal({
         const user = data.user;
         if (!user) return;
 
-        // Ensure author exists
-        const { data: author } = await supabase
-            .from('authors')
-            .select('id')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (!author) {
-            const { error: insertError } = await supabase.from('authors').insert({
-                id: user.id,
-                name: user.user_metadata?.name || '',
-                email: user.email,
-            });
-
-            if (insertError) throw insertError;
-        }
+        // Ensure author exists (prevents FK error on first login)
+        await ensureAuthorExists();
 
         setMessage(t('Login successful!', 'लॉगिन सफल!'));
 

@@ -10,6 +10,7 @@ import LoginModal from '@/components/LoginModal';
 import { uploadBlogImage, uploadCoverImage } from '@/lib/upload';
 import { createBlog } from '@/lib/supabaseBlogs';
 import { supabase } from '@/lib/supabaseClient';
+import { ensureAuthorExists } from '@/lib/supabaseAuthors';
 
 const destinations = [
     { value: '', label: 'Select destination' },
@@ -66,7 +67,7 @@ export default function SubmitPage() {
                 setUser(user);
 
                 // Ensure author exists
-                await ensureAuthorExists(user);
+                await ensureAuthorExists();
 
                 // Auto-fill author info from user
                 if (user.user_metadata?.name) {
@@ -84,29 +85,7 @@ export default function SubmitPage() {
         return () => subscription.unsubscribe();
     }, []);
 
-    const ensureAuthorExists = async (user: any) => {
-        try {
-            // Check if author exists
-            const { data: author, error: authorFetchError } = await supabase
-                .from('authors')
-                .select('id')
-                .eq('id', user.id)
-                .single();
 
-            // Create author if not exists
-            if (!author && (authorFetchError?.code === 'PGRST116' || !authorFetchError)) {
-                await supabase
-                    .from('authors')
-                    .insert({
-                        id: user.id,
-                        name: user.user_metadata?.name || '',
-                        email: user.email,
-                    });
-            }
-        } catch (error) {
-            console.error('Error ensuring author exists:', error);
-        }
-    };
 
     const checkUser = async () => {
         try {
@@ -115,7 +94,7 @@ export default function SubmitPage() {
                 setUser(currentUser);
 
                 // Ensure author exists
-                await ensureAuthorExists(currentUser);
+                await ensureAuthorExists();
 
                 // Auto-fill author info
                 if (currentUser.user_metadata?.name) {

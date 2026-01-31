@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { BlogPost } from './data';
+import { ensureAuthorExists } from './supabaseAuthors';
 
 // Normalize a Supabase row into the existing BlogPost shape
 function mapRowToBlog(row: any): BlogPost {
@@ -73,12 +74,12 @@ export async function createBlog(payload: {
     status?: 'draft' | 'pending' | 'published';
 }): Promise<{ id: string | null; error: string | null }> {
     try {
-        // Check for authenticated user OR dev bypass
-        let { data: { user }, error: authError } = await supabase.auth.getUser();
+        // Ensure author exists in the 'authors' table before inserting the blog
+        // This solves the "violates foreign key constraint" error
+        const authorId = await ensureAuthorExists();
 
-        if (authError || !user) {
-            console.error('[supabaseBlogs] User not authenticated:', authError?.message);
-            return { id: null, error: 'You must be logged in to submit a blog' };
+        if (!authorId) {
+            return { id: null, error: 'Could not verify author information' };
         }
 
         // Default to 'pending' for approval workflow
@@ -90,7 +91,7 @@ export async function createBlog(payload: {
             destination: payload.destination,
             category: payload.category,
             status: blogStatus,
-            author_id: user?.id,
+            author_id: authorId,
             has_content: !!payload.content_en,
             images_count: payload.images?.length || 0,
         });
@@ -109,7 +110,7 @@ export async function createBlog(payload: {
                 cover_image: payload.coverImage,
                 author: payload.author,
                 images: payload.images,
-                author_id: user?.id, // Required for RLS policies
+                author_id: authorId, // Required for RLS policies
                 status: blogStatus,
                 created_at: new Date().toISOString(),
                 published_at: blogStatus === 'published' ? new Date().toISOString() : null,
