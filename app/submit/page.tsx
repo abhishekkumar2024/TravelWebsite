@@ -44,8 +44,6 @@ export default function SubmitPage() {
     const [sessionReady, setSessionReady] = useState(false);
 
     // Form state
-    const [authorName, setAuthorName] = useState('');
-    const [authorEmail, setAuthorEmail] = useState('');
     const [destination, setDestination] = useState('');
     const [category, setCategory] = useState('');
     const [titleEn, setTitleEn] = useState('');
@@ -110,8 +108,6 @@ export default function SubmitPage() {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setUser(null);
-        setAuthorName('');
-        setAuthorEmail('');
     };
 
     // Derived metrics for better writing UX
@@ -194,7 +190,10 @@ export default function SubmitPage() {
 
         try {
             const blogData = {
-                author: { name: authorName, email: authorEmail },
+                author: {
+                    name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler',
+                    email: user?.email || ''
+                },
                 destination,
                 category,
                 title_en: titleEn,
@@ -398,23 +397,8 @@ export default function SubmitPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {/* Left Column - Editor */}
                             <div className="space-y-6">
-                                {/* Author Info */}
-                                <div className="bg-white rounded-2xl shadow-sm p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-bold text-royal-blue">
-                                            {t('Author Information', 'लेखक की जानकारी')}
-                                        </h2>
-                                        {!user && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowLoginModal(true)}
-                                                className="text-sm text-royal-blue hover:underline font-semibold"
-                                            >
-                                                {t('Login to auto-fill', 'ऑटो-भरने के लिए लॉगिन करें')}
-                                            </button>
-                                        )}
-                                    </div>
-                                    {!user && (
+                                {!user && (
+                                    <div className="bg-white rounded-2xl shadow-sm p-6">
                                         <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-lg">
                                             <div className="flex items-center justify-between flex-wrap gap-3">
                                                 <div className="flex-1">
@@ -437,38 +421,8 @@ export default function SubmitPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                    )}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                {t('Your Name', 'आपका नाम')}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={authorName}
-                                                onChange={(e) => setAuthorName(e.target.value)}
-                                                required
-                                                disabled={!user}
-                                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-desert-gold disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                placeholder="Rahul Sharma"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                {t('Your Email', 'आपका ईमेल')}
-                                            </label>
-                                            <input
-                                                type="email"
-                                                value={authorEmail}
-                                                onChange={(e) => setAuthorEmail(e.target.value)}
-                                                required
-                                                disabled={!user}
-                                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-desert-gold disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                placeholder="rahul@example.com"
-                                            />
-                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Blog Details */}
                                 <div className="bg-white rounded-2xl shadow-sm p-6">
@@ -646,7 +600,7 @@ export default function SubmitPage() {
                                     coverImage={coverImage}
                                     content={contentEn}
                                     category={category}
-                                    authorName={authorName}
+                                    authorName={user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler'}
                                 />
                             </div>
                         </div>

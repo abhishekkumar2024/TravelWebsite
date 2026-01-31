@@ -70,15 +70,32 @@ export default function LoginModal({
     // SIGN UP
     // -------------------------
     const handleSignup = async () => {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                data: { name },
+                data: {
+                    name: name || email.split('@')[0],
+                    full_name: name || email.split('@')[0]
+                },
             },
         });
 
         if (error) throw error;
+
+        // Note: If email confirmation is ON, this insert might fail due to RLS.
+        // That's okay, because ensureAuthorExists() will catch it later when they log in.
+        if (data.user) {
+            try {
+                await supabase.from('authors').insert({
+                    id: data.user.id,
+                    name: name || email.split('@')[0],
+                    email: email,
+                });
+            } catch (e) {
+                console.log('Author creation deferred until email confirmation');
+            }
+        }
 
         setMessage(
             t(
