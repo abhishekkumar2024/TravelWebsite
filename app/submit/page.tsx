@@ -60,15 +60,20 @@ export default function SubmitPage() {
         checkUser();
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
-                setUser(session.user);
+                const user = session.user;
+                setUser(user);
+
+                // Ensure author exists
+                await ensureAuthorExists(user);
+
                 // Auto-fill author info from user
-                if (session.user.user_metadata?.name) {
-                    setAuthorName(session.user.user_metadata.name);
+                if (user.user_metadata?.name) {
+                    setAuthorName(user.user_metadata.name);
                 }
-                if (session.user.email) {
-                    setAuthorEmail(session.user.email);
+                if (user.email) {
+                    setAuthorEmail(user.email);
                 }
             } else {
                 setUser(null);
@@ -79,11 +84,39 @@ export default function SubmitPage() {
         return () => subscription.unsubscribe();
     }, []);
 
+    const ensureAuthorExists = async (user: any) => {
+        try {
+            // Check if author exists
+            const { data: author, error: authorFetchError } = await supabase
+                .from('authors')
+                .select('id')
+                .eq('id', user.id)
+                .single();
+
+            // Create author if not exists
+            if (!author && (authorFetchError?.code === 'PGRST116' || !authorFetchError)) {
+                await supabase
+                    .from('authors')
+                    .insert({
+                        id: user.id,
+                        name: user.user_metadata?.name || '',
+                        email: user.email,
+                    });
+            }
+        } catch (error) {
+            console.error('Error ensuring author exists:', error);
+        }
+    };
+
     const checkUser = async () => {
         try {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             if (currentUser) {
                 setUser(currentUser);
+
+                // Ensure author exists
+                await ensureAuthorExists(currentUser);
+
                 // Auto-fill author info
                 if (currentUser.user_metadata?.name) {
                     setAuthorName(currentUser.user_metadata.name);
