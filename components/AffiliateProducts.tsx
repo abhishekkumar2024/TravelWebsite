@@ -4,16 +4,7 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from './LanguageProvider';
 import { dataCache, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
 
-interface AffiliateProduct {
-    id: string;
-    name: string;
-    description?: string;
-    price: string;
-    imageUrl: string;
-    affiliateLink: string;
-    destinations: string[];
-    isActive: boolean;
-}
+import { fetchProducts } from '@/lib/supabaseProducts';
 
 interface AffiliateProductsProps {
     destination?: string;
@@ -22,43 +13,27 @@ interface AffiliateProductsProps {
 
 export default function AffiliateProducts({ destination, limit = 4 }: AffiliateProductsProps) {
     const { t } = useLanguage();
-    const [products, setProducts] = useState<AffiliateProduct[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simple demo products for now instead of Firebase
-        const demoProducts: AffiliateProduct[] = [
-            {
-                id: '1',
-                name: 'Rajasthan Travel Guide Book',
-                price: '₹799',
-                imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
-                affiliateLink: '#',
-                destinations: ['jaipur', 'udaipur'],
-                isActive: true,
-            },
-            {
-                id: '2',
-                name: 'Desert Safari Hat',
-                price: '₹499',
-                imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=300',
-                affiliateLink: '#',
-                destinations: ['jaisalmer'],
-                isActive: true,
-            },
-        ];
+        async function loadProducts() {
+            setLoading(true);
+            const allProducts = await fetchProducts();
 
-        let filtered = demoProducts;
-        if (destination) {
-            filtered = demoProducts.filter(p =>
-                p.destinations.includes(destination) || p.destinations.length === 0
-            );
+            let filtered = allProducts;
+            if (destination) {
+                const searchDest = destination.toLowerCase();
+                filtered = allProducts.filter(p =>
+                    p.destinations.some(d => d.toLowerCase() === searchDest) || p.destinations.length === 0
+                );
+            }
+
+            setProducts(filtered.slice(0, limit));
+            setLoading(false);
         }
 
-        const limited = filtered.slice(0, limit);
-        dataCache.set(CACHE_KEYS.PRODUCTS, limited, CACHE_DURATION.MEDIUM);
-        setProducts(limited);
-        setLoading(false);
+        loadProducts();
     }, [destination, limit]);
 
     if (loading) {
