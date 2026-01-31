@@ -25,7 +25,7 @@ export async function ensureAuthorExists(): Promise<string> {
 
     // ✅ Create author if missing
     if (!author) {
-        console.log('[supabaseAuthors] creating author for:', user.email);
+        console.log('[supabaseAuthors] author row missing in DB, attempting to create for:', user.id);
 
         const { error: insertError } = await supabase
             .from('authors')
@@ -39,8 +39,17 @@ export async function ensureAuthorExists(): Promise<string> {
 
         if (insertError) {
             console.error('[supabaseAuthors] insert error:', insertError.message);
-            throw insertError;
+            // If it's a conflict, someone else might have just inserted it, so we can ignore it
+            if (!insertError.message.includes('unique_violation') && !insertError.message.includes('already exists')) {
+                throw insertError;
+            }
+        } else {
+            console.log('[supabaseAuthors] author row created successfully');
+            // Small delay to allow replica/DB sync if needed (though usually immediate)
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
+    } else {
+        console.log('[supabaseAuthors] author row already exists for:', user.id);
     }
 
     return user.id;

@@ -41,6 +41,7 @@ export default function SubmitPage() {
     const [loading, setLoading] = useState(true);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [sessionReady, setSessionReady] = useState(false);
 
     // Form state
     const [authorName, setAuthorName] = useState('');
@@ -68,16 +69,10 @@ export default function SubmitPage() {
 
                 // Ensure author exists
                 await ensureAuthorExists();
-
-                // Auto-fill author info from user
-                if (user.user_metadata?.name) {
-                    setAuthorName(user.user_metadata.name);
-                }
-                if (user.email) {
-                    setAuthorEmail(user.email);
-                }
+                setSessionReady(true);
             } else {
                 setUser(null);
+                setSessionReady(false);
             }
             setLoading(false);
         });
@@ -95,15 +90,9 @@ export default function SubmitPage() {
 
                 // Ensure author exists
                 await ensureAuthorExists();
-
-                // Auto-fill author info
-                if (currentUser.user_metadata?.name) {
-                    setAuthorName(currentUser.user_metadata.name);
-                }
-                if (currentUser.email) {
-                    setAuthorEmail(currentUser.email);
-                }
-
+                setSessionReady(true);
+            } else {
+                setSessionReady(false);
             }
         } catch (error) {
             console.error('Error checking user:', error);
@@ -630,14 +619,16 @@ export default function SubmitPage() {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={submitting || !user}
+                                    disabled={submitting || !sessionReady}
                                     className="w-full py-4 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-bold rounded-lg text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {!user
                                         ? t('Please Login First', 'कृपया पहले लॉगिन करें')
-                                        : submitting
-                                            ? t('Submitting...', 'जमा हो रहा है...')
-                                            : t('Submit Blog for Review', 'समीक्षा के लिए ब्लॉग जमा करें')}
+                                        : !sessionReady
+                                            ? t('Verifying Session...', 'सत्र सत्यापित किया जा रहा है...')
+                                            : submitting
+                                                ? t('Submitting...', 'जमा हो रहा है...')
+                                                : t('Submit Blog for Review', 'समीक्षा के लिए ब्लॉग जमा करें')}
                                 </button>
 
                                 <p className="text-center text-gray-500 text-sm">

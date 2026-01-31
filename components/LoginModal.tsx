@@ -54,7 +54,14 @@ export default function LoginModal({
                 await handleLogin();
             }
         } catch (err: any) {
-            setError(err.message || t('Something went wrong', 'कुछ गलत हो गया'));
+            let errorMsg = err.message;
+            if (errorMsg.includes('Email not confirmed')) {
+                errorMsg = t(
+                    'Email not confirmed. Please check your inbox for the verification link.',
+                    'ईमेल की पुष्टि नहीं हुई है। कृपया सत्यापन लिंक के लिए अपना इनबॉक्स जांचें।'
+                );
+            }
+            setError(errorMsg || t('Something went wrong', 'कुछ गलत हो गया'));
             setLoading(false);
         }
     };
@@ -75,8 +82,8 @@ export default function LoginModal({
 
         setMessage(
             t(
-                'Account created! Please check your email to verify your account.',
-                'खाता बन गया! कृपया ईमेल सत्यापन करें।'
+                'Verification email sent! Please check your inbox and confirm your email before logging in.',
+                'सत्यापन ईमेल भेज दिया गया है! कृपया अपना इनबॉक्स जांचें और लॉगिन करने से पहले अपने ईमेल की पुष्टि करें।'
             )
         );
 
