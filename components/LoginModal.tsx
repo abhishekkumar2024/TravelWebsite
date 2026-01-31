@@ -99,12 +99,17 @@ export default function LoginModal({
 
         setMessage(
             t(
-                'Verification email sent! Please check your inbox and confirm your email before logging in.',
-                'सत्यापन ईमेल भेज दिया गया है! कृपया अपना इनबॉक्स जांचें और लॉगिन करने से पहले अपने ईमेल की पुष्टि करें।'
+                'Verification email sent! Please check your inbox and confirm your email, then login here.',
+                'सत्यापन ईमेल भेज दिया गया है! कृपया अपना इनबॉक्स जांचें और ईमेल की पुष्टि करें, फिर यहां लॉगिन करें।'
             )
         );
 
-        setLoading(false);
+        // Redirect to login view after 3 seconds
+        setTimeout(() => {
+            setIsSignUp(false);
+            setMessage(null);
+            setLoading(false);
+        }, 4000);
     };
 
     // -------------------------
