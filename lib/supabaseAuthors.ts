@@ -1,17 +1,17 @@
 import { supabase } from './supabaseClient';
 
-/**
- * Ensures that an author record exists for the given user.
- * This prevents Foreign Key constraint errors when creating blogs.
- */
 export async function ensureAuthorExists(): Promise<string> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // ✅ Get ACTIVE session
+    const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession();
 
-    if (authError || !user) {
-        throw new Error('User not authenticated');
+    if (sessionError || !session?.user) {
+        throw new Error('User not authenticated or session not ready');
     }
 
-    // Check if author exists
+    const user = session.user;
+
+    // ✅ Check author
     const { data: author, error: fetchError } = await supabase
         .from('authors')
         .select('id')
@@ -19,21 +19,26 @@ export async function ensureAuthorExists(): Promise<string> {
         .maybeSingle();
 
     if (fetchError) {
-        console.error('[supabaseAuthors] Error fetching author:', fetchError.message);
+        console.error('[supabaseAuthors] fetch error:', fetchError.message);
         throw fetchError;
     }
 
-    // Create author if not exists
+    // ✅ Create author if missing
     if (!author) {
-        console.log('[supabaseAuthors] Author not found, creating one for:', user.email);
-        const { error: insertError } = await supabase.from('authors').insert({
-            id: user.id,
-            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Traveler',
-            email: user.email,
-        });
+        console.log('[supabaseAuthors] creating author for:', user.email);
+
+        const { error: insertError } = await supabase
+            .from('authors')
+            .insert({
+                id: user.id,
+                name: user.user_metadata?.name
+                    || user.email?.split('@')[0]
+                    || 'Traveler',
+                email: user.email,
+            });
 
         if (insertError) {
-            console.error('[supabaseAuthors] Error creating author:', insertError.message);
+            console.error('[supabaseAuthors] insert error:', insertError.message);
             throw insertError;
         }
     }
