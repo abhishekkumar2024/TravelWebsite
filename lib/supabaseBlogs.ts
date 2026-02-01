@@ -23,6 +23,11 @@ function mapRowToBlog(row: any): BlogPost {
         publishedAt: row.published_at ? new Date(row.published_at) : new Date(row.created_at ?? Date.now()),
         status: (row.status ?? 'published') as 'pending' | 'approved' | 'rejected',
         views: row.views ?? 0,
+        // SEO Fields
+        meta_title: row.meta_title ?? row.title_en,
+        meta_description: row.meta_description ?? row.excerpt_en ?? '',
+        focus_keyword: row.focus_keyword,
+        canonical_url: row.canonical_url,
     };
 }
 
@@ -214,5 +219,86 @@ export async function rejectBlog(blogId: string): Promise<{ success: boolean; er
     }
 
     return { success: true, error: null };
+}
+
+// Fetch all blogs submitted by the current user
+export async function fetchUserBlogs(): Promise<BlogPost[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        console.error('[supabaseBlogs] User not authenticated');
+        return [];
+    }
+
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .eq('author_id', user.id)
+        .order('created_at', { ascending: false });
+
+    if (error || !data) {
+        console.error('[supabaseBlogs] fetchUserBlogs error:', error?.message || error);
+        return [];
+    }
+
+    return data.map(mapRowToBlog);
+}
+
+// Update an existing blog
+export async function updateBlog(id: string, payload: {
+    destination?: string;
+    category?: string;
+    title_en?: string;
+    title_hi?: string;
+    excerpt_en?: string;
+    excerpt_hi?: string;
+    content_en?: string;
+    content_hi?: string;
+    coverImage?: string;
+    images?: string[];
+    status?: 'draft' | 'pending' | 'published';
+    meta_title?: string;
+    meta_description?: string;
+    focus_keyword?: string;
+    canonical_url?: string;
+}): Promise<{ success: boolean; error: string | null }> {
+    try {
+        const updateData: any = {
+            updated_at: new Date().toISOString(),
+        };
+
+        if (payload.title_en) updateData.title_en = payload.title_en;
+        if (payload.title_hi) updateData.title_hi = payload.title_hi;
+        if (payload.excerpt_en) updateData.excerpt_en = payload.excerpt_en;
+        if (payload.excerpt_hi) updateData.excerpt_hi = payload.excerpt_hi;
+        if (payload.content_en) updateData.content_en = payload.content_en;
+        if (payload.content_hi) updateData.content_hi = payload.content_hi;
+        if (payload.destination) updateData.destination = payload.destination;
+        if (payload.category) updateData.category = payload.category;
+        if (payload.coverImage) updateData.cover_image = payload.coverImage;
+        if (payload.images) updateData.images = payload.images;
+        if (payload.status) updateData.status = payload.status;
+
+        // SEO Fields
+        if (payload.meta_title) updateData.meta_title = payload.meta_title;
+        if (payload.meta_description) updateData.meta_description = payload.meta_description;
+        if (payload.focus_keyword) updateData.focus_keyword = payload.focus_keyword;
+        if (payload.canonical_url) updateData.canonical_url = payload.canonical_url;
+
+        const { error } = await supabase
+            .from('blogs')
+            .update(updateData)
+            .eq('id', id);
+
+        if (error) {
+            console.error('[supabaseBlogs] updateBlog error:', error.message);
+            return { success: false, error: error.message };
+        }
+
+        return { success: true, error: null };
+    } catch (err: any) {
+        console.error('[supabaseBlogs] updateBlog unexpected error:', err);
+        return { success: false, error: err?.message || 'Unexpected error' };
+    }
 }
 

@@ -4,11 +4,27 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from './LanguageProvider';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function Navbar() {
     const { lang, setLang, t } = useLanguage();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [user, setUser] = useState<any>(null);
     const navRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        // Check initial user
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setUser(user);
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -83,6 +99,15 @@ export default function Navbar() {
                         </button>
                     </div>
 
+                    {user && (
+                        <Link
+                            href="/my-blogs"
+                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all text-sm"
+                        >
+                            {t('My Blogs', 'मेरे ब्लॉग')}
+                        </Link>
+                    )}
+
                     <Link
                         href="/submit"
                         className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
@@ -135,6 +160,17 @@ export default function Navbar() {
                             <span>🎒</span>
                             {t('Travel Essentials', 'यात्रा आवश्यकताएं')}
                         </Link>
+
+                        {user && (
+                            <Link
+                                href="/my-blogs"
+                                className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 font-medium text-royal-blue"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                {t('My Blogs', 'मेरे ब्लॉग')}
+                            </Link>
+                        )}
+
                         <Link
                             href="/submit"
                             className="text-lg py-2 px-4 rounded-lg bg-desert-gold text-white text-center"

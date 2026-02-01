@@ -20,8 +20,13 @@ export interface BlogPost {
     author: Author;
     readTime: string;
     publishedAt: Date;
-    status: 'pending' | 'approved' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected' | 'published';
     views: number;
+    // SEO Fields (optional for demo blogs)
+    meta_title?: string;
+    meta_description?: string;
+    focus_keyword?: string;
+    canonical_url?: string;
 }
 
 export interface Destination {

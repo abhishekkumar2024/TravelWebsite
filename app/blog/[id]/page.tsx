@@ -1,15 +1,17 @@
 
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+import { cache } from 'react';
 import { demoBlogs, BlogPost } from '@/lib/data';
 import { fetchBlogById } from '@/lib/supabaseBlogs';
 import BlogContent from '../BlogContent';
 
-// Generate static params for all known demo blogs at build time
-export async function generateStaticParams() {
-    return demoBlogs.map(blog => ({ id: blog.id }));
-}
+// Force dynamic rendering - don't cache, always fetch fresh data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-async function getBlogData(id: string): Promise<BlogPost | null> {
+// Use React cache to deduplicate requests during rendering
+const getBlogData = cache(async (id: string): Promise<BlogPost | null> => {
     // 1. Check demo blogs first
     const demoBlog = demoBlogs.find(b => b.id === id);
     if (demoBlog) {
@@ -17,13 +19,18 @@ async function getBlogData(id: string): Promise<BlogPost | null> {
     }
 
     // 2. Check Supabase
-    const supabaseBlog = await fetchBlogById(id);
-    if (supabaseBlog) {
-        return supabaseBlog;
+    try {
+        const supabaseBlog = await fetchBlogById(id);
+        console.log('[BlogPage] fetchBlogById result:', supabaseBlog ? 'Found' : 'Not found', 'for ID:', id);
+        if (supabaseBlog) {
+            return supabaseBlog;
+        }
+    } catch (error) {
+        console.error('[BlogPage] Error fetching blog from Supabase:', error);
     }
 
     return null;
-}
+});
 
 interface PageProps {
     params: {
@@ -31,11 +38,41 @@ interface PageProps {
     }
 }
 
+// Generate SEO metadata
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const blog = await getBlogData(params.id);
+
+    if (!blog) {
+        return {
+            title: 'Blog Not Found',
+        };
+    }
+
+    return {
+        title: blog.meta_title || blog.title_en,
+        description: blog.meta_description || blog.excerpt_en,
+        keywords: blog.focus_keyword,
+        alternates: {
+            canonical: blog.canonical_url,
+        },
+        openGraph: {
+            title: blog.meta_title || blog.title_en,
+            description: blog.meta_description || blog.excerpt_en,
+            images: [blog.coverImage],
+            type: 'article',
+        },
+    };
+}
+
 export default async function BlogPage({ params }: PageProps) {
     const { id } = params;
+    console.log('[BlogPage] Loading blog with ID:', id);
+
+    // This call is deduplicated thanks to `cache`
     const blog = await getBlogData(id);
 
     if (!blog) {
+        console.log('[BlogPage] Blog not found, returning 404 for ID:', id);
         notFound();
     }
 
