@@ -47,7 +47,7 @@ export default function HomePage() {
                     </div>
 
                     <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight animate-slide-up">
-                        <span>{t('Enjoy the Magic of', 'खोजें जादू')}</span>
+                        <span>{t('Discover the Magic of', 'खोजें जादू')}</span>
                         <br />
                         <span className="gradient-text">{t('Rajasthan', 'राजस्थान का')}</span>
                     </h1>
