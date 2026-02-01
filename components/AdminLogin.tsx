@@ -30,29 +30,21 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
             if (signInError) throw signInError;
 
             if (data.user) {
-                // Check all possible locations for role
                 const user = data.user as any;
                 const role = user.role ||
-                    user.user_metadata?.role ||
                     user.app_metadata?.role ||
+                    user.user_metadata?.role ||
                     user.raw_app_meta_data?.role;
 
-                console.log('Login attempt detected:', {
-                    userId: user.id,
-                    email: user.email,
-                    detectedRole: role,
-                    fullUserObject: user
-                });
+                console.log('Admin login attempt:', { email: user.email, role });
 
                 if (role !== 'admin') {
-                    console.log('Access denied: Role is not admin. Role found:', role);
                     await supabase.auth.signOut();
-                    setError(t('Access denied. Admin privileges required.', 'अस्वीकृत पहुंच। व्यवस्थापक विशेषाधिकार आवश्यक हैं।'));
+                    setError(`${t('Access denied. Admin privileges required.', 'अस्वीकृत पहुंच। व्यवस्थापक विशेषाधिकार आवश्यक हैं।')} (Detected Role: ${role || 'none'})`);
                     setLoading(false);
                     return;
                 }
 
-                console.log('Admin access granted for:', user.email);
                 onLoginSuccess();
             }
         } catch (err: any) {
