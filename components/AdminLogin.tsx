@@ -26,28 +26,14 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
                 email,
                 password,
             });
-            console.log(`data: ${data}, signInError: ${signInError}`);
 
             if (signInError) throw signInError;
 
             if (data.user) {
-                // 1. First check metadata (fastest)
-                let role = data.user.user_metadata?.role ||
+                // Check role strictly in user metadata
+                const role = data.user.user_metadata?.role ||
                     data.user.app_metadata?.role ||
                     (data.user as any).raw_app_meta_data?.role;
-
-                // 2. If metadata doesn't have it, check the 'profiles' table (truth source)
-                if (role !== 'admin') {
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', data.user.id)
-                        .maybeSingle();
-
-                    if (!profileError && profile) {
-                        role = profile.role;
-                    }
-                }
 
                 if (role !== 'admin') {
                     await supabase.auth.signOut();
