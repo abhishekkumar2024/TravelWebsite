@@ -1,10 +1,4 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/destinations/page": "app/destinations/page.js",
   "/page": "app/page.js",
-  "/submit/page": "app/submit/page.js",
-  "/blogs/page": "app/blogs/page.js",
-  "/essentials/page": "app/essentials/page.js",
-  "/blog/[id]/page": "app/blog/[id]/page.js"
+  "/submit/page": "app/submit/page.js"
 }

@@ -329,9 +329,11 @@ export default function SubmitPage() {
             {/* Page Header */}
             <section className="pt-32 pb-16 px-4 bg-gradient-to-br from-royal-blue to-deep-maroon text-white">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-                        <div className="flex-1"></div>
-                        <div className="text-center flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-4">
+                        {/* Empty spacer for balancing on desktop */}
+                        <div className="hidden md:block"></div>
+
+                        <div className="text-center">
                             <h1 className="text-4xl md:text-5xl font-bold mb-4">
                                 {t('Submit Your Travel Story', 'अपनी यात्रा कहानी जमा करें')}
                             </h1>
@@ -342,8 +344,9 @@ export default function SubmitPage() {
                                 )}
                             </p>
                         </div>
-                        {user && (
-                            <div className="flex-1 flex justify-center md:justify-end">
+
+                        <div className="flex justify-center md:justify-end">
+                            {user && (
                                 <div className="flex flex-col md:flex-row items-center gap-3">
                                     <div className="text-center md:text-right">
                                         <p className="text-sm opacity-90 font-medium">{user.email}</p>
@@ -358,8 +361,8 @@ export default function SubmitPage() {
                                         {t('Logout', 'लॉगआउट')}
                                     </button>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </section>

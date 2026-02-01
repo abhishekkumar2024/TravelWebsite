@@ -29,9 +29,9 @@ export default function Navbar() {
 
     return (
         <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300">
-            <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
+            <div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-2 md:grid-cols-3 items-center">
                 {/* Logo Section - Left */}
-                <div className="flex-1 flex justify-start">
+                <div className="flex justify-start">
                     <Link href="/" className="flex items-center gap-2">
                         <Image
                             src="/camelthar_logo.png"
@@ -46,7 +46,7 @@ export default function Navbar() {
                     </Link>
                 </div>
 
-                {/* Nav Links - Center */}
+                {/* Nav Links - Center (Desktop) */}
                 <div className="hidden md:flex items-center justify-center gap-8">
                     <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Home', 'होम')}
@@ -64,7 +64,7 @@ export default function Navbar() {
                 </div>
 
                 {/* Actions Section - Right */}
-                <div className="flex-1 flex justify-end items-center gap-4">
+                <div className="flex justify-end items-center gap-4">
                     {/* Language Toggle */}
                     <div className="flex bg-gray-200 rounded-full p-1">
                         <button
