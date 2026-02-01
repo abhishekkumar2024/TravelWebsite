@@ -31,9 +31,8 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
 
             if (data.user) {
                 // Check role strictly in user metadata
-                const role = data.user.user_metadata?.role ||
-                    data.user.app_metadata?.role ||
-                    (data.user as any).raw_app_meta_data?.role;
+                const role = data.user?.role || data.user.app_metadata?.role || (data.user as any).raw_app_meta_data?.role;
+                console.log(`role: ${role}`);
 
                 if (role !== 'admin') {
                     await supabase.auth.signOut();
