@@ -72,6 +72,11 @@ export async function createBlog(payload: {
     coverImage: string;
     images: string[];
     status?: 'draft' | 'pending' | 'published';
+    // SEO Fields
+    meta_title?: string;
+    meta_description?: string;
+    focus_keyword?: string;
+    canonical_url?: string;
 }): Promise<{ id: string | null; error: string | null }> {
     try {
         // Ensure author exists in the 'authors' table before inserting the blog
@@ -114,6 +119,9 @@ export async function createBlog(payload: {
                 status: blogStatus,
                 created_at: new Date().toISOString(),
                 published_at: blogStatus === 'published' ? new Date().toISOString() : null,
+                // SEO Fields
+                meta_title: payload.meta_title || payload.title_en,
+                meta_description: payload.meta_description || payload.excerpt_en,
             })
             .select('id')
             .single();

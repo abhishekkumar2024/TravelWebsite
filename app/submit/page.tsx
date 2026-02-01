@@ -3,7 +3,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import TipTapEditor from '@/components/editor/TipTapEditor';
-import LivePreview from '@/components/editor/LivePreview';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 import LoginModal from '@/components/LoginModal';
@@ -56,6 +55,13 @@ export default function SubmitPage() {
     const [contentHi, setContentHi] = useState('');
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+
+    // SEO Fields
+    const [metaTitle, setMetaTitle] = useState('');
+    const [metaDescription, setMetaDescription] = useState('');
+    const [focusKeyword, setFocusKeyword] = useState('');
+    const [canonicalUrl, setCanonicalUrl] = useState('');
+    const [showSeoSection, setShowSeoSection] = useState(false);
 
     // Check authentication status
     useEffect(() => {
@@ -223,6 +229,11 @@ export default function SubmitPage() {
                 coverImage: coverImage || 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800',
                 images: uploadedImages,
                 status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
+                // SEO Fields
+                meta_title: metaTitle || titleEn,
+                meta_description: metaDescription || excerptEn,
+                focus_keyword: focusKeyword,
+                canonical_url: canonicalUrl,
             };
 
             const { id, error } = await createBlog(blogData);
@@ -415,8 +426,8 @@ export default function SubmitPage() {
                     )}
 
                     <form onSubmit={handleSubmit}>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Left Column - Editor */}
+                        <div className="max-w-4xl mx-auto">
+                            {/* Full Width Editor */}
                             <div className="space-y-6">
                                 {!user && (
                                     <div className="bg-white rounded-2xl shadow-sm p-6">
@@ -589,6 +600,129 @@ export default function SubmitPage() {
                                         onRemove={handleRemoveImage}
                                         onInsert={handleInsertImage}
                                     />
+
+                                    {/* SEO Optimization Section */}
+                                    <div className="border-2 border-gray-200 rounded-2xl overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowSeoSection(!showSeoSection)}
+                                            className="w-full px-6 py-4 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between hover:bg-gray-100 transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">🔍</span>
+                                                <div className="text-left">
+                                                    <h3 className="font-bold text-gray-800">
+                                                        {t('SEO Optimization', 'एसईओ अनुकूलन')}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500">
+                                                        {t('Improve your search engine visibility', 'अपनी खोज इंजन दृश्यता में सुधार करें')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <svg
+                                                className={`w-5 h-5 text-gray-500 transition-transform ${showSeoSection ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        {showSeoSection && (
+                                            <div className="p-6 space-y-6 border-t border-gray-200">
+                                                {/* Meta Title */}
+                                                <div>
+                                                    <label className="block mb-2 font-semibold text-gray-700">
+                                                        {t('Meta Title', 'मेटा शीर्षक')}
+                                                        <span className="ml-2 text-xs text-gray-400 font-normal">
+                                                            ({metaTitle.length}/60 {t('characters', 'अक्षर')})
+                                                        </span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={metaTitle}
+                                                        onChange={(e) => setMetaTitle(e.target.value)}
+                                                        placeholder={titleEn || t('Enter meta title for search engines...', 'खोज इंजन के लिए मेटा शीर्षक दर्ज करें...')}
+                                                        maxLength={60}
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {t('Ideal: 50-60 characters. Appears in browser tabs and search results.', 'आदर्श: 50-60 अक्षर। ब्राउज़र टैब और खोज परिणामों में दिखाई देता है।')}
+                                                    </p>
+                                                </div>
+
+                                                {/* Meta Description */}
+                                                <div>
+                                                    <label className="block mb-2 font-semibold text-gray-700">
+                                                        {t('Meta Description', 'मेटा विवरण')}
+                                                        <span className="ml-2 text-xs text-gray-400 font-normal">
+                                                            ({metaDescription.length}/160 {t('characters', 'अक्षर')})
+                                                        </span>
+                                                    </label>
+                                                    <textarea
+                                                        value={metaDescription}
+                                                        onChange={(e) => setMetaDescription(e.target.value)}
+                                                        placeholder={excerptEn || t('Enter a compelling description for search engines...', 'खोज इंजन के लिए आकर्षक विवरण दर्ज करें...')}
+                                                        maxLength={160}
+                                                        rows={3}
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all resize-none"
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {t('Ideal: 150-160 characters. This appears below your title in search results.', 'आदर्श: 150-160 अक्षर। यह खोज परिणामों में आपके शीर्षक के नीचे दिखाई देता है।')}
+                                                    </p>
+                                                </div>
+
+                                                {/* Focus Keyword */}
+                                                <div>
+                                                    <label className="block mb-2 font-semibold text-gray-700">
+                                                        {t('Focus Keyword', 'फोकस कीवर्ड')}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={focusKeyword}
+                                                        onChange={(e) => setFocusKeyword(e.target.value)}
+                                                        placeholder={t('e.g., "Jaipur travel guide" or "Rajasthan budget trip"', 'जैसे, "जयपुर यात्रा गाइड" या "राजस्थान बजट यात्रा"')}
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {t('The main keyword you want this post to rank for.', 'मुख्य कीवर्ड जिसके लिए आप चाहते हैं कि यह पोस्ट रैंक करे।')}
+                                                    </p>
+                                                </div>
+
+                                                {/* Canonical URL */}
+                                                <div>
+                                                    <label className="block mb-2 font-semibold text-gray-700">
+                                                        {t('Canonical URL', 'कैनोनिकल यूआरएल')}
+                                                        <span className="ml-2 text-xs text-gray-400 font-normal">({t('Optional', 'वैकल्पिक')})</span>
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        value={canonicalUrl}
+                                                        onChange={(e) => setCanonicalUrl(e.target.value)}
+                                                        placeholder="https://..."
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {t('Use if this content was originally published elsewhere.', 'उपयोग करें यदि यह सामग्री मूल रूप से कहीं और प्रकाशित हुई थी।')}
+                                                    </p>
+                                                </div>
+
+                                                {/* SEO Tips */}
+                                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
+                                                    <h4 className="font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                                        <span>💡</span> {t('SEO Tips', 'एसईओ सुझाव')}
+                                                    </h4>
+                                                    <ul className="text-sm text-gray-600 space-y-1">
+                                                        <li>• {t('Include your focus keyword in the title and first paragraph', 'शीर्षक और पहले पैराग्राफ में अपना फोकस कीवर्ड शामिल करें')}</li>
+                                                        <li>• {t('Use H1, H2, H3 headings to structure your content', 'अपनी सामग्री को संरचित करने के लिए H1, H2, H3 हेडिंग का उपयोग करें')}</li>
+                                                        <li>• {t('Add alt text to images (we do this automatically)', 'छवियों में alt टेक्स्ट जोड़ें (हम यह स्वचालित रूप से करते हैं)')}</li>
+                                                        <li>• {t('Write at least 300 words for better SEO', 'बेहतर SEO के लिए कम से कम 300 शब्द लिखें')}</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Submit Button */}
@@ -617,17 +751,6 @@ export default function SubmitPage() {
                                         )
                                     }
                                 </p>
-                            </div>
-
-                            {/* Right Column - Live Preview */}
-                            <div className="lg:sticky lg:top-24 lg:self-start">
-                                <LivePreview
-                                    title={titleEn}
-                                    coverImage={coverImage}
-                                    content={contentEn}
-                                    category={category}
-                                    authorName={user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler'}
-                                />
                             </div>
                         </div>
                     </form>

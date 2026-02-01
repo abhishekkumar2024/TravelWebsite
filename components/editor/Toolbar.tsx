@@ -1,14 +1,41 @@
 'use client';
 
 import { Editor } from '@tiptap/react';
+import { useState } from 'react';
 
 interface ToolbarProps {
     editor: Editor;
     onImageClick: () => void;
     onLinkClick: () => void;
+    onEditImageClick?: () => void;
 }
 
-export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarProps) {
+const TEXT_COLORS = [
+    { name: 'Default', color: null },
+    { name: 'Black', color: '#000000' },
+    { name: 'Dark Gray', color: '#4B5563' },
+    { name: 'Red', color: '#EF4444' },
+    { name: 'Orange', color: '#F97316' },
+    { name: 'Amber', color: '#F59E0B' },
+    { name: 'Green', color: '#22C55E' },
+    { name: 'Blue', color: '#3B82F6' },
+    { name: 'Purple', color: '#8B5CF6' },
+    { name: 'Pink', color: '#EC4899' },
+];
+
+const HIGHLIGHT_COLORS = [
+    { name: 'None', color: null },
+    { name: 'Yellow', color: '#FEF08A' },
+    { name: 'Green', color: '#BBF7D0' },
+    { name: 'Blue', color: '#BFDBFE' },
+    { name: 'Pink', color: '#FBCFE8' },
+    { name: 'Orange', color: '#FED7AA' },
+];
+
+export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImageClick }: ToolbarProps) {
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+
     const ToolbarButton = ({
         onClick,
         isActive = false,
@@ -31,6 +58,8 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
         </button>
     );
 
+    const Divider = () => <div className="w-px h-6 bg-gray-300 mx-1"></div>;
+
     return (
         <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-gray-50">
             {/* Text Formatting */}
@@ -51,6 +80,14 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
             </ToolbarButton>
 
             <ToolbarButton
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                isActive={editor.isActive('underline')}
+                title="Underline (Ctrl+U)"
+            >
+                <span className="underline text-sm">U</span>
+            </ToolbarButton>
+
+            <ToolbarButton
                 onClick={() => editor.chain().focus().toggleStrike().run()}
                 isActive={editor.isActive('strike')}
                 title="Strikethrough"
@@ -58,7 +95,84 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                 <span className="line-through text-sm">S</span>
             </ToolbarButton>
 
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <Divider />
+
+            {/* Text Color */}
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setShowColorPicker(!showColorPicker);
+                        setShowHighlightPicker(false);
+                    }}
+                    title="Text Color"
+                    className="p-2 rounded hover:bg-gray-100 transition-colors text-gray-600 flex items-center gap-1"
+                >
+                    <span className="text-sm font-bold">A</span>
+                    <div className="w-4 h-1 bg-gradient-to-r from-red-500 via-green-500 to-blue-500 rounded"></div>
+                </button>
+                {showColorPicker && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 grid grid-cols-5 gap-1">
+                        {TEXT_COLORS.map((c) => (
+                            <button
+                                key={c.name}
+                                type="button"
+                                onClick={() => {
+                                    if (c.color) {
+                                        editor.chain().focus().setColor(c.color).run();
+                                    } else {
+                                        editor.chain().focus().unsetColor().run();
+                                    }
+                                    setShowColorPicker(false);
+                                }}
+                                title={c.name}
+                                className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
+                                style={{ backgroundColor: c.color || '#ffffff' }}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Highlight Color */}
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setShowHighlightPicker(!showHighlightPicker);
+                        setShowColorPicker(false);
+                    }}
+                    title="Highlight"
+                    className="p-2 rounded hover:bg-gray-100 transition-colors text-gray-600"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M15.243 4.515l-6.738 6.737-.707 2.121-1.04 1.041 2.828 2.829 1.04-1.041 2.122-.707 6.737-6.738-4.242-4.242zm6.364 3.535a1 1 0 010 1.414l-7.778 7.778-2.122.707-1.414 1.414a1 1 0 01-1.414 0l-4.243-4.243a1 1 0 010-1.414l1.414-1.414.707-2.121 7.778-7.778a1 1 0 011.414 0l5.657 5.657zM4 20h16v2H4z" />
+                    </svg>
+                </button>
+                {showHighlightPicker && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 grid grid-cols-3 gap-1">
+                        {HIGHLIGHT_COLORS.map((c) => (
+                            <button
+                                key={c.name}
+                                type="button"
+                                onClick={() => {
+                                    if (c.color) {
+                                        editor.chain().focus().toggleHighlight({ color: c.color }).run();
+                                    } else {
+                                        editor.chain().focus().unsetHighlight().run();
+                                    }
+                                    setShowHighlightPicker(false);
+                                }}
+                                title={c.name}
+                                className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
+                                style={{ backgroundColor: c.color || '#ffffff' }}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <Divider />
 
             {/* Headings */}
             <ToolbarButton
@@ -85,7 +199,50 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                 <span className="font-bold text-sm">H3</span>
             </ToolbarButton>
 
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <Divider />
+
+            {/* Text Alignment */}
+            <ToolbarButton
+                onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                isActive={editor.isActive({ textAlign: 'left' })}
+                title="Align Left"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h10M4 18h14" />
+                </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+                onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                isActive={editor.isActive({ textAlign: 'center' })}
+                title="Align Center"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M7 12h10M5 18h14" />
+                </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+                onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                isActive={editor.isActive({ textAlign: 'right' })}
+                title="Align Right"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M10 12h10M6 18h14" />
+                </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+                onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                isActive={editor.isActive({ textAlign: 'justify' })}
+                title="Justify"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </ToolbarButton>
+
+            <Divider />
 
             {/* Lists */}
             <ToolbarButton
@@ -118,25 +275,26 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                 </svg>
             </ToolbarButton>
 
+            <Divider />
+
+            {/* Sub/Superscript */}
             <ToolbarButton
-                onClick={() => editor.chain().focus().toggleCode().run()}
-                isActive={editor.isActive('code')}
-                title="Inline code"
+                onClick={() => editor.chain().focus().toggleSubscript().run()}
+                isActive={editor.isActive('subscript')}
+                title="Subscript"
             >
-                <span className="text-xs font-mono">{'</>'}</span>
+                <span className="text-sm">X<sub className="text-xs">2</sub></span>
             </ToolbarButton>
 
             <ToolbarButton
-                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                isActive={editor.isActive('codeBlock')}
-                title="Code block"
+                onClick={() => editor.chain().focus().toggleSuperscript().run()}
+                isActive={editor.isActive('superscript')}
+                title="Superscript"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 18l4-4-4-4M8 6l-4 4 4 4" />
-                </svg>
+                <span className="text-sm">X<sup className="text-xs">2</sup></span>
             </ToolbarButton>
 
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <Divider />
 
             {/* Media */}
             <ToolbarButton onClick={onImageClick} title="Insert Image">
@@ -149,6 +307,23 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                     />
                 </svg>
             </ToolbarButton>
+
+            {onEditImageClick && (
+                <ToolbarButton
+                    onClick={onEditImageClick}
+                    isActive={editor.isActive('image')}
+                    title="Edit Selected Image (click an image first)"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                    </svg>
+                </ToolbarButton>
+            )}
 
             <ToolbarButton
                 onClick={onLinkClick}
@@ -165,7 +340,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                 </svg>
             </ToolbarButton>
 
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <Divider />
 
             {/* Clear formatting */}
             <ToolbarButton
@@ -177,7 +352,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick }: ToolbarPr
                 </svg>
             </ToolbarButton>
 
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+            <Divider />
 
             {/* Undo/Redo */}
             <ToolbarButton
