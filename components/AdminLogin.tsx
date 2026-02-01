@@ -26,6 +26,7 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
                 email,
                 password,
             });
+            console.log(`data: ${data}, signInError: ${signInError}`);
 
             if (signInError) throw signInError;
 
