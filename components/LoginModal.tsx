@@ -18,7 +18,7 @@ export default function LoginModal({
 }: LoginModalProps) {
     const { t } = useLanguage();
 
-    const [isSignUp, setIsSignUp] = useState(false);
+    const [view, setView] = useState<'login' | 'signup' | 'forgot-password'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -48,8 +48,10 @@ export default function LoginModal({
         setMessage(null);
 
         try {
-            if (isSignUp) {
+            if (view === 'signup') {
                 await handleSignup();
+            } else if (view === 'forgot-password') {
+                await handleForgotPassword();
             } else {
                 await handleLogin();
             }
@@ -104,12 +106,31 @@ export default function LoginModal({
             )
         );
 
-        // Redirect to login view after 3 seconds
+        // Redirect to login view after 1 second
         setTimeout(() => {
-            setIsSignUp(false);
+            setView('login');
             setMessage(null);
             setLoading(false);
         }, 1000);
+    };
+
+    // -------------------------
+    // FORGOT PASSWORD
+    // -------------------------
+    const handleForgotPassword = async () => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) throw error;
+
+        setMessage(
+            t(
+                'Password reset link sent! Please check your email.',
+                'पासवर्ड रीसेट लिंक भेज दिया गया है! कृपया अपना ईमेल जांचें।'
+            )
+        );
+        setLoading(false);
     };
 
     // -------------------------
@@ -135,26 +156,6 @@ export default function LoginModal({
             onLoginSuccess();
             onClose();
         }, 500);
-    };
-
-    // -------------------------
-    // GOOGLE LOGIN
-    // -------------------------
-    const handleGoogleLogin = async () => {
-        setLoading(true);
-        setError(null);
-
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/submit`,
-            },
-        });
-
-        if (error) {
-            setError(error.message);
-            setLoading(false);
-        }
     };
 
     // -------------------------
@@ -196,10 +197,16 @@ export default function LoginModal({
                 {/* Header */}
                 <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold">
-                        {isSignUp ? t('Create Account', 'खाता बनाएं') : t('Login', 'लॉगिन')}
+                        {view === 'signup'
+                            ? t('Create Account', 'खाता बनाएं')
+                            : view === 'forgot-password'
+                                ? t('Reset Password', 'पासवर्ड रीसेट करें')
+                                : t('Login', 'लॉगिन')}
                     </h2>
                     <p className="text-gray-600 text-sm">
-                        {t('Submit your travel stories', 'अपनी यात्रा कहानियां साझा करें')}
+                        {view === 'forgot-password'
+                            ? t('Enter your email to receive a reset link', 'रीसेट लिंक प्राप्त करने के लिए अपना ईमेल दर्ज करें')
+                            : t('Submit your travel stories', 'अपनी यात्रा कहानियां साझा करें')}
                     </p>
                 </div>
 
@@ -219,14 +226,14 @@ export default function LoginModal({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {isSignUp && (
+                    {view === 'signup' && (
                         <input
                             type="text"
                             placeholder={t('Your Name', 'आपका नाम')}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
-                            className="w-full border p-3 rounded"
+                            className="w-full border p-3 rounded focus:outline-none focus:border-royal-blue"
                         />
                     )}
 
@@ -236,64 +243,98 @@ export default function LoginModal({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full border p-3 rounded"
+                        className="w-full border p-3 rounded focus:outline-none focus:border-royal-blue"
                     />
 
-                    <input
-                        type="password"
-                        placeholder={t('Password', 'पासवर्ड')}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="w-full border p-3 rounded"
-                    />
+                    {view !== 'forgot-password' && (
+                        <div className="space-y-1">
+                            <input
+                                type="password"
+                                placeholder={t('Password', 'पासवर्ड')}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength={6}
+                                className="w-full border p-3 rounded focus:outline-none focus:border-royal-blue"
+                            />
+                            {view === 'login' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setView('forgot-password')}
+                                    className="text-xs text-royal-blue hover:underline"
+                                >
+                                    {t('Forgot password?', 'पासवर्ड भूल गए?')}
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-600 text-white p-3 rounded font-semibold"
+                        className="w-full bg-royal-blue text-white p-3 rounded font-semibold hover:bg-opacity-90 transition-all disabled:opacity-50"
                     >
                         {loading
                             ? t('Please wait...', 'कृपया प्रतीक्षा करें...')
-                            : isSignUp
+                            : view === 'signup'
                                 ? t('Sign Up', 'साइन अप')
-                                : t('Login', 'लॉगिन')}
+                                : view === 'forgot-password'
+                                    ? t('Send Reset Link', 'रीसेट लिंक भेजें')
+                                    : t('Login', 'लॉगिन')}
                     </button>
+
+                    {view === 'forgot-password' && (
+                        <button
+                            type="button"
+                            onClick={() => setView('login')}
+                            className="w-full text-sm text-gray-500 hover:text-royal-blue"
+                        >
+                            {t('Back to Login', 'लॉगिन पर वापस जाएं')}
+                        </button>
+                    )}
                 </form>
 
                 {/* OAuth */}
-                <div className="mt-4 space-y-2">
-                    <button
-                        onClick={handleGoogleLogin}
-                        className="w-full border p-3 rounded"
-                    >
-                        {t('Continue with Google', 'Google से जारी रखें')}
-                    </button>
+                {view !== 'forgot-password' && (
+                    <div className="mt-4 space-y-2">
+                        <div className="relative flex items-center justify-center py-2">
+                            <div className="flex-grow border-t border-gray-200"></div>
+                            <span className="flex-shrink mx-4 text-gray-400 text-xs uppercase tracking-wider">{t('or', 'या')}</span>
+                            <div className="flex-grow border-t border-gray-200"></div>
+                        </div>
+                        <button
+                            onClick={handleMicrosoftLogin}
+                            className="w-full border p-3 rounded flex items-center justify-center gap-3 hover:bg-gray-50 transition-all font-semibold"
+                        >
+                            <svg className="w-5 h-5" viewBox="0 0 23 23">
+                                <path fill="#f3f3f3" d="M0 0h23v23H0z" />
+                                <path fill="#f35325" d="M1 1h10v10H1z" />
+                                <path fill="#81bc06" d="M12 1h10v10H12z" />
+                                <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                                <path fill="#ffba08" d="M12 12h10v10H12z" />
+                            </svg>
+                            {t('Continue with Microsoft', 'Microsoft से जारी रखें')}
+                        </button>
+                    </div>
+                )}
 
-                    <button
-                        onClick={handleMicrosoftLogin}
-                        className="w-full border p-3 rounded"
-                    >
-                        {t('Continue with Microsoft', 'Microsoft से जारी रखें')}
-                    </button>
-                </div>
-
-                {/* Toggle */}
-                <div className="mt-4 text-center text-sm">
-                    <button
-                        onClick={() => {
-                            setIsSignUp(!isSignUp);
-                            setError(null);
-                            setMessage(null);
-                        }}
-                        className="text-blue-600"
-                    >
-                        {isSignUp
-                            ? t('Already have an account? Login', 'पहले से खाता है? लॉगिन करें')
-                            : t("Don't have an account? Sign up", 'खाता नहीं है? साइन अप करें')}
-                    </button>
-                </div>
+                {/* Toggle Signup/Login */}
+                {view !== 'forgot-password' && (
+                    <div className="mt-4 text-center text-sm">
+                        <button
+                            onClick={() => {
+                                setView(view === 'login' ? 'signup' : 'login');
+                                setError(null);
+                                setMessage(null);
+                            }}
+                            className="text-royal-blue font-semibold"
+                        >
+                            {view === 'signup'
+                                ? t('Already have an account? Login', 'पहले से खाता है? लॉगिन करें')
+                                : t("Don't have an account? Sign up", 'खाता नहीं है? साइन अप करें')}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
