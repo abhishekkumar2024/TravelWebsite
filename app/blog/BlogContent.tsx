@@ -22,7 +22,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
     );
 
     return (
-        <article className="pt-24 pb-20 px-4">
+        <article className="pt-32 pb-20 px-4">
             <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm overflow-hidden">
                 {/* Cover Image */}
                 <div className="h-96 relative">

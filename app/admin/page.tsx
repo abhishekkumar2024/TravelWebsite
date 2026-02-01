@@ -218,7 +218,7 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
             {/* Header */}
-            <div className="bg-white/10 backdrop-blur-lg border-b border-white/20">
+            <div className="bg-white/10 backdrop-blur-lg border-b border-white/20 pt-20">
                 <div className="max-w-7xl mx-auto px-4 py-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -302,8 +302,8 @@ export default function AdminPage() {
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
                                         className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${activeTab === tab
-                                                ? 'bg-white text-gray-900'
-                                                : 'text-white hover:bg-white/10'
+                                            ? 'bg-white text-gray-900'
+                                            : 'text-white hover:bg-white/10'
                                             }`}
                                     >
                                         {t(
@@ -352,9 +352,9 @@ export default function AdminPage() {
                                                         </p>
                                                     </div>
                                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${blog.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
-                                                            blog.status === 'published' ? 'bg-green-500/20 text-green-300' :
-                                                                blog.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
-                                                                    'bg-gray-500/20 text-gray-300'
+                                                        blog.status === 'published' ? 'bg-green-500/20 text-green-300' :
+                                                            blog.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
+                                                                'bg-gray-500/20 text-gray-300'
                                                         }`}>
                                                         {blog.status}
                                                     </span>
