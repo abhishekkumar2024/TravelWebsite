@@ -11,13 +11,15 @@ import { supabase } from './supabaseClient';
 export async function isAdmin(): Promise<boolean> {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) return false;
 
-        // Check if user has admin role in metadata
-        const role = user.user_metadata?.role || 
-                     user.app_metadata?.role ||
-                     (user as any).raw_app_meta_data?.role;
+        const role = user.role ||
+            user.app_metadata?.role ||
+            user.user_metadata?.role ||
+            (user as any).raw_app_meta_data?.role;
+
+        console.log('isAdmin check:', { email: user.email, role });
 
         return role === 'admin';
     } catch (error) {
@@ -32,14 +34,14 @@ export async function isAdmin(): Promise<boolean> {
 export async function getAdminStatus(): Promise<{ isAdmin: boolean; user: any }> {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
             return { isAdmin: false, user: null };
         }
 
-        const role = user.user_metadata?.role || 
-                     user.app_metadata?.role ||
-                     (user as any).raw_app_meta_data?.role;
+        const role = user.user_metadata?.role ||
+            user.app_metadata?.role ||
+            (user as any).raw_app_meta_data?.role;
 
         return {
             isAdmin: role === 'admin',
@@ -110,7 +112,7 @@ export async function getAdminStats(): Promise<{
 }> {
     try {
         const allBlogs = await fetchAllBlogs();
-        
+
         return {
             total: allBlogs.length,
             pending: allBlogs.filter(b => b.status === 'pending').length,
