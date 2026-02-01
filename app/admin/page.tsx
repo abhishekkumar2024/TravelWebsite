@@ -231,6 +231,12 @@ export default function AdminPage() {
                         </div>
                         <div className="flex items-center gap-4">
                             <Link
+                                href="/submit"
+                                className="px-4 py-2 bg-desert-gold hover:bg-desert-gold/90 text-white rounded-lg transition-all font-bold"
+                            >
+                                {t('Create New Blog', 'नया ब्लॉग बनाएं')}
+                            </Link>
+                            <Link
                                 href="/"
                                 className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
                             >

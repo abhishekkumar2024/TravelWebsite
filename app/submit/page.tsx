@@ -11,6 +11,7 @@ import { uploadBlogImage, uploadCoverImage } from '@/lib/upload';
 import { createBlog } from '@/lib/supabaseBlogs';
 import { supabase } from '@/lib/supabaseClient';
 import { ensureAuthorExists } from '@/lib/supabaseAuthors';
+import { isAdmin } from '@/lib/admin';
 
 const destinations = [
     { value: '', label: 'Select destination' },
@@ -42,6 +43,7 @@ export default function SubmitPage() {
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [sessionReady, setSessionReady] = useState(false);
+    const [isAdminUser, setIsAdminUser] = useState(false);
 
     // Form state
     const [destination, setDestination] = useState('');
@@ -65,12 +67,17 @@ export default function SubmitPage() {
                 const user = session.user;
                 setUser(user);
 
+                // Check if admin
+                const isAdm = await isAdmin();
+                setIsAdminUser(isAdm);
+
                 // Ensure author exists
                 await ensureAuthorExists();
                 setSessionReady(true);
             } else {
                 setUser(null);
                 setSessionReady(false);
+                setIsAdminUser(false);
             }
             setLoading(false);
         });
@@ -86,14 +93,25 @@ export default function SubmitPage() {
             if (currentUser) {
                 setUser(currentUser);
 
-                // Ensure author exists
-                await ensureAuthorExists();
+                // Check if admin
+                const isAdm = await isAdmin();
+                setIsAdminUser(isAdm);
+
+                // Ensure author exists (wrapped in try to not block the UI if it fails)
+                try {
+                    await ensureAuthorExists();
+                } catch (e) {
+                    console.error('Error ensuring author exists:', e);
+                }
+
                 setSessionReady(true);
             } else {
                 setSessionReady(false);
+                setIsAdminUser(false);
             }
         } catch (error) {
             console.error('Error checking user:', error);
+            setSessionReady(false); // Ensure sessionReady is set to false on error
         } finally {
             setLoading(false);
         }
@@ -204,7 +222,7 @@ export default function SubmitPage() {
                 content_hi: contentHi || contentEn,
                 coverImage: coverImage || 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800',
                 images: uploadedImages,
-                status: 'pending' as const, // Changed to 'pending' for approval workflow
+                status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
             };
 
             const { id, error } = await createBlog(blogData);
@@ -245,10 +263,13 @@ export default function SubmitPage() {
                         </div>
                         <h2 className="text-2xl font-bold mb-4">{t('Thank You!', 'धन्यवाद!')}</h2>
                         <p className="text-gray-600 mb-6">
-                            {t(
-                                "Your blog has been submitted successfully and is under review. We'll notify you once it's published.",
-                                'आपका ब्लॉग सफलतापूर्वक जमा हो गया है और समीक्षाधीन है। प्रकाशित होने पर हम आपको सूचित करेंगे।'
-                            )}
+                            {isAdminUser
+                                ? t('Your blog has been published successfully and is now live on the website!', 'आपका ब्लॉग सफलतापूर्वक प्रकाशित हो गया है और अब वेबसाइट पर लाइव है!')
+                                : t(
+                                    "Your blog has been submitted successfully and is under review. We'll notify you once it's published.",
+                                    'आपका ब्लॉग सफलतापूर्वक जमा हो गया है और समीक्षाधीन है। प्रकाशित होने पर हम आपको सूचित करेंगे।'
+                                )
+                            }
                         </p>
                         <a
                             href="/"
@@ -375,13 +396,10 @@ export default function SubmitPage() {
                         <div className="mb-6 bg-gradient-to-r from-royal-blue to-deep-maroon rounded-2xl p-6 text-white shadow-lg">
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                                 <div className="flex-1">
-                                    <h3 className="text-xl font-bold mb-2">
-                                        {t('🔐 Login Required to Submit', '🔐 जमा करने के लिए लॉगिन आवश्यक')}
-                                    </h3>
                                     <p className="text-white/90">
                                         {t(
-                                            'Please login or create an account to submit your travel story. It only takes a minute!',
-                                            'अपनी यात्रा कहानी जमा करने के लिए कृपया लॉगिन करें या खाता बनाएं। इसमें केवल एक मिनट लगता है!'
+                                            'Please login or create an account to submit your travel story.',
+                                            'अपनी यात्रा कहानी जमा करने के लिए कृपया लॉगिन करें या खाता बनाएं।'
                                         )}
                                     </p>
                                 </div>
@@ -585,14 +603,19 @@ export default function SubmitPage() {
                                             ? t('Verifying Session...', 'सत्र सत्यापित किया जा रहा है...')
                                             : submitting
                                                 ? t('Submitting...', 'जमा हो रहा है...')
-                                                : t('Submit Blog for Review', 'समीक्षा के लिए ब्लॉग जमा करें')}
+                                                : isAdminUser
+                                                    ? t('Publish Blog Now', 'अभी ब्लॉग प्रकाशित करें')
+                                                    : t('Submit Blog for Review', 'समीक्षा के लिए ब्लॉग जमा करें')}
                                 </button>
 
                                 <p className="text-center text-gray-500 text-sm">
-                                    {t(
-                                        'Your blog will be reviewed by our team before publishing',
-                                        'प्रकाशन से पहले हमारी टीम द्वारा आपके ब्लॉग की समीक्षा की जाएगी'
-                                    )}
+                                    {isAdminUser
+                                        ? t('You are logged in as admin. Your blog will be published immediately.', 'आप व्यवस्थापक के रूप में लॉग इन हैं। आपका ब्लॉग तुरंत प्रकाशित किया जाएगा।')
+                                        : t(
+                                            'Your blog will be reviewed by our team before publishing',
+                                            'प्रकाशन से पहले हमारी टीम द्वारा आपके ब्लॉग की समीक्षा की जाएगी'
+                                        )
+                                    }
                                 </p>
                             </div>
 

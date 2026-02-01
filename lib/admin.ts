@@ -14,10 +14,10 @@ export async function isAdmin(): Promise<boolean> {
 
         if (!user) return false;
 
-        const role = user.role ||
-            user.app_metadata?.role ||
+        const role = user.app_metadata?.role ||
             user.user_metadata?.role ||
-            (user as any).raw_app_meta_data?.role;
+            (user as any).raw_app_meta_data?.role ||
+            user.role;
 
         console.log('isAdmin check:', { email: user.email, role });
 

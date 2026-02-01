@@ -6,7 +6,13 @@ export async function ensureAuthorExists(): Promise<string> {
         await supabase.auth.getSession();
 
     if (sessionError || !session?.user) {
-        throw new Error('User not authenticated or session not ready');
+        // Log but don't strictly throw if we might be in a race condition
+        console.warn('[supabaseAuthors] No session found, attempting to get user directly');
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) {
+            throw new Error('User not authenticated or session not ready');
+        }
+        return currentUser.id; // Just return ID if we can't ensure row exists yet
     }
 
     const user = session.user;

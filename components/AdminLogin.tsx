@@ -31,16 +31,16 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
 
             if (data.user) {
                 const user = data.user as any;
-                const role = user.role ||
-                    user.app_metadata?.role ||
+                const role = user.app_metadata?.role ||
                     user.user_metadata?.role ||
-                    user.raw_app_meta_data?.role;
+                    user.raw_app_meta_data?.role ||
+                    user.role;
 
                 console.log('Admin login attempt:', { email: user.email, role });
 
                 if (role !== 'admin') {
                     await supabase.auth.signOut();
-                    setError(`${t('Access denied. Admin privileges required.', 'अस्वीकृत पहुंच। व्यवस्थापक विशेषाधिकार आवश्यक हैं।')} (Detected Role: ${role || 'none'})`);
+                    setError(`${t('Access denied. Admin privileges required.', 'अस्वीकृत पहुंच। व्यवस्थापक विशेषाधिकार आवश्यक हैं।')} (Detected: ${role || 'none'})`);
                     setLoading(false);
                     return;
                 }
