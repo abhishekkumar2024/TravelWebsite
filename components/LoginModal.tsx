@@ -85,20 +85,6 @@ export default function LoginModal({
 
         if (error) throw error;
 
-        // Note: If email confirmation is ON, this insert might fail due to RLS.
-        // That's okay, because ensureAuthorExists() will catch it later when they log in.
-        if (data.user) {
-            try {
-                await supabase.from('authors').insert({
-                    id: data.user.id,
-                    name: name || email.split('@')[0],
-                    email: email,
-                });
-            } catch (e) {
-                console.log('Author creation deferred until email confirmation');
-            }
-        }
-
         setMessage(
             t(
                 'Verification email sent! Please check your inbox and confirm your email, then login here.',
@@ -106,12 +92,11 @@ export default function LoginModal({
             )
         );
 
-        // Redirect to login view after 1 second
+        // Transition to login view after a short delay
         setTimeout(() => {
             setView('login');
-            setMessage(null);
             setLoading(false);
-        }, 1000);
+        }, 1200);
     };
 
     // -------------------------
