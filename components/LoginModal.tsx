@@ -109,7 +109,7 @@ export default function LoginModal({
             setIsSignUp(false);
             setMessage(null);
             setLoading(false);
-        }, 4000);
+        }, 1000);
     };
 
     // -------------------------

@@ -29,40 +29,42 @@ export default function Navbar() {
 
     return (
         <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300">
-            <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2">
-                    <Image
-                        src="/camelthar_logo.png"
-                        alt="CamelThar Logo"
-                        width={40}
-                        height={40}
-                        className="h-10 w-auto"
-                    />
-                    <span className="text-xl font-bold text-royal-blue">
-                        {t('CamelThar', 'कैमलथार')}
-                    </span>
-                </Link>
+            <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
+                {/* Logo Section - Left */}
+                <div className="flex-1 flex justify-start">
+                    <Link href="/" className="flex items-center gap-2">
+                        <Image
+                            src="/camelthar_logo.png"
+                            alt="CamelThar Logo"
+                            width={40}
+                            height={40}
+                            className="h-10 w-auto"
+                        />
+                        <span className="text-xl font-bold text-royal-blue whitespace-nowrap">
+                            {t('CamelThar', 'कैमलथार')}
+                        </span>
+                    </Link>
+                </div>
 
-                {/* Desktop Nav Links */}
-                <div className="hidden md:flex items-center gap-8">
-                    <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue py-2">
+                {/* Nav Links - Center */}
+                <div className="hidden md:flex items-center justify-center gap-8">
+                    <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Home', 'होम')}
                     </Link>
-                    <Link href="/blogs" className="font-medium text-gray-600 hover:text-royal-blue py-2">
+                    <Link href="/blogs" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Blogs', 'ब्लॉग')}
                     </Link>
-                    <Link href="/destinations" className="font-medium text-gray-600 hover:text-royal-blue py-2">
+                    <Link href="/destinations" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Destinations', 'स्थान')}
                     </Link>
-                    <Link href="/essentials" className="font-medium text-gray-600 hover:text-royal-blue py-2 flex items-center gap-1">
+                    <Link href="/essentials" className="font-medium text-gray-600 hover:text-royal-blue transition-colors flex items-center gap-1">
                         <span className="text-sm">🎒</span>
                         {t('Travel Essentials', 'यात्रा आवश्यकताएं')}
                     </Link>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-4">
+                {/* Actions Section - Right */}
+                <div className="flex-1 flex justify-end items-center gap-4">
                     {/* Language Toggle */}
                     <div className="flex bg-gray-200 rounded-full p-1">
                         <button
@@ -83,7 +85,7 @@ export default function Navbar() {
 
                     <Link
                         href="/submit"
-                        className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                        className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
                     >
                         {t('Submit Blog', 'ब्लॉग जमा करें')}
                     </Link>
