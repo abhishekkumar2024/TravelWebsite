@@ -18,7 +18,11 @@ function mapRowToBlog(row: any): BlogPost {
             row.cover_image ||
             'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=60',
         images: row.images ?? [],
-        author: row.author ?? { name: 'Traveler' },
+        author: row.authors ? {
+            name: row.authors.name || row.author?.name || 'Traveler',
+            avatar: row.authors.avatar_url || row.author?.avatar,
+            email: row.authors.email || row.author?.email
+        } : (row.author ?? { name: 'Traveler' }),
         readTime: row.read_time ?? '5 min',
         publishedAt: row.published_at ? new Date(row.published_at) : new Date(row.created_at ?? Date.now()),
         status: (row.status ?? 'published') as 'pending' | 'approved' | 'rejected',
@@ -34,7 +38,7 @@ function mapRowToBlog(row: any): BlogPost {
 export async function fetchPublishedBlogs(limit = 50): Promise<BlogPost[]> {
     const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select('*, authors(name, avatar_url, email)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -51,7 +55,7 @@ export async function fetchPublishedBlogs(limit = 50): Promise<BlogPost[]> {
 export async function fetchBlogById(id: string): Promise<BlogPost | null> {
     const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select('*, authors(name, avatar_url, email)')
         .eq('id', id)
         .single();
 
@@ -168,7 +172,7 @@ export async function fetchPendingBlogs(): Promise<BlogPost[]> {
 
     const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select('*, authors(name, avatar_url, email)')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
@@ -232,7 +236,7 @@ export async function fetchUserBlogs(): Promise<BlogPost[]> {
 
     const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select('*, authors(name, avatar_url, email)')
         .eq('author_id', user.id)
         .order('created_at', { ascending: false });
 

@@ -289,6 +289,7 @@ export default function AdminPage() {
                     <ProfileHeader
                         userId={user.id}
                         email={user.email}
+                        onProfileUpdate={loadBlogs}
                     />
                 )}
             </div>

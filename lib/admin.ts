@@ -61,7 +61,7 @@ export async function fetchAllBlogs(): Promise<any[]> {
     try {
         const { data, error } = await supabase
             .from('blogs')
-            .select('*')
+            .select('*, authors(name, email, avatar_url)')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -69,7 +69,14 @@ export async function fetchAllBlogs(): Promise<any[]> {
             return [];
         }
 
-        return data || [];
+        return (data || []).map((blog: any) => ({
+            ...blog,
+            author: blog.authors ? {
+                name: blog.authors.name,
+                email: blog.authors.email,
+                avatar: blog.authors.avatar_url
+            } : (blog.author || { name: 'Unknown' })
+        }));
     } catch (error) {
         console.error('[admin] fetchAllBlogs exception:', error);
         return [];
@@ -84,7 +91,7 @@ export async function fetchBlogsByStatus(status: 'pending' | 'published' | 'reje
     try {
         const { data, error } = await supabase
             .from('blogs')
-            .select('*')
+            .select('*, authors(name, email, avatar_url)')
             .eq('status', status)
             .order('created_at', { ascending: false });
 
@@ -93,7 +100,14 @@ export async function fetchBlogsByStatus(status: 'pending' | 'published' | 'reje
             return [];
         }
 
-        return data || [];
+        return (data || []).map((blog: any) => ({
+            ...blog,
+            author: blog.authors ? {
+                name: blog.authors.name,
+                email: blog.authors.email,
+                avatar: blog.authors.avatar_url
+            } : (blog.author || { name: 'Unknown' })
+        }));
     } catch (error) {
         console.error(`[admin] fetchBlogsByStatus(${status}) exception:`, error);
         return [];

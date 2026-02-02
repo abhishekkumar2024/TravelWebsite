@@ -166,6 +166,7 @@ export default function MyBlogsPage() {
                     <ProfileHeader
                         userId={user.id}
                         email={user.email}
+                        onProfileUpdate={loadBlogs}
                     />
                 )}
 
