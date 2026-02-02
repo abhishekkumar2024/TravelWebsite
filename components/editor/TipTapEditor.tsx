@@ -97,6 +97,25 @@ export default function TipTapEditor({
         },
     });
 
+    // Sync editor content when content prop changes externally (e.g., draft restore)
+    useEffect(() => {
+        if (editor && content !== editor.getHTML()) {
+            // Only update if content is different and not empty
+            // This prevents cursor position issues during normal typing
+            const currentContent = editor.getHTML();
+            const isCurrentEmpty = currentContent === '<p></p>' || currentContent === '';
+            const isNewEmpty = content === '<p></p>' || content === '';
+
+            // Update if: 
+            // 1. New content has value and current is empty (draft restore)
+            // 2. New content is significantly different (external update)
+            if ((isCurrentEmpty && !isNewEmpty) ||
+                (!isNewEmpty && content !== currentContent && content.length > currentContent.length + 50)) {
+                editor.commands.setContent(content);
+            }
+        }
+    }, [content, editor]);
+
     // Handle keyboard shortcut for image editing
     useEffect(() => {
         if (!editor) return;

@@ -100,12 +100,26 @@ export default function Navbar() {
                     </div>
 
                     {user && (
-                        <Link
-                            href="/my-blogs"
-                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all text-sm"
-                        >
-                            {t('My Blogs', 'मेरे ब्लॉग')}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                            <Link
+                                href="/my-blogs"
+                                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all text-sm"
+                            >
+                                {t('My Blogs', 'मेरे ब्लॉग')}
+                            </Link>
+                            <button
+                                onClick={async () => {
+                                    await supabase.auth.signOut({ scope: 'local' });
+                                    window.location.reload();
+                                }}
+                                className="hidden sm:inline-flex items-center justify-center w-9 h-9 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-all"
+                                title={t('Logout', 'लॉगआउट')}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                            </button>
+                        </div>
                     )}
 
                     <Link
@@ -162,13 +176,26 @@ export default function Navbar() {
                         </Link>
 
                         {user && (
-                            <Link
-                                href="/my-blogs"
-                                className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 font-medium text-royal-blue"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                {t('My Blogs', 'मेरे ब्लॉग')}
-                            </Link>
+                            <>
+                                <Link
+                                    href="/my-blogs"
+                                    className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 font-medium text-royal-blue"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    {t('My Blogs', 'मेरे ब्लॉग')}
+                                </Link>
+                                <button
+                                    className="text-lg py-2 px-4 rounded-lg hover:bg-red-50 font-medium text-red-600 text-left flex items-center gap-2"
+                                    onClick={async () => {
+                                        await supabase.auth.signOut({ scope: 'local' });
+                                        setMobileMenuOpen(false);
+                                        window.location.reload();
+                                    }}
+                                >
+                                    <span>🚪</span>
+                                    {t('Logout', 'लॉगआउट')}
+                                </button>
+                            </>
                         )}
 
                         <Link

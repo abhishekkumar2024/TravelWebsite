@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
+import { useDraft, EditDraftData } from '@/hooks/useDraft';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
@@ -64,6 +65,13 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     const [canonicalUrl, setCanonicalUrl] = useState('');
     const [showSeoSection, setShowSeoSection] = useState(false);
 
+    // Draft auto-save
+    const [showDraftRestoreModal, setShowDraftRestoreModal] = useState(false);
+    const [pendingDraft, setPendingDraft] = useState<EditDraftData | null>(null);
+    const draftInitialized = useRef(false);
+    const blogDataLoaded = useRef(false);
+    const { saveDraft, loadDraft, clearDraft, scheduleAutoSave, lastSaved, isSaving, hasDraft, getLastSavedText } = useDraft('edit', params.id);
+
     useEffect(() => {
         const init = async () => {
             // 1. Check User
@@ -111,6 +119,9 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 setFocusKeyword(blog.focus_keyword || '');
                 setCanonicalUrl(blog.canonical_url || '');
 
+                // Mark blog data as loaded for draft comparison
+                blogDataLoaded.current = true;
+
             } catch (error) {
                 console.error('Error fetching blog:', error);
                 alert('Error loading blog data');
@@ -121,6 +132,83 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
 
         init();
     }, [params.id, router]);
+
+    // Check for draft after blog data loads
+    useEffect(() => {
+        if (!blogDataLoaded.current || draftInitialized.current || loading) return;
+        draftInitialized.current = true;
+
+        const draft = loadDraft() as EditDraftData | null;
+        if (draft && draft.savedAt && draft.blogId === params.id) {
+            // Check if draft has changes from saved blog data
+            const hasChanges = draft.titleEn !== titleEn ||
+                draft.contentEn !== contentEn ||
+                draft.excerptEn !== excerptEn;
+            if (hasChanges && (draft.titleEn || draft.contentEn || draft.excerptEn)) {
+                setPendingDraft(draft);
+                setShowDraftRestoreModal(true);
+            }
+        }
+    }, [loadDraft, params.id, loading, titleEn, contentEn, excerptEn]);
+
+    // Restore draft handler
+    const handleRestoreDraft = () => {
+        if (pendingDraft) {
+            setDestination(pendingDraft.destination || '');
+            setCategory(pendingDraft.category || '');
+            setTitleEn(pendingDraft.titleEn || '');
+            setTitleHi(pendingDraft.titleHi || '');
+            setExcerptEn(pendingDraft.excerptEn || '');
+            setExcerptHi(pendingDraft.excerptHi || '');
+            setContentEn(pendingDraft.contentEn || '');
+            setContentHi(pendingDraft.contentHi || '');
+            setCoverImage(pendingDraft.coverImage || null);
+            setUploadedImages(pendingDraft.uploadedImages || []);
+            setMetaTitle(pendingDraft.metaTitle || '');
+            setMetaDescription(pendingDraft.metaDescription || '');
+            setFocusKeyword(pendingDraft.focusKeyword || '');
+            setCanonicalUrl(pendingDraft.canonicalUrl || '');
+        }
+        setShowDraftRestoreModal(false);
+        setPendingDraft(null);
+    };
+
+    const handleDiscardDraft = () => {
+        clearDraft();
+        setShowDraftRestoreModal(false);
+        setPendingDraft(null);
+    };
+
+    // Auto-save draft when form changes
+    useEffect(() => {
+        // Only save if blog data has been loaded and there's meaningful content
+        if (!blogDataLoaded.current) return;
+
+        const hasContent = titleEn || contentEn || excerptEn;
+        if (hasContent && !submitted) {
+            scheduleAutoSave({
+                blogId: params.id,
+                destination,
+                category,
+                titleEn,
+                titleHi,
+                excerptEn,
+                excerptHi,
+                contentEn,
+                contentHi,
+                coverImage,
+                uploadedImages,
+                metaTitle,
+                metaDescription,
+                focusKeyword,
+                canonicalUrl,
+            });
+        }
+    }, [
+        params.id, destination, category, titleEn, titleHi, excerptEn, excerptHi,
+        contentEn, contentHi, coverImage, uploadedImages, metaTitle,
+        metaDescription, focusKeyword, canonicalUrl, submitted, scheduleAutoSave
+    ]);
 
     // Derived metrics
     const wordCount = useMemo(() => {
@@ -200,6 +288,8 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             }
 
             setSubmitted(true);
+            // Clear draft on successful submission
+            clearDraft();
         } catch (error: any) {
             console.error('Submit error:', error);
             alert(t('Failed to update. Please try again.', 'अपडेट करने में विफल। कृपया पुनः प्रयास करें।'));
@@ -258,6 +348,50 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
 
     return (
         <>
+            {/* Draft Restore Modal */}
+            {showDraftRestoreModal && pendingDraft && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center animate-fade-in">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {t('Unsaved Changes Found!', 'असहेजे परिवर्तन मिले!')}
+                        </h3>
+                        <p className="text-gray-600 mb-2">
+                            {t(
+                                'You have unsaved changes from your previous editing session.',
+                                'आपके पिछले संपादन सत्र से असहेजे परिवर्तन हैं।'
+                            )}
+                        </p>
+                        {pendingDraft.titleEn && (
+                            <p className="text-sm text-gray-500 mb-4 italic">
+                                "{pendingDraft.titleEn.slice(0, 50)}{pendingDraft.titleEn.length > 50 ? '...' : ''}"
+                            </p>
+                        )}
+                        <p className="text-xs text-gray-400 mb-4">
+                            {t('Saved', 'सहेजा गया')}: {new Date(pendingDraft.savedAt).toLocaleString()}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleDiscardDraft}
+                                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+                            >
+                                {t('Discard', 'छोड़ें')}
+                            </button>
+                            <button
+                                onClick={handleRestoreDraft}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-royal-blue to-deep-maroon text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                            >
+                                {t('Restore Changes', 'परिवर्तन पुनर्स्थापित करें')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <section className="pt-32 pb-16 px-4 bg-gradient-to-br from-royal-blue to-deep-maroon text-white">
                 <div className="max-w-7xl mx-auto text-center">
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -476,6 +610,27 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                                     )}
                                 </div>
                             </div>
+
+                            {/* Draft Status Indicator */}
+                            {(isSaving || lastSaved) && (
+                                <div className="flex items-center justify-center gap-2 py-2 text-sm">
+                                    {isSaving ? (
+                                        <>
+                                            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                            <span className="text-yellow-600">
+                                                {t('Saving changes...', 'परिवर्तन सहेजे जा रहे हैं...')}
+                                            </span>
+                                        </>
+                                    ) : lastSaved ? (
+                                        <>
+                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            <span className="text-green-600">
+                                                {t('Changes saved', 'परिवर्तन सहेजे गए')} • {getLastSavedText()}
+                                            </span>
+                                        </>
+                                    ) : null}
+                                </div>
+                            )}
 
                             <button
                                 type="submit"

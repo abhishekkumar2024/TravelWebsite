@@ -302,3 +302,25 @@ export async function updateBlog(id: string, payload: {
     }
 }
 
+// Admin function: Delete a blog permanently
+export async function deleteBlog(blogId: string): Promise<{ success: boolean; error: string | null }> {
+    try {
+        const { error } = await supabase
+            .from('blogs')
+            .delete()
+            .eq('id', blogId);
+
+        if (error) {
+            console.error('[supabaseBlogs] deleteBlog error:', error.message);
+            return { success: false, error: error.message };
+        }
+
+        console.log('[supabaseBlogs] Blog deleted successfully:', blogId);
+        return { success: true, error: null };
+    } catch (err: any) {
+        console.error('[supabaseBlogs] deleteBlog unexpected error:', err);
+        return { success: false, error: err?.message || 'Unexpected error' };
+    }
+}
+
+

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { isAdmin, getAdminStats, fetchBlogsByStatus } from '@/lib/admin';
-import { approveBlog, rejectBlog } from '@/lib/supabaseBlogs';
+import { approveBlog, rejectBlog, deleteBlog } from '@/lib/supabaseBlogs';
 import AdminLogin from '@/components/AdminLogin';
 import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
@@ -187,8 +187,33 @@ export default function AdminPage() {
         }
     };
 
+    const handleDeleteBlog = async (blogId: string, blogTitle: string) => {
+        if (!confirm(t(
+            `Are you sure you want to PERMANENTLY DELETE this blog?\n\n"${blogTitle}"\n\nThis action cannot be undone!`,
+            `क्या आप वाकई इस ब्लॉग को स्थायी रूप से हटाना चाहते हैं?\n\n"${blogTitle}"\n\nयह क्रिया पूर्ववत नहीं की जा सकती!`
+        ))) {
+            return;
+        }
+
+        setProcessing(blogId);
+        try {
+            const result = await deleteBlog(blogId);
+            if (result.success) {
+                await loadBlogs();
+                await loadStats();
+            } else {
+                alert(t('Failed to delete blog', 'ब्लॉग को हटाने में विफल') + ': ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error deleting blog:', error);
+            alert(t('An error occurred', 'एक त्रुटि हुई'));
+        } finally {
+            setProcessing(null);
+        }
+    };
+
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         setAuthenticated(false);
         setBlogs([]);
         setStats({
@@ -381,7 +406,7 @@ export default function AdminPage() {
 
                                                 {/* Actions */}
                                                 {activeTab === 'pending' && (
-                                                    <div className="flex gap-3">
+                                                    <div className="flex flex-wrap gap-3">
                                                         <button
                                                             onClick={() => handleApprove(blog.id)}
                                                             disabled={processing === blog.id}
@@ -402,16 +427,29 @@ export default function AdminPage() {
                                                         >
                                                             {t('View', 'देखें')}
                                                         </Link>
+                                                        <button
+                                                            onClick={() => handleDeleteBlog(blog.id, blog.title_en)}
+                                                            disabled={processing === blog.id}
+                                                            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {t('Delete', 'हटाएं')}
+                                                        </button>
                                                     </div>
                                                 )}
 
                                                 {activeTab !== 'pending' && (
-                                                    <div className="flex gap-3">
+                                                    <div className="flex flex-wrap gap-3">
                                                         <Link
                                                             href={`/blog/${blog.id}`}
                                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all"
                                                         >
                                                             {t('View', 'देखें')}
+                                                        </Link>
+                                                        <Link
+                                                            href={`/edit/${blog.id}`}
+                                                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all"
+                                                        >
+                                                            {t('Edit', 'संपादित करें')}
                                                         </Link>
                                                         {activeTab === 'rejected' && (
                                                             <button
@@ -422,6 +460,13 @@ export default function AdminPage() {
                                                                 {t('Approve', 'मंजूरी दें')}
                                                             </button>
                                                         )}
+                                                        <button
+                                                            onClick={() => handleDeleteBlog(blog.id, blog.title_en)}
+                                                            disabled={processing === blog.id}
+                                                            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {t('Delete', 'हटाएं')}
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>

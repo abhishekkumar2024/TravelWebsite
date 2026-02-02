@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
+import { useDraft, SubmitDraftData } from '@/hooks/useDraft';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
@@ -62,6 +63,84 @@ export default function SubmitPage() {
     const [focusKeyword, setFocusKeyword] = useState('');
     const [canonicalUrl, setCanonicalUrl] = useState('');
     const [showSeoSection, setShowSeoSection] = useState(false);
+
+    // Draft auto-save
+    const [showDraftRestoreModal, setShowDraftRestoreModal] = useState(false);
+    const [pendingDraft, setPendingDraft] = useState<SubmitDraftData | null>(null);
+    const draftInitialized = useRef(false);
+    const { saveDraft, loadDraft, clearDraft, scheduleAutoSave, lastSaved, isSaving, hasDraft, getLastSavedText } = useDraft('submit');
+
+    // Load draft on mount
+    useEffect(() => {
+        if (draftInitialized.current) return;
+        draftInitialized.current = true;
+
+        const draft = loadDraft();
+        if (draft && draft.savedAt) {
+            // Check if draft has meaningful content
+            const hasContent = draft.titleEn || draft.contentEn || draft.excerptEn;
+            if (hasContent) {
+                setPendingDraft(draft);
+                setShowDraftRestoreModal(true);
+            }
+        }
+    }, [loadDraft]);
+
+    // Restore draft handler
+    const handleRestoreDraft = () => {
+        if (pendingDraft) {
+            setDestination(pendingDraft.destination || '');
+            setCategory(pendingDraft.category || '');
+            setTitleEn(pendingDraft.titleEn || '');
+            setTitleHi(pendingDraft.titleHi || '');
+            setExcerptEn(pendingDraft.excerptEn || '');
+            setExcerptHi(pendingDraft.excerptHi || '');
+            setContentEn(pendingDraft.contentEn || '');
+            setContentHi(pendingDraft.contentHi || '');
+            setCoverImage(pendingDraft.coverImage || null);
+            setUploadedImages(pendingDraft.uploadedImages || []);
+            setMetaTitle(pendingDraft.metaTitle || '');
+            setMetaDescription(pendingDraft.metaDescription || '');
+            setFocusKeyword(pendingDraft.focusKeyword || '');
+            setCanonicalUrl(pendingDraft.canonicalUrl || '');
+        }
+        setShowDraftRestoreModal(false);
+        setPendingDraft(null);
+    };
+
+    const handleDiscardDraft = () => {
+        clearDraft();
+        setShowDraftRestoreModal(false);
+        setPendingDraft(null);
+    };
+
+    // Auto-save draft when form changes
+    useEffect(() => {
+        // Only save if there's meaningful content
+        const hasContent = titleEn || contentEn || excerptEn;
+        if (hasContent && !submitted) {
+            scheduleAutoSave({
+                destination,
+                category,
+                titleEn,
+                titleHi,
+                excerptEn,
+                excerptHi,
+                contentEn,
+                contentHi,
+                coverImage,
+                uploadedImages,
+                metaTitle,
+                metaDescription,
+                focusKeyword,
+                canonicalUrl,
+            });
+        }
+    }, [
+        destination, category, titleEn, titleHi, excerptEn, excerptHi,
+        contentEn, contentHi, coverImage, uploadedImages, metaTitle,
+        metaDescription, focusKeyword, canonicalUrl, submitted, scheduleAutoSave
+    ]);
 
     // Check authentication status
     useEffect(() => {
@@ -247,6 +326,8 @@ export default function SubmitPage() {
                 throw new Error(error || 'Unknown error');
             }
 
+            // Clear draft on successful submission
+            clearDraft();
             setSubmitted(true);
         } catch (error: any) {
             console.error('Submit error:', error);
@@ -352,6 +433,50 @@ export default function SubmitPage() {
                                 className="flex-1 px-4 py-2 bg-gradient-to-r from-royal-blue to-deep-maroon text-white font-semibold rounded-lg hover:shadow-lg transition-all"
                             >
                                 {t('Login', 'लॉगिन')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Draft Restore Modal */}
+            {showDraftRestoreModal && pendingDraft && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center animate-fade-in">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {t('Draft Found!', 'ड्राफ्ट मिला!')}
+                        </h3>
+                        <p className="text-gray-600 mb-2">
+                            {t(
+                                'You have an unsaved draft from your previous session.',
+                                'आपके पिछले सत्र से एक असहेजा ड्राफ्ट है।'
+                            )}
+                        </p>
+                        {pendingDraft.titleEn && (
+                            <p className="text-sm text-gray-500 mb-4 italic">
+                                "{pendingDraft.titleEn.slice(0, 50)}{pendingDraft.titleEn.length > 50 ? '...' : ''}"
+                            </p>
+                        )}
+                        <p className="text-xs text-gray-400 mb-4">
+                            {t('Saved', 'सहेजा गया')}: {new Date(pendingDraft.savedAt).toLocaleString()}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleDiscardDraft}
+                                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+                            >
+                                {t('Discard', 'छोड़ें')}
+                            </button>
+                            <button
+                                onClick={handleRestoreDraft}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-royal-blue to-deep-maroon text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                            >
+                                {t('Restore Draft', 'ड्राफ्ट पुनर्स्थापित करें')}
                             </button>
                         </div>
                     </div>
@@ -724,6 +849,27 @@ export default function SubmitPage() {
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Draft Status Indicator */}
+                                {(isSaving || lastSaved) && (
+                                    <div className="flex items-center justify-center gap-2 py-2 text-sm">
+                                        {isSaving ? (
+                                            <>
+                                                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                                <span className="text-yellow-600">
+                                                    {t('Saving draft...', 'ड्राफ्ट सहेजा जा रहा है...')}
+                                                </span>
+                                            </>
+                                        ) : lastSaved ? (
+                                            <>
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                <span className="text-green-600">
+                                                    {t('Draft saved', 'ड्राफ्ट सहेजा गया')} • {getLastSavedText()}
+                                                </span>
+                                            </>
+                                        ) : null}
+                                    </div>
+                                )}
 
                                 {/* Submit Button */}
                                 <button
