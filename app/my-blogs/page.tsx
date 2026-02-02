@@ -9,6 +9,7 @@ import { fetchUserBlogs } from '@/lib/supabaseBlogs';
 import { BlogPost } from '@/lib/data';
 import { supabase } from '@/lib/supabaseClient';
 import { SubmitDraftData } from '@/hooks/useDraft';
+import ProfileHeader from '@/components/ProfileHeader';
 
 // Helper to get draft from localStorage
 function getLocalDraft(): SubmitDraftData | null {
@@ -161,6 +162,13 @@ export default function MyBlogsPage() {
             )}
 
             <div className="max-w-7xl mx-auto">
+                {user && (
+                    <ProfileHeader
+                        userId={user.id}
+                        email={user.email}
+                    />
+                )}
+
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">

@@ -45,3 +45,34 @@ export async function uploadCoverImage(file: File): Promise<string> {
     return uploadToCloudinary(file, 'cover-images');
 }
 
+export async function uploadAvatar(file: File): Promise<string> {
+    if (!cloudName || !uploadPreset) {
+        throw new Error('Cloudinary is not configured');
+    }
+
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('folder', 'avatars');
+
+    const res = await fetch(url, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!res.ok) {
+        throw new Error('Avatar upload failed');
+    }
+
+    const data = await res.json();
+    const publicId = data.public_id;
+
+    if (publicId) {
+        // Optimized for avatars: 300x300, face focus, circular if we wanted but CSS is better for shape
+        return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto,w_300,h_300,c_thumb,g_face/${publicId}`;
+    }
+
+    return data.secure_url;
+}
+

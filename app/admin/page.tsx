@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { isAdmin, getAdminStats, fetchBlogsByStatus } from '@/lib/admin';
+import { isAdmin, getAdminStatus, getAdminStats, fetchBlogsByStatus } from '@/lib/admin';
 import { approveBlog, rejectBlog, deleteBlog } from '@/lib/supabaseBlogs';
 import AdminLogin from '@/components/AdminLogin';
+import ProfileHeader from '@/components/ProfileHeader';
 import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
 
@@ -22,6 +23,7 @@ import { AffiliateProduct } from '@/app/essentials/EssentialsContent';
 export default function AdminPage() {
     const { t } = useLanguage();
     const [authenticated, setAuthenticated] = useState(false);
+    const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [mainTab, setMainTab] = useState<MainTab>('blogs');
     const [activeTab, setActiveTab] = useState<BlogStatus>('pending');
@@ -64,8 +66,11 @@ export default function AdminPage() {
 
     const checkAdminAccess = async () => {
         try {
-            const adminStatus = await isAdmin();
-            setAuthenticated(adminStatus);
+            const { isAdmin, user } = await getAdminStatus();
+            setAuthenticated(isAdmin);
+            if (isAdmin && user) {
+                setUser(user);
+            }
         } catch (error) {
             console.error('Error checking admin access:', error);
             setAuthenticated(false);
@@ -276,6 +281,16 @@ export default function AdminPage() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Profile Header */}
+            <div className="max-w-7xl mx-auto px-4 mt-6">
+                {user && (
+                    <ProfileHeader
+                        userId={user.id}
+                        email={user.email}
+                    />
+                )}
             </div>
 
             {/* Main Tabs */}

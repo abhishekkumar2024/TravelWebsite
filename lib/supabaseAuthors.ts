@@ -60,3 +60,39 @@ export async function ensureAuthorExists(): Promise<string> {
 
     return user.id;
 }
+
+export async function getAuthorProfile(userId: string) {
+    const { data, error } = await supabase
+        .from('authors')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    if (error) {
+        console.error('[supabaseAuthors] getAuthorProfile error:', error.message);
+        return null;
+    }
+    return data;
+}
+
+export async function updateAuthorProfile(userId: string, updates: { name?: string; avatar_url?: string }) {
+    const { data, error } = await supabase
+        .from('authors')
+        .update(updates)
+        .eq('id', userId)
+        .select();
+
+    if (error) {
+        console.error('[supabaseAuthors] updateAuthorProfile error:', error.message);
+        return { success: false, error: error.message };
+    }
+
+    if (!data || data.length === 0) {
+        console.error('[supabaseAuthors] updateAuthorProfile: No rows updated. Check RLS policies.');
+        // Even if no rows returned, the update might have happened but we can't see it? 
+        // Usually it means no row matched or RLS blocked it.
+        return { success: false, error: 'Update failed or permission denied' };
+    }
+
+    return { success: true, data: data[0] };
+}

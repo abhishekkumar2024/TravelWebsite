@@ -5,26 +5,41 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from './LanguageProvider';
 import { supabase } from '@/lib/supabaseClient';
+import { getAuthorProfile } from '@/lib/supabaseAuthors';
 
 export default function Navbar() {
     const { lang, setLang, t } = useLanguage();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const navRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         // Check initial user
         supabase.auth.getUser().then(({ data: { user } }) => {
             setUser(user);
+            if (user) loadAvatar(user.id);
         });
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
+            if (session?.user) {
+                loadAvatar(session.user.id);
+            } else {
+                setAvatarUrl(null);
+            }
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const loadAvatar = async (userId: string) => {
+        const profile = await getAuthorProfile(userId);
+        if (profile?.avatar_url) {
+            setAvatarUrl(profile.avatar_url);
+        }
+    };
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -103,8 +118,18 @@ export default function Navbar() {
                         <div className="flex items-center gap-2">
                             <Link
                                 href="/my-blogs"
-                                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all text-sm"
+                                className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all text-sm"
                             >
+                                {avatarUrl ? (
+                                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-white shadow-sm">
+                                        <Image
+                                            src={avatarUrl}
+                                            alt="Profile"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                ) : null}
                                 {t('My Blogs', 'मेरे ब्लॉग')}
                             </Link>
                             <button
