@@ -67,9 +67,9 @@ export default function Navbar() {
                         <Image
                             src="/camelthar_logo.png"
                             alt="CamelThar Logo"
-                            width={40}
-                            height={40}
-                            className="h-10 w-auto"
+                            width={50}
+                            height={50}
+                            className="h-12 w-auto rounded-full"
                         />
                         <span className="text-xl font-bold text-royal-blue whitespace-nowrap">
                             {t('CamelThar', 'कैमलथार')}

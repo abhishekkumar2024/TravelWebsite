@@ -262,7 +262,7 @@ export default function TipTapEditor({
                     />
                 </div>
 
-                <div className="bg-white">
+                <div className="bg-white max-h-[600px] overflow-y-auto">
                     <EditorContent editor={editor} />
                 </div>
             </div>

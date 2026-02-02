@@ -229,9 +229,7 @@ export default function SubmitPage() {
     // Upload image used inside the rich-text editor
     const handleImageUpload = useCallback(async (file: File): Promise<string> => {
         try {
-            console.log('Starting upload for:', file.name);
             const downloadURL = await uploadBlogImage(file);
-            console.log('Got URL:', downloadURL);
 
             // Add to uploaded images list
             setUploadedImages((prev) => [...prev, downloadURL]);
@@ -551,7 +549,7 @@ export default function SubmitPage() {
                     )}
 
                     <form onSubmit={handleSubmit}>
-                        <div className="max-w-4xl mx-auto">
+                        <div className="max-w-full mx-auto">
                             {/* Full Width Editor */}
                             <div className="space-y-6">
                                 {!user && (

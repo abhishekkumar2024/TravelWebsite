@@ -21,7 +21,6 @@ const getBlogData = cache(async (id: string): Promise<BlogPost | null> => {
     // 2. Check Supabase
     try {
         const supabaseBlog = await fetchBlogById(id);
-        console.log('[BlogPage] fetchBlogById result:', supabaseBlog ? 'Found' : 'Not found', 'for ID:', id);
         if (supabaseBlog) {
             return supabaseBlog;
         }
