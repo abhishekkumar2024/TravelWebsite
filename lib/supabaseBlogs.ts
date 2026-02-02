@@ -2,6 +2,18 @@ import { supabase } from './supabaseClient';
 import { BlogPost } from './data';
 import { ensureAuthorExists } from './supabaseAuthors';
 
+/**
+ * Generate a URL-friendly slug from a title
+ */
+export function generateSlug(title: string): string {
+    return title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
 // Normalize a Supabase row into the existing BlogPost shape
 function mapRowToBlog(row: any): BlogPost {
     return {
@@ -32,6 +44,7 @@ function mapRowToBlog(row: any): BlogPost {
         meta_description: row.meta_description ?? row.excerpt_en ?? '',
         focus_keyword: row.focus_keyword,
         canonical_url: row.canonical_url,
+        slug: row.slug,
     };
 }
 
@@ -53,19 +66,43 @@ export async function fetchPublishedBlogs(limit = 50): Promise<BlogPost[]> {
 }
 
 export async function fetchBlogById(id: string): Promise<BlogPost | null> {
-    const { data, error } = await supabase
-        .from('blogs')
-        .select('*, authors(name, avatar_url, email)')
-        .eq('id', id)
-        .single();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-    if (error || !data) {
-        // eslint-disable-next-line no-console
-        console.error('[supabaseBlogs] fetchBlogById error:', error?.message || error);
+    // Build query based on whether it's a UUID or a slug
+    let query = supabase
+        .from('blogs')
+        .select('*, authors(name, avatar_url, email)');
+
+    if (isUuid) {
+        query = query.or(`id.eq.${id},slug.eq.${id}`);
+    } else {
+        query = query.eq('slug', id);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error) {
+        // Fallback for missing slug column
+        if (error.message?.includes('column "slug" does not exist')) {
+            if (isUuid) {
+                const { data: idData } = await supabase
+                    .from('blogs')
+                    .select('*, authors(name, avatar_url, email)')
+                    .eq('id', id)
+                    .single();
+                if (idData) return mapRowToBlog(idData);
+            }
+            return null;
+        }
+
+        // Silent fail for non-existent slugs (expected 404 behavior)
+        if (error.code === 'PGRST116') return null;
+
+        console.error('[supabaseBlogs] fetchBlogById error:', error.message || error);
         return null;
     }
 
-    return mapRowToBlog(data);
+    return data ? mapRowToBlog(data) : null;
 }
 
 export async function createBlog(payload: {
@@ -86,14 +123,15 @@ export async function createBlog(payload: {
     meta_description?: string;
     focus_keyword?: string;
     canonical_url?: string;
-}): Promise<{ id: string | null; error: string | null }> {
+    slug?: string;
+}): Promise<{ id: string | null; slug: string | null; error: string | null }> {
     try {
         // Ensure author exists in the 'authors' table before inserting the blog
         // This solves the "violates foreign key constraint" error
         const authorId = await ensureAuthorExists();
 
         if (!authorId) {
-            return { id: null, error: 'Could not verify author information' };
+            return { id: null, slug: null, error: 'Could not verify author information' };
         }
 
         // Default to 'pending' for approval workflow
@@ -113,6 +151,7 @@ export async function createBlog(payload: {
         const { data, error } = await supabase
             .from('blogs')
             .insert({
+                slug: payload.slug || generateSlug(payload.title_en),
                 title_en: payload.title_en,
                 title_hi: payload.title_hi ?? payload.title_en,
                 excerpt_en: payload.excerpt_en,
@@ -132,7 +171,7 @@ export async function createBlog(payload: {
                 meta_title: payload.meta_title || payload.title_en,
                 meta_description: payload.meta_description || payload.excerpt_en,
             })
-            .select('id')
+            .select('id, slug')
             .single();
 
         if (error) {
@@ -143,21 +182,21 @@ export async function createBlog(payload: {
                 hint: error.hint,
                 code: error.code,
             });
-            return { id: null, error: error.message || 'Unknown error' };
+            return { id: null, slug: null, error: error.message || 'Unknown error' };
         }
 
         if (!data) {
             // eslint-disable-next-line no-console
             console.error('[supabaseBlogs] createBlog: No data returned from insert');
-            return { id: null, error: 'No data returned from database' };
+            return { id: null, slug: null, error: 'No data returned from database' };
         }
 
         console.log('[supabaseBlogs] Blog created successfully with ID:', data.id);
-        return { id: data.id, error: null };
+        return { id: data.id, slug: data.slug, error: null };
     } catch (err: any) {
         // eslint-disable-next-line no-console
         console.error('[supabaseBlogs] createBlog unexpected error:', err);
-        return { id: null, error: err?.message || 'Unexpected error occurred' };
+        return { id: null, slug: null, error: err?.message || 'Unexpected error occurred' };
     }
 }
 
@@ -265,6 +304,7 @@ export async function updateBlog(id: string, payload: {
     meta_description?: string;
     focus_keyword?: string;
     canonical_url?: string;
+    slug?: string;
 }): Promise<{ success: boolean; error: string | null }> {
     try {
         const updateData: any = {
@@ -288,6 +328,8 @@ export async function updateBlog(id: string, payload: {
         if (payload.meta_description) updateData.meta_description = payload.meta_description;
         if (payload.focus_keyword) updateData.focus_keyword = payload.focus_keyword;
         if (payload.canonical_url) updateData.canonical_url = payload.canonical_url;
+        if (payload.slug) updateData.slug = payload.slug;
+        else if (payload.title_en) updateData.slug = generateSlug(payload.title_en);
 
         const { error } = await supabase
             .from('blogs')

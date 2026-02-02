@@ -438,7 +438,7 @@ export default function AdminPage() {
                                                             {t('Reject', 'अस्वीकार करें')}
                                                         </button>
                                                         <Link
-                                                            href={`/blog/${blog.id}`}
+                                                            href={`/blog/${blog.slug || blog.id}`}
                                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all"
                                                         >
                                                             {t('View', 'देखें')}
@@ -456,7 +456,7 @@ export default function AdminPage() {
                                                 {activeTab !== 'pending' && (
                                                     <div className="flex flex-wrap gap-3">
                                                         <Link
-                                                            href={`/blog/${blog.id}`}
+                                                            href={`/blog/${blog.slug || blog.id}`}
                                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all"
                                                         >
                                                             {t('View', 'देखें')}

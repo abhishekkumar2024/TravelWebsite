@@ -22,6 +22,7 @@ export interface BlogPost {
     publishedAt: Date;
     status: 'pending' | 'approved' | 'rejected' | 'published';
     views: number;
+    slug?: string;
     // SEO Fields (optional for demo blogs)
     meta_title?: string;
     meta_description?: string;

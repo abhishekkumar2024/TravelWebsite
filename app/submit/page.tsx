@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useDraft, SubmitDraftData } from '@/hooks/useDraft';
 import TipTapEditor from '@/components/editor/TipTapEditor';
@@ -38,6 +39,7 @@ export default function SubmitPage() {
     const { t } = useLanguage();
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [createdSlug, setCreatedSlug] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -313,7 +315,7 @@ export default function SubmitPage() {
                 canonical_url: canonicalUrl,
             };
 
-            const { id, error } = await createBlog(blogData);
+            const { id, slug, error } = await createBlog(blogData);
             if (error || !id) {
                 // Check if error is due to authentication
                 if (error?.includes('logged in') || error?.includes('authenticated')) {
@@ -326,6 +328,7 @@ export default function SubmitPage() {
 
             // Clear draft on successful submission
             clearDraft();
+            setCreatedSlug(slug || id);
             setSubmitted(true);
         } catch (error: any) {
             console.error('Submit error:', error);
@@ -361,12 +364,22 @@ export default function SubmitPage() {
                                 )
                             }
                         </p>
-                        <a
-                            href="/"
-                            className="inline-block px-6 py-3 bg-royal-blue text-white font-semibold rounded-lg"
-                        >
-                            {t('Back to Home', 'होम पर वापस जाएं')}
-                        </a>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            {isAdminUser && createdSlug && (
+                                <Link
+                                    href={`/blog/${createdSlug}`}
+                                    className="inline-block px-6 py-3 bg-desert-gold text-white font-semibold rounded-lg hover:bg-opacity-90 transition-all"
+                                >
+                                    {t('View Blog', 'ब्लॉग देखें')}
+                                </Link>
+                            )}
+                            <Link
+                                href="/"
+                                className="inline-block px-6 py-3 bg-royal-blue text-white font-semibold rounded-lg hover:bg-opacity-90 transition-all"
+                            >
+                                {t('Back to Home', 'होम पर वापस जाएं')}
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -147,6 +147,10 @@ export async function runMigrations(): Promise<{ success: boolean; errors: strin
             name: 'approval_workflow_setup',
             file: 'database_scripts/supabase-approval-workflow.sql',
         },
+        {
+            name: 'add_blog_slug',
+            file: 'database_scripts/add-blog-slug.sql',
+        },
     ];
 
     // Check if already run

@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 
     return {
-        title: blog.meta_title || blog.title_en,
+        title: blog.title_en,
         description: blog.meta_description || blog.excerpt_en,
         keywords: blog.focus_keyword,
         alternates: {
@@ -65,13 +65,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogPage({ params }: PageProps) {
     const { id } = params;
-    console.log('[BlogPage] Loading blog with ID:', id);
 
     // This call is deduplicated thanks to `cache`
     const blog = await getBlogData(id);
 
     if (!blog) {
-        console.log('[BlogPage] Blog not found, returning 404 for ID:', id);
         notFound();
     }
 
