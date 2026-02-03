@@ -51,7 +51,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImage
             type="button"
             onClick={onClick}
             title={title}
-            className={`p-2 rounded hover:bg-gray-100 transition-colors ${isActive ? 'bg-gray-200 text-royal-blue' : 'text-gray-600'
+            className={`p-2.5 rounded hover:bg-gray-100 active:bg-gray-200 transition-colors min-w-[36px] flex items-center justify-center ${isActive ? 'bg-gray-200 text-royal-blue' : 'text-gray-600'
                 }`}
         >
             {children}
@@ -61,7 +61,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImage
     const Divider = () => <div className="w-px h-6 bg-gray-300 mx-1"></div>;
 
     return (
-        <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center gap-1 p-2 border-b border-gray-200 bg-gray-50 overflow-x-auto scrollbar-hide flex-nowrap md:flex-wrap">
             {/* Text Formatting */}
             <ToolbarButton
                 onClick={() => editor.chain().focus().toggleBold().run()}
@@ -112,7 +112,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImage
                     <div className="w-4 h-1 bg-gradient-to-r from-red-500 via-green-500 to-blue-500 rounded"></div>
                 </button>
                 {showColorPicker && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 grid grid-cols-5 gap-1">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 grid grid-cols-5 gap-1 min-w-[150px]">
                         {TEXT_COLORS.map((c) => (
                             <button
                                 key={c.name}
@@ -126,7 +126,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImage
                                     setShowColorPicker(false);
                                 }}
                                 title={c.name}
-                                className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
+                                className="w-8 h-8 rounded border border-gray-200 hover:scale-110 transition-transform"
                                 style={{ backgroundColor: c.color || '#ffffff' }}
                             />
                         ))}
@@ -150,7 +150,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImage
                     </svg>
                 </button>
                 {showHighlightPicker && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 grid grid-cols-3 gap-1">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 grid grid-cols-3 gap-1 min-w-[100px]">
                         {HIGHLIGHT_COLORS.map((c) => (
                             <button
                                 key={c.name}
@@ -164,7 +164,7 @@ export default function Toolbar({ editor, onImageClick, onLinkClick, onEditImage
                                     setShowHighlightPicker(false);
                                 }}
                                 title={c.name}
-                                className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
+                                className="w-8 h-8 rounded border border-gray-200 hover:scale-110 transition-transform"
                                 style={{ backgroundColor: c.color || '#ffffff' }}
                             />
                         ))}

@@ -109,9 +109,10 @@ body.hindi {
     margin: 1.5rem 0;
 }
 
-.prose strong {
-    font-weight: 600;
-    color: #1f2937;
+.prose strong,
+.prose b {
+    font-weight: 700;
+    color: #111827;
 }
 
 /* TipTap Editor Styles */
