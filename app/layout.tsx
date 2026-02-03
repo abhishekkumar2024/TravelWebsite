@@ -4,6 +4,7 @@ import { LanguageProvider } from '@/components/LanguageProvider';
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SessionTimeout from '@/components/SessionTimeout';
 
 
 export const metadata: Metadata = {
@@ -74,6 +75,7 @@ export default function RootLayout({
             </head>
             <body className="bg-gray-50">
                 <LanguageProvider>
+                    <SessionTimeout />
                     <Navbar />
                     <main>{children}</main>
                     <Footer />
