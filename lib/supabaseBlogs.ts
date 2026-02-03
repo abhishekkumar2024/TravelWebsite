@@ -328,8 +328,13 @@ export async function updateBlog(id: string, payload: {
         if (payload.meta_description) updateData.meta_description = payload.meta_description;
         if (payload.focus_keyword) updateData.focus_keyword = payload.focus_keyword;
         if (payload.canonical_url) updateData.canonical_url = payload.canonical_url;
-        if (payload.slug) updateData.slug = payload.slug;
-        else if (payload.title_en) updateData.slug = generateSlug(payload.title_en);
+        
+        // Ensure slug is updated if title changes or if explicitly provided
+        if (payload.slug) {
+            updateData.slug = payload.slug;
+        } else if (payload.title_en) {
+            updateData.slug = generateSlug(payload.title_en);
+        }
 
         const { error } = await supabase
             .from('blogs')

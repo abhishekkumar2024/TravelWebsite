@@ -4,6 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import AffiliateProducts from '@/components/AffiliateProducts';
+import LikeButton from '@/components/LikeButton';
+import CommentSection from '@/components/CommentSection';
 import type { BlogPost } from '@/lib/data';
 
 interface BlogContentProps {
@@ -48,24 +50,31 @@ export default function BlogContent({ blog }: BlogContentProps) {
                 </div>
 
                 <div className="p-8 md:p-12">
-                    {/* Author */}
-                    <div className="flex items-center gap-4 mb-8 pb-8 border-b border-gray-100">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl overflow-hidden">
-                            {blog.author.avatar ? (
-                                <Image
-                                    src={blog.author.avatar}
-                                    alt={blog.author.name}
-                                    width={48}
-                                    height={48}
-                                    className="rounded-full object-cover"
-                                />
-                            ) : (
-                                <span>{blog.author.name.charAt(0)}</span>
-                            )}
+                    {/* Author & Interactions */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-gray-100">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl overflow-hidden">
+                                {blog.author.avatar ? (
+                                    <Image
+                                        src={blog.author.avatar}
+                                        alt={blog.author.name}
+                                        width={48}
+                                        height={48}
+                                        className="rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <span>{blog.author.name.charAt(0)}</span>
+                                )}
+                            </div>
+                            <div>
+                                <p className="font-bold text-royal-blue">{blog.author.name}</p>
+                                <p className="text-sm text-gray-500">Traveler</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-bold text-royal-blue">{blog.author.name}</p>
-                            <p className="text-sm text-gray-500">Traveler</p>
+
+                        {/* Likes Integration */}
+                        <div className="flex items-center bg-gray-50 px-4 py-2 rounded-full self-start md:self-auto">
+                            <LikeButton blogId={blog.id} />
                         </div>
                     </div>
 
@@ -79,6 +88,9 @@ export default function BlogContent({ blog }: BlogContentProps) {
                     <div className="mt-12 pt-8 border-t border-gray-100">
                         <AffiliateProducts destination={blog.destination} limit={4} />
                     </div>
+
+                    {/* Comments Section */}
+                    <CommentSection blogId={blog.id} />
                 </div>
 
                 {/* Back to Blogs */}
