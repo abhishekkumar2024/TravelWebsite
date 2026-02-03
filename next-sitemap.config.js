@@ -32,6 +32,9 @@ module.exports = {
         } else if (path === '/destinations') {
             priority = 0.8;
             changefreq = 'weekly';
+        } else if (path === '/privacy-policy' || path === '/terms-of-service') {
+            priority = 0.5;
+            changefreq = 'monthly';
         }
 
         return {

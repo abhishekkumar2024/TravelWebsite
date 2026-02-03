@@ -1,11 +1,51 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient';
 import { useLanguage } from './LanguageProvider';
 
 export default function Footer() {
     const { t } = useLanguage();
+    const [email, setEmail] = useState('');
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [message, setMessage] = useState('');
+
+    const handleSubscribe = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!email || !email.includes('@')) {
+            setStatus('error');
+            setMessage(t('Please enter a valid email.', 'कृपया वैध ईमेल दर्ज करें।'));
+            return;
+        }
+
+        setStatus('loading');
+
+        try {
+            const { error } = await supabase
+                .from('newsletter_subscribers')
+                .insert([{ email }]);
+
+            if (error) {
+                if (error.code === '23505') { // Unique violation
+                    setStatus('success');
+                    setMessage(t('You are already subscribed!', 'आप पहले से ही सब्सक्राइब हैं!'));
+                } else {
+                    throw error;
+                }
+            } else {
+                setStatus('success');
+                setMessage(t('Thank you for subscribing!', 'सब्सक्राइब करने के लिए धन्यवाद!'));
+                setEmail('');
+            }
+        } catch (err) {
+            console.error('Newsletter error:', err);
+            setStatus('error');
+            setMessage(t('Something went wrong. Please try again.', 'कुछ गलत हो गया। कृपया पुन: प्रयास करें।'));
+        }
+    };
 
     return (
         <footer className="bg-gray-800 text-white py-16 px-4">
@@ -104,32 +144,47 @@ export default function Footer() {
                                 'यात्रा टिप्स और अपडेट अपने इनबॉक्स में प्राप्त करें।'
                             )}
                         </p>
-                        <form className="flex gap-2">
+                        <form onSubmit={handleSubscribe} className="flex gap-2">
                             <input
                                 type="email"
-                                placeholder="Your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder={t('Your email', 'आपका ईमेल')}
                                 className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-desert-gold text-white"
+                                disabled={status === 'loading' || status === 'success'}
                             />
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-desert-gold rounded-lg hover:bg-[#c49740] transition-colors"
+                                disabled={status === 'loading' || status === 'success'}
+                                className="px-4 py-2 bg-desert-gold rounded-lg hover:bg-[#c49740] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                →
+                                {status === 'loading' ? (
+                                    <span className="animate-spin text-xl">⟳</span>
+                                ) : status === 'success' ? (
+                                    <span className="text-xl">✓</span>
+                                ) : (
+                                    '→'
+                                )}
                             </button>
                         </form>
+                        {message && (
+                            <p className={`mt-2 text-sm ${status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                                {message}
+                            </p>
+                        )}
                     </div>
                 </div>
 
                 {/* Bottom */}
                 <div className="pt-8 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
-                    <p>{t('© 2025 CamelThar. All rights reserved.', '© 2025 कैमलथार। सर्वाधिकार सुरक्षित।')}</p>
+                    <p>{t('© 2026 CamelThar. All rights reserved.', '© 2026 कैमलथार। सर्वाधिकार सुरक्षित।')}</p>
                     <div className="flex gap-6">
-                        <a href="#" className="hover:text-desert-gold transition-colors">
+                        <Link href="/privacy-policy" className="hover:text-desert-gold transition-colors">
                             {t('Privacy Policy', 'गोपनीयता नीति')}
-                        </a>
-                        <a href="#" className="hover:text-desert-gold transition-colors">
+                        </Link>
+                        <Link href="/terms-of-service" className="hover:text-desert-gold transition-colors">
                             {t('Terms of Service', 'सेवा की शर्तें')}
-                        </a>
+                        </Link>
                         <Link href="/admin" className="hover:text-desert-gold transition-colors text-xs font-semibold text-gray-400 flex items-center gap-1 mt-1">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

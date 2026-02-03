@@ -151,6 +151,10 @@ export async function runMigrations(): Promise<{ success: boolean; errors: strin
             name: 'add_blog_slug',
             file: 'database_scripts/add-blog-slug.sql',
         },
+        {
+            name: 'create_newsletter_table',
+            file: 'database_scripts/create_newsletter_table.sql',
+        },
     ];
 
     // Check if already run

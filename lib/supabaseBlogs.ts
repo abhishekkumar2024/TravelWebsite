@@ -328,7 +328,7 @@ export async function updateBlog(id: string, payload: {
         if (payload.meta_description) updateData.meta_description = payload.meta_description;
         if (payload.focus_keyword) updateData.focus_keyword = payload.focus_keyword;
         if (payload.canonical_url) updateData.canonical_url = payload.canonical_url;
-        
+
         // Ensure slug is updated if title changes or if explicitly provided
         if (payload.slug) {
             updateData.slug = payload.slug;
@@ -375,3 +375,24 @@ export async function deleteBlog(blogId: string): Promise<{ success: boolean; er
 }
 
 
+export async function fetchBlogCountsByDestination(): Promise<Record<string, number>> {
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('destination')
+        .eq('status', 'published');
+
+    if (error) {
+        console.error('[supabaseBlogs] fetchBlogCountsByDestination error:', error.message);
+        return {};
+    }
+
+    const counts: Record<string, number> = {};
+    data?.forEach((blog) => {
+        const dest = blog.destination?.toLowerCase();
+        if (dest) {
+            counts[dest] = (counts[dest] || 0) + 1;
+        }
+    });
+
+    return counts;
+}

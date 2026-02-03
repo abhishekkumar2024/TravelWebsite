@@ -3,15 +3,29 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Head from 'next/head';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 import BlogCard from '@/components/BlogCard';
 import DestinationCard from '@/components/DestinationCard';
-import { demoBlogs, demoDestinations } from '@/lib/data';
+import { demoBlogs, demoDestinations, Destination } from '@/lib/data';
+import { fetchBlogCountsByDestination } from '@/lib/supabaseBlogs';
 
 export default function HomePage() {
     const { t } = useLanguage();
+    const [featuredDestinations, setFeaturedDestinations] = useState<Destination[]>(demoDestinations);
+
+    useEffect(() => {
+        const loadDestinations = async () => {
+            const counts = await fetchBlogCountsByDestination();
+            const updated = demoDestinations.map(dest => ({
+                ...dest,
+                blogCount: counts[dest.id.toLowerCase()] || 0
+            }));
+            setFeaturedDestinations(updated);
+        };
+        loadDestinations();
+    }, []);
 
 
 
@@ -113,7 +127,7 @@ export default function HomePage() {
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {demoDestinations.slice(0, 6).map((dest) => (
+                        {featuredDestinations.slice(0, 6).map((dest) => (
                             <DestinationCard key={dest.id} destination={dest} />
                         ))}
                     </div>

@@ -1,13 +1,3 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/destinations/page": "app/destinations/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/my-blogs/page": "app/my-blogs/page.js",
-  "/blogs/page": "app/blogs/page.js",
-  "/edit/[id]/page": "app/edit/[id]/page.js",
-  "/page": "app/page.js",
-  "/submit/page": "app/submit/page.js",
-  "/login/page": "app/login/page.js",
-  "/essentials/page": "app/essentials/page.js",
-  "/blog/[id]/page": "app/blog/[id]/page.js"
+  "/page": "app/page.js"
 }

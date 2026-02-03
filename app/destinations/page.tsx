@@ -2,13 +2,27 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 
-import { demoDestinations } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { demoDestinations, Destination } from '@/lib/data';
+import { fetchBlogCountsByDestination } from '@/lib/supabaseBlogs';
 
 export default function DestinationsPage() {
     const { t, lang } = useLanguage();
+    const [allDestinations, setAllDestinations] = useState<Destination[]>(demoDestinations);
+
+    useEffect(() => {
+        const loadDestinations = async () => {
+            const counts = await fetchBlogCountsByDestination();
+            const updated = demoDestinations.map(dest => ({
+                ...dest,
+                blogCount: counts[dest.id.toLowerCase()] || 0
+            }));
+            setAllDestinations(updated);
+        };
+        loadDestinations();
+    }, []);
 
 
 
@@ -34,7 +48,7 @@ export default function DestinationsPage() {
             <section className="py-16 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {demoDestinations.map((dest) => {
+                        {allDestinations.map((dest) => {
                             const name = lang === 'hi' ? dest.name_hi : dest.name_en;
                             const tagline = lang === 'hi' ? dest.tagline_hi : dest.tagline_en;
                             const description = lang === 'hi' ? dest.description_hi : dest.description_en;
