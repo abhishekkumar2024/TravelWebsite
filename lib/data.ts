@@ -22,12 +22,13 @@ export interface BlogPost {
     publishedAt: Date;
     status: 'pending' | 'approved' | 'rejected' | 'published';
     views: number;
-    slug?: string;
-    // SEO Fields (optional for demo blogs)
     meta_title?: string;
     meta_description?: string;
     focus_keyword?: string;
     canonical_url?: string;
+    slug?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface Destination {

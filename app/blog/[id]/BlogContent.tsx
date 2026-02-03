@@ -2,9 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import AffiliateProducts from '@/components/AffiliateProducts';
-import LikeButton from '@/components/LikeButton';
+import LikeButton, { LikeCount } from '@/components/LikeButton';
+import CommentButton from '@/components/CommentButton';
 import CommentSection from '@/components/CommentSection';
 import type { BlogPost } from '@/lib/data';
 
@@ -13,7 +16,21 @@ interface BlogContentProps {
 }
 
 export default function BlogContent({ blog }: BlogContentProps) {
-    const { lang } = useLanguage();
+    const { lang, t } = useLanguage();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('scroll') === 'comments') {
+            // Small delay to ensure the page has rendered enough content for accurate position
+            const timer = setTimeout(() => {
+                const element = document.getElementById('comments-section');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
 
     const title = lang === 'hi' ? blog.title_hi : blog.title_en;
     const content = lang === 'hi' ? blog.content_hi : blog.content_en;
@@ -45,7 +62,28 @@ export default function BlogContent({ blog }: BlogContentProps) {
                             <span>{date}</span>
                             <span>•</span>
                             <span>{blog.readTime}</span>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                                <svg className="w-4 h-4 fill-desert-gold" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                </svg>
+                                <span className="font-bold">
+                                    {/* This will show a live count inside the component */}
+                                    <LikeCount blogId={blog.id} />
+                                </span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <div className="bg-gray-50 border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <LikeButton blogId={blog.id} />
+                        <CommentButton blogId={blog.id} slug={blog.slug} />
+                    </div>
+
+                    <div className="flex gap-2">
+                        {/* Share buttons could go here */}
                     </div>
                 </div>
 
@@ -90,7 +128,9 @@ export default function BlogContent({ blog }: BlogContentProps) {
                     </div>
 
                     {/* Comments Section */}
-                    <CommentSection blogId={blog.id} />
+                    <div id="comments-section">
+                        <CommentSection blogId={blog.id} />
+                    </div>
                 </div>
 
                 {/* Back to Blogs */}

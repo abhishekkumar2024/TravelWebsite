@@ -8,7 +8,7 @@ import { useDraft, EditDraftData } from '@/hooks/useDraft';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
-import LoginModal from '@/components/LoginModal';
+// Removed LoginModal
 import { uploadBlogImage, uploadCoverImage } from '@/lib/upload';
 import { fetchBlogById, updateBlog } from '@/lib/supabaseBlogs';
 import { supabase } from '@/lib/supabaseClient';
@@ -42,7 +42,6 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     const [submitting, setSubmitting] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [showLoginModal, setShowLoginModal] = useState(false);
     const [isAdminUser, setIsAdminUser] = useState(false);
 
     // Form state
@@ -77,7 +76,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             // 1. Check User
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                router.push('/submit?login=true');
+                router.push(`/login?redirectTo=/edit/${params.id}`);
                 return;
             }
             setUser(user);

@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useDraft, SubmitDraftData } from '@/hooks/useDraft';
 import TipTapEditor from '@/components/editor/TipTapEditor';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
-import LoginModal from '@/components/LoginModal';
+// Removed LoginModal import as we are using redirect now
 import { uploadBlogImage, uploadCoverImage } from '@/lib/upload';
 import { createBlog } from '@/lib/supabaseBlogs';
 import { supabase } from '@/lib/supabaseClient';
@@ -36,16 +37,17 @@ const categories = [
 ];
 
 export default function SubmitPage() {
+    const router = useRouter();
     const { t } = useLanguage();
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [createdSlug, setCreatedSlug] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-    const [sessionReady, setSessionReady] = useState(false);
     const [isAdminUser, setIsAdminUser] = useState(false);
+    const [sessionReady, setSessionReady] = useState(false);
+    // Removed showLoginModal as we redirect to /login now
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
     // Form state
     const [destination, setDestination] = useState('');
@@ -206,7 +208,6 @@ export default function SubmitPage() {
 
     const handleLoginSuccess = () => {
         checkUser();
-        setShowLoginModal(false);
         setShowLoginPrompt(false);
     };
 
@@ -284,8 +285,7 @@ export default function SubmitPage() {
 
         // Check if user is logged in
         if (!user) {
-            setShowLoginPrompt(true);
-            setShowLoginModal(true);
+            router.push('/login?redirectTo=/submit');
             return;
         }
 
@@ -319,8 +319,7 @@ export default function SubmitPage() {
             if (error || !id) {
                 // Check if error is due to authentication
                 if (error?.includes('logged in') || error?.includes('authenticated')) {
-                    setShowLoginPrompt(true);
-                    setShowLoginModal(true);
+                    router.push('/login?redirectTo=/submit');
                     return;
                 }
                 throw new Error(error || 'Unknown error');
@@ -334,8 +333,7 @@ export default function SubmitPage() {
             console.error('Submit error:', error);
             // Check if error is due to authentication
             if (error?.message?.includes('logged in') || error?.message?.includes('authenticated')) {
-                setShowLoginPrompt(true);
-                setShowLoginModal(true);
+                router.push('/login?redirectTo=/submit');
             } else {
                 alert(t('Failed to submit. Please try again.', 'जमा करने में विफल। कृपया पुनः प्रयास करें।'));
             }
@@ -399,18 +397,10 @@ export default function SubmitPage() {
 
     return (
         <>
-            {/* Login Modal */}
-            <LoginModal
-                isOpen={showLoginModal}
-                onClose={() => {
-                    setShowLoginModal(false);
-                    setShowLoginPrompt(false);
-                }}
-                onLoginSuccess={handleLoginSuccess}
-            />
+            {/* Removed LoginModal as we are using a dedicated /login page */}
 
             {/* Login Prompt Popup */}
-            {showLoginPrompt && !showLoginModal && (
+            {showLoginPrompt && (
                 <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center">
                         <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -438,7 +428,7 @@ export default function SubmitPage() {
                             </button>
                             <button
                                 onClick={() => {
-                                    setShowLoginModal(true);
+                                    router.push('/login?redirectTo=/submit');
                                     setShowLoginPrompt(false);
                                 }}
                                 className="flex-1 px-4 py-2 bg-gradient-to-r from-royal-blue to-deep-maroon text-white font-semibold rounded-lg hover:shadow-lg transition-all"
@@ -552,7 +542,7 @@ export default function SubmitPage() {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setShowLoginModal(true)}
+                                    onClick={() => router.push('/login?redirectTo=/submit')}
                                     className="px-8 py-3 bg-white text-royal-blue font-bold rounded-lg hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
                                 >
                                     {t('Login / Sign Up', 'लॉगिन / साइन अप')}
@@ -582,7 +572,7 @@ export default function SubmitPage() {
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setShowLoginModal(true)}
+                                                    onClick={() => router.push('/login?redirectTo=/submit')}
                                                     className="px-6 py-2 bg-gradient-to-r from-royal-blue to-deep-maroon text-white font-semibold rounded-lg hover:shadow-lg transition-all whitespace-nowrap"
                                                 >
                                                     {t('Login Now', 'अभी लॉगिन करें')}

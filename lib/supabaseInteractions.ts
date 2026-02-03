@@ -12,11 +12,20 @@ export interface BlogComment {
     };
 }
 
+export const isUuid = (id: string) => {
+    if (!id || typeof id !== 'string') return false;
+    // UUIDs must be 36 characters long including 4 dashes
+    if (id.length !== 36) return false;
+    const match = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    return match;
+};
+
 /**
  * LIKES LOGIC
  */
 
 export async function toggleLike(blogId: string, userId: string): Promise<{ liked: boolean; error: string | null }> {
+    if (!isUuid(blogId)) return { liked: false, error: null };
     try {
         // Check if already liked
         const { data: existingLike, error: fetchError } = await supabase
@@ -47,13 +56,12 @@ export async function toggleLike(blogId: string, userId: string): Promise<{ like
             return { liked: true, error: null };
         }
     } catch (err: any) {
-        console.error('[supabaseInteractions] toggleLike error:', err.message);
         return { liked: false, error: err.message };
     }
 }
 
 export async function fetchLikeStatus(blogId: string, userId: string): Promise<boolean> {
-    if (!userId) return false;
+    if (!userId || !isUuid(blogId)) return false;
     const { data, error } = await supabase
         .from('blog_likes')
         .select('id')
@@ -66,6 +74,7 @@ export async function fetchLikeStatus(blogId: string, userId: string): Promise<b
 }
 
 export async function fetchLikeCount(blogId: string): Promise<number> {
+    if (!isUuid(blogId)) return 0;
     const { count, error } = await supabase
         .from('blog_likes')
         .select('*', { count: 'exact', head: true })
@@ -79,7 +88,19 @@ export async function fetchLikeCount(blogId: string): Promise<number> {
  * COMMENTS LOGIC
  */
 
+export async function fetchCommentCount(blogId: string): Promise<number> {
+    if (!isUuid(blogId)) return 0;
+    const { count, error } = await supabase
+        .from('blog_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('blog_id', blogId);
+
+    if (error) return 0;
+    return count || 0;
+}
+
 export async function fetchComments(blogId: string): Promise<BlogComment[]> {
+    if (!isUuid(blogId)) return [];
     const { data, error } = await supabase
         .from('blog_comments')
         .select('*, author:authors(name, avatar_url)')
@@ -87,7 +108,6 @@ export async function fetchComments(blogId: string): Promise<BlogComment[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('[supabaseInteractions] fetchComments error:', error.message);
         return [];
     }
 
@@ -95,6 +115,7 @@ export async function fetchComments(blogId: string): Promise<BlogComment[]> {
 }
 
 export async function addComment(blogId: string, userId: string, content: string): Promise<{ success: boolean; data?: BlogComment; error?: string }> {
+    if (!isUuid(blogId)) return { success: false, error: 'Cannot comment on demo blogs' };
     try {
         const { data, error } = await supabase
             .from('blog_comments')
@@ -110,7 +131,6 @@ export async function addComment(blogId: string, userId: string, content: string
 
         return { success: true, data: data as BlogComment };
     } catch (err: any) {
-        console.error('[supabaseInteractions] addComment error:', err.message);
         return { success: false, error: err.message };
     }
 }

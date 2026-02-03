@@ -1,10 +1,11 @@
 
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { cache } from 'react';
 import { demoBlogs, BlogPost } from '@/lib/data';
 import { fetchBlogById } from '@/lib/supabaseBlogs';
-import BlogContent from '../BlogContent';
+import BlogContent from './BlogContent';
 
 // Force dynamic rendering - don't cache, always fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -73,5 +74,9 @@ export default async function BlogPage({ params }: PageProps) {
         notFound();
     }
 
-    return <BlogContent blog={blog} />;
+    return (
+        <Suspense fallback={<div className="pt-32 pb-20 text-center text-gray-500">Loading blog...</div>}>
+            <BlogContent blog={blog} />
+        </Suspense>
+    );
 }
