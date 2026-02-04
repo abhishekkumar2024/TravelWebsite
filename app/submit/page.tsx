@@ -305,7 +305,7 @@ export default function SubmitPage() {
                 excerpt_hi: excerptHi || excerptEn,
                 content_en: contentEn,
                 content_hi: contentHi || contentEn,
-                coverImage: coverImage || 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800',
+                coverImage: coverImage || '/images/jaipur-hawa-mahal.webp',
                 images: uploadedImages,
                 status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
                 // SEO Fields

@@ -381,7 +381,7 @@ export default function AdminPage() {
                                             {/* Cover Image */}
                                             <div className="w-full md:w-48 h-32 flex-shrink-0">
                                                 <img
-                                                    src={blog.cover_image || 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800'}
+                                                    src={blog.cover_image || '/images/jaipur-hawa-mahal.webp'}
                                                     alt={blog.title_en}
                                                     className="w-full h-full object-cover rounded-lg"
                                                 />
@@ -529,7 +529,7 @@ export default function AdminPage() {
                                 <div key={product.id} className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden border border-white/20">
                                     <div className="aspect-square relative">
                                         <img
-                                            src={product.imageUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300'}
+                                            src={product.imageUrl || '/images/pushkar.webp'}
                                             alt={product.name}
                                             className="w-full h-full object-cover"
                                         />

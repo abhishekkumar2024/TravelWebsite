@@ -28,7 +28,7 @@ function mapRowToBlog(row: any): BlogPost {
         category: row.category ?? 'Travel',
         coverImage:
             row.cover_image ||
-            'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=60',
+            '/images/jaipur-hawa-mahal.webp',
         images: row.images ?? [],
         author: row.authors ? {
             name: row.authors.name || row.author?.name || 'Traveler',

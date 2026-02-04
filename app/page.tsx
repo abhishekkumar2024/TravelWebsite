@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
+
 import Link from 'next/link';
-import Head from 'next/head';
+
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 
@@ -32,28 +32,22 @@ export default function HomePage() {
 
     return (
         <>
-            <Head>
-                <title>{t('Rajasthan Travel Guide', 'राजस्थान यात्रा गाइड')} | Travel Website</title>
-                <meta name="description" content={t('Discover Rajasthan travel blogs, destinations, and travel essentials', 'राजस्थान यात्रा ब्लॉग, स्थान और यात्रा सामग्री खोजें')} />
 
-                {/* Preload critical pages for faster navigation */}
-                <link rel="preload" href="/blogs" as="document" />
-                <link rel="preload" href="/destinations" as="document" />
-                <link rel="preload" href="/essentials" as="document" />
-
-                {/* Preload critical resources */}
-                <link rel="preload" href="/api/blogs" as="fetch" crossOrigin="anonymous" />
-                <link rel="preload" href="/api/destinations" as="fetch" crossOrigin="anonymous" />
-            </Head>
             {/* Hero Section */}
-            <section
-                className="relative min-h-screen flex items-center justify-center bg-cover bg-center bg-fixed"
-                style={{
-                    backgroundImage:
-                        "url('https://images.unsplash.com/photo-1477587458883-47145ed94245?w=1920&q=80')",
-                }}
-            >
-                <div className="absolute inset-0 bg-gradient-to-br from-royal-blue/90 to-deep-maroon/80"></div>
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+                <picture className="absolute inset-0 -z-10">
+                    <source
+                        media="(max-width: 768px)"
+                        srcSet="/images/rajasthan-desert-hero-mobile.webp"
+                    />
+                    <img
+                        src="/images/rajasthan-desert-hero.webp"
+                        alt="Panoramic view of Rajasthan desert landscape at sunset with camels"
+                        className="object-cover object-center w-full h-full"
+                        fetchPriority="high"
+                    />
+                </picture>
+                <div className="absolute inset-0 bg-gradient-to-br from-royal-blue/90 to-deep-maroon/80 z-0"></div>
 
                 <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto pt-20">
                     <div className="inline-block glass px-4 py-2 rounded-full text-sm mb-6 animate-fade-in">

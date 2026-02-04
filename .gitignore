@@ -29,3 +29,8 @@ dist-ssr
 out
 .firebase
 .vercel
+
+# Backup
+backup_images/
+
+scripts/

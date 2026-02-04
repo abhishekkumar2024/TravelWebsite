@@ -72,6 +72,18 @@ export default function RootLayout({
             <head>
                 <link rel="canonical" href="https://camelthar.com" />
                 <meta name="referrer" content="strict-origin-when-cross-origin" />
+                <link
+                    rel="preload"
+                    as="image"
+                    href="/images/rajasthan-desert-hero-mobile.webp"
+                    media="(max-width: 768px)"
+                />
+                <link
+                    rel="preload"
+                    as="image"
+                    href="/images/rajasthan-desert-hero.webp"
+                    media="(min-width: 769px)"
+                />
             </head>
             <body className="bg-gray-50">
                 <LanguageProvider>
