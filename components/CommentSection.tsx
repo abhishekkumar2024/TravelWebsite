@@ -3,9 +3,18 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { fetchComments, addComment, deleteComment, BlogComment, isUuid } from '@/lib/supabaseInteractions';
+import {
+    fetchComments,
+    addComment,
+    deleteComment,
+    updateComment,
+    toggleCommentLike,
+    fetchUserCommentLikes,
+    BlogComment,
+    isUuid
+} from '@/lib/supabaseInteractions';
 import { useLanguage } from './LanguageProvider';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 
 interface CommentSectionProps {
     blogId: string;
@@ -18,8 +27,34 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
+
     const [user, setUser] = useState<any>(null);
+    const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+
+    // Tree Builder to organizing nested comments
+    const buildCommentTree = (flatComments: BlogComment[]) => {
+        const commentMap = new Map<string, BlogComment & { children: BlogComment[] }>();
+        const roots: (BlogComment & { children: BlogComment[] })[] = [];
+
+        // Init map
+        flatComments.forEach(c => {
+            commentMap.set(c.id, { ...c, children: [] });
+        });
+
+        // Link
+        flatComments.forEach(c => {
+            const node = commentMap.get(c.id);
+            if (!node) return;
+            if (c.parent_id && commentMap.has(c.parent_id)) {
+                commentMap.get(c.parent_id)!.children.push(node);
+            } else {
+                roots.push(node);
+            }
+        });
+
+        // Sort roots by date descending (newest on top)
+        return roots.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    };
 
     useEffect(() => {
         const loadComments = async () => {
@@ -34,33 +69,25 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         };
 
         const checkUser = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                setUser(user);
-            } catch (err) {
-                console.error('Error checking user:', err);
-            }
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
         };
 
         loadComments();
         checkUser();
 
-        // Realtime Subscription (only for real database blogs)
+        // Realtime Subscription
         let channel: any;
         if (isUuid(blogId)) {
             channel = supabase
                 .channel(`blog-comments-${blogId}`)
                 .on(
                     'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'blog_comments',
-                        filter: `blog_id=eq.${blogId}`
-                    },
+                    { event: '*', schema: 'public', table: 'blog_comments', filter: `blog_id=eq.${blogId}` },
                     async () => {
-                        const updatedComments = await fetchComments(blogId);
-                        setComments(updatedComments);
+                        const updated = await fetchComments(blogId);
+                        setComments(updated);
+                        // Re-fetch likes if needed, or rely on client state
                     }
                 )
                 .subscribe();
@@ -76,54 +103,89 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         };
     }, [blogId]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Fetch user liked comments when comments or user changes
+    useEffect(() => {
+        if (user && comments.length > 0) {
+            const ids = comments.map(c => c.id);
+            // Optimization: Only fetch if ids changed or user newly logged in?
+            // Simple approach: fetch always
+            fetchUserCommentLikes(ids, user.id).then(setLikedComments);
+        } else {
+            setLikedComments(new Set());
+        }
+    }, [user, comments.length]); // depend on length change or user
 
+    const handlePostComment = async (e: FormEvent, content: string, parentId: string | null = null) => {
+        e.preventDefault();
         if (!user) {
             const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
             router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
             return;
         }
 
-        if (!newComment.trim()) return;
+        if (!content.trim()) return;
 
         setSubmitting(true);
-        const { success, data, error } = await addComment(blogId, user.id, newComment.trim());
+        const { success, data, error } = await addComment(blogId, user.id, content.trim(), parentId);
 
         if (success && data) {
             setComments([data, ...comments]);
-            setNewComment('');
+            if (!parentId) setNewComment(''); // clear main input
         } else {
             alert(error || 'Failed to post comment');
         }
         setSubmitting(false);
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return success;
     };
 
     const handleDelete = async (commentId: string) => {
-        if (!confirm(t('Are you sure you want to delete this comment?', 'क्या आप वाकई इस टिप्पणी को हटाना चाहते हैं?'))) {
+        if (!confirm(t('Are you sure?', 'क्या आप वाकई हटाना चाहते हैं?'))) return;
+        const { success } = await deleteComment(commentId);
+        if (success) {
+            setComments(comments.filter(c => c.id !== commentId && c.parent_id !== commentId));
+        }
+    };
+
+    const handleEdit = async (commentId: string, newContent: string) => {
+        const { success } = await updateComment(commentId, newContent);
+        if (success) {
+            setComments(comments.map(c => c.id === commentId ? { ...c, content: newContent, is_edited: true, updated_at: new Date().toISOString() } : c));
+        }
+        return success;
+    };
+
+    const handleToggleLike = async (commentId: string) => {
+        if (!user) {
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+            router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
             return;
         }
 
-        setDeletingId(commentId);
-        const { success, error } = await deleteComment(commentId);
+        // Optimistic Update
+        const isLiked = likedComments.has(commentId);
+        const newSet = new Set(likedComments);
+        if (isLiked) newSet.delete(commentId);
+        else newSet.add(commentId);
+        setLikedComments(newSet);
 
-        if (success) {
-            setComments(comments.filter(c => c.id !== commentId));
-        } else {
-            alert(error || 'Failed to delete comment');
+        // Adjust count locally
+        setComments(comments.map(c => {
+            if (c.id === commentId) {
+                const currentCount = c.likes?.[0]?.count || 0;
+                const newCount = isLiked ? Math.max(0, currentCount - 1) : currentCount + 1;
+                return { ...c, likes: [{ count: newCount }] };
+            }
+            return c;
+        }));
+
+        const { error } = await toggleCommentLike(commentId, user.id);
+        if (error) {
+            // Revert on error (optional)
+            console.error(error);
         }
-        setDeletingId(null);
     };
+
+    const rootComments = buildCommentTree(comments);
 
     return (
         <div className="mt-12 pt-12 border-t border-gray-100">
@@ -134,135 +196,193 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
                 </span>
             </h3>
 
-            {/* Comment Form */}
+            {/* Main Input */}
             <div className="mb-10">
                 {!user ? (
                     <div className="bg-sand p-6 rounded-2xl text-center">
-                        <p className="text-gray-600 mb-4">
-                            {t('Please login to join the conversation.', 'बातचीत में शामिल होने के लिए कृपया लॉगिन करें।')}
-                        </p>
-                        <button
-                            onClick={() => {
-                                const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-                                router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
-                            }}
-                            className="px-6 py-2 bg-royal-blue text-white font-semibold rounded-lg hover:bg-opacity-90 transition-all"
-                        >
-                            {t('Login to Comment', 'कमेंट करने के लिए लॉगिन करें')}
-                        </button>
+                        <p className="text-gray-600 mb-4">{t('Please login to join conversation', 'चर्चा में शामिल होने के लिए कृपया लॉगिन करें')}</p>
+                        <button onClick={() => router.push('/login')} className="px-6 py-2 bg-royal-blue text-white rounded-lg">{t('Login', 'लॉगिन')}</button>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="flex gap-4">
-                            <div className="flex-shrink-0 w-10 h-10 bg-gray-200 rounded-full overflow-hidden">
-                                {user.user_metadata?.avatar_url ? (
-                                    <Image
-                                        src={user.user_metadata.avatar_url}
-                                        alt="Avatar"
-                                        width={40}
-                                        height={40}
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold">
-                                        {(user.user_metadata?.name || user.email || 'T').charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex-1">
-                                <textarea
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    placeholder={t('Share your thoughts...', 'अपने विचार साझा करें...')}
-                                    className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-desert-gold focus:bg-white rounded-xl transition-all resize-none min-h-[100px] outline-none"
-                                    required
-                                />
-                                <div className="mt-2 flex justify-end">
-                                    <button
-                                        type="submit"
-                                        disabled={submitting || !newComment.trim()}
-                                        className="px-6 py-2 bg-desert-gold text-white font-bold rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {submitting ? t('Posting...', 'पोस्ट किया जा रहा है...') : t('Post Comment', 'कमेंट पोस्ट करें')}
-                                    </button>
-                                </div>
+                    <form onSubmit={(e) => handlePostComment(e, newComment)} className="flex gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                            {user.user_metadata?.avatar_url && <Image src={user.user_metadata.avatar_url} alt="User" width={40} height={40} />}
+                        </div>
+                        <div className="flex-1">
+                            <textarea
+                                value={newComment}
+                                onChange={e => setNewComment(e.target.value)}
+                                placeholder={t('Share your thoughts...', 'अपने विचार साझा करें...')}
+                                className="w-full p-4 bg-gray-50 rounded-xl border focus:bg-white focus:border-desert-gold resize-none outline-none transition-all"
+                                required
+                            />
+                            <div className="flex justify-end mt-2">
+                                <button disabled={submitting} className="px-6 py-2 bg-desert-gold text-white font-bold rounded-lg disabled:opacity-50">
+                                    {submitting ? 'Posting...' : t('Post', 'पोस्ट करें')}
+                                </button>
                             </div>
                         </div>
                     </form>
                 )}
             </div>
 
-            {/* Comments List */}
-            <div className="space-y-8">
-                {loading ? (
-                    [1, 2].map((i) => (
-                        <div key={i} className="flex gap-4 animate-pulse">
-                            <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                            <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                                <div className="h-4 bg-gray-100 rounded w-full"></div>
-                                <div className="h-3 bg-gray-50 rounded w-1/5"></div>
-                            </div>
-                        </div>
-                    ))
-                ) : comments.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400 italic">
-                        {t('No comments yet. Be the first to share your thoughts!', 'अभी तक कोई कमेंट नहीं है। अपने विचार साझा करने वाले पहले व्यक्ति बनें!')}
-                    </div>
+            <div className="space-y-6">
+                {rootComments.map(node => (
+                    <CommentItem
+                        key={node.id}
+                        comment={node}
+                        user={user}
+                        likedComments={likedComments}
+                        onReply={handlePostComment}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onLike={handleToggleLike}
+                        t={t}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function CommentItem({ comment, user, likedComments, onReply, onEdit, onDelete, onLike, t, depth = 0 }: any) {
+    const [isReplying, setIsReplying] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [replyContent, setReplyContent] = useState('');
+    const [submittingReply, setSubmittingReply] = useState(false);
+
+    const isAuthor = user && user.id === comment.user_id;
+    const isLiked = likedComments.has(comment.id);
+    const likeCount = comment.likes?.[0]?.count || 0;
+
+    const handleSaveEdit = async () => {
+        if (editContent.trim() === comment.content) {
+            setIsEditing(false);
+            return;
+        }
+        const success = await onEdit(comment.id, editContent);
+        if (success) setIsEditing(false);
+    };
+
+    const handleSubmitReply = async (e: FormEvent) => {
+        setSubmittingReply(true);
+        const success = await onReply(e, replyContent, comment.id);
+        if (success) {
+            setIsReplying(false);
+            setReplyContent('');
+        }
+        setSubmittingReply(false);
+    };
+
+    return (
+        <div className={`flex gap-4 group ${depth > 0 ? 'ml-12 border-l-2 border-gray-100 pl-4' : ''}`}>
+            <div className="shrink-0 w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
+                {comment.author?.avatar_url ? (
+                    <Image src={comment.author.avatar_url} alt={comment.author.name} width={40} height={40} className="object-cover" />
                 ) : (
-                    comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-4 group">
-                            <div className="flex-shrink-0 w-10 h-10 bg-royal-blue/10 rounded-full overflow-hidden flex items-center justify-center border border-royal-blue/20">
-                                {comment.author?.avatar_url ? (
-                                    <Image
-                                        src={comment.author.avatar_url}
-                                        alt={comment.author?.name || 'User'}
-                                        width={40}
-                                        height={40}
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-royal-blue font-bold">
-                                        {(comment.author?.name || 'T').charAt(0).toUpperCase()}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-bold text-gray-900">{comment.author?.name || 'Anonymous Traveler'}</span>
-                                        <span className="text-xs text-gray-400">•</span>
-                                        <span className="text-xs text-gray-400">{formatDate(comment.created_at)}</span>
-                                    </div>
-                                    {user && user.id === comment.user_id && (
-                                        <button
-                                            onClick={() => handleDelete(comment.id)}
-                                            disabled={deletingId === comment.id}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                                            title={t('Delete comment', 'टिप्पणी हटाएं')}
-                                        >
-                                            {deletingId === comment.id ? (
-                                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="text-gray-700 leading-relaxed bg-gray-50/50 p-4 rounded-xl border border-gray-100 group-hover:bg-white group-hover:shadow-sm transition-all">
-                                    {comment.content}
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                    <div className="flex items-center justify-center w-full h-full text-gray-500 font-bold">{comment.author?.name?.[0] || 'A'}</div>
                 )}
             </div>
 
-        </div >
+            <div className="flex-1">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900">{comment.author?.name || 'Anonymous'}</span>
+                        <span className="text-xs text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
+                        {comment.is_edited && <span className="text-xs text-gray-400 italic">({t('edited', 'संपादित')})</span>}
+                    </div>
+                </div>
+
+                {/* Content */}
+                {isEditing ? (
+                    <div className="mb-2">
+                        <textarea
+                            value={editContent}
+                            onChange={e => setEditContent(e.target.value)}
+                            className="w-full p-2 border rounded-lg bg-white"
+                        />
+                        <div className="flex gap-2 mt-2 justify-end">
+                            <button onClick={() => setIsEditing(false)} className="text-sm text-gray-500">{t('Cancel', 'रद्द करें')}</button>
+                            <button onClick={handleSaveEdit} className="text-sm bg-royal-blue text-white px-3 py-1 rounded">{t('Save', 'सहेजें')}</button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-gray-700 bg-gray-50/50 p-3 rounded-lg mb-2">
+                        {comment.content}
+                    </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <button onClick={() => onLike(comment.id)} className={`flex items-center gap-1 hover:text-red-500 ${isLiked ? 'text-red-500 font-semibold' : ''}`}>
+                        <svg className={`w-4 h-4 ${isLiked ? 'fill-current' : 'none'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        {likeCount > 0 && likeCount} {likeCount === 0 && t('Like', 'पसंद')}
+                    </button>
+
+                    <button onClick={() => setIsReplying(!isReplying)} className="hover:text-royal-blue">
+                        {t('Reply', 'उत्तर दें')}
+                    </button>
+
+                    {isAuthor && (
+                        <>
+                            <button onClick={() => { setIsEditing(true); setEditContent(comment.content); }} className="hover:text-royal-blue">
+                                {t('Edit', 'संपादित')}
+                            </button>
+                            <button onClick={() => onDelete(comment.id)} className="hover:text-red-500">
+                                {t('Delete', 'हटाएं')}
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* Reply Input */}
+                {isReplying && (
+                    <div className="mt-4 flex gap-3">
+                        <div className="flex-1">
+                            <textarea
+                                value={replyContent}
+                                onChange={e => setReplyContent(e.target.value)}
+                                placeholder={t('Write a reply...', 'उत्तर लिखें...')}
+                                className="w-full p-2 border rounded-lg text-sm bg-white"
+                            />
+                            <div className="flex justify-end gap-2 mt-2">
+                                <button onClick={() => setIsReplying(false)} className="text-sm text-gray-500">{t('Cancel', 'रद्द करें')}</button>
+                                <button
+                                    onClick={handleSubmitReply}
+                                    disabled={submittingReply || !replyContent.trim()}
+                                    className="text-sm bg-desert-gold text-white px-3 py-1 rounded disabled:opacity-50"
+                                >
+                                    {t('Reply', 'उत्तर दें')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Nested Children */}
+                {comment.children && comment.children.length > 0 && (
+                    <div className="mt-4">
+                        {comment.children.map((child: any) => (
+                            <CommentItem
+                                key={child.id}
+                                comment={child}
+                                depth={depth + 1}
+                                user={user}
+                                likedComments={likedComments}
+                                onReply={onReply}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                onLike={onLike}
+                                t={t}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
     );
-}
+};

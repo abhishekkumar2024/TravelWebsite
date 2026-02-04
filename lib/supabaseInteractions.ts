@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 
 export interface BlogComment {
@@ -6,10 +7,16 @@ export interface BlogComment {
     user_id: string;
     content: string;
     created_at: string;
+    updated_at?: string;
+    is_edited?: boolean;
+    parent_id?: string | null;
     author?: {
         name: string;
         avatar_url?: string;
     };
+    likes?: { count: number }[];
+    user_liked?: { user_id: string }[]; // For checking if current user liked
+    reply_count?: { count: number }[];
 }
 
 export const isUuid = (id: string) => {
@@ -21,7 +28,7 @@ export const isUuid = (id: string) => {
 };
 
 /**
- * LIKES LOGIC
+ * LIKES LOGIC (BLOG)
  */
 
 export async function toggleLike(blogId: string, userId: string): Promise<{ liked: boolean; error: string | null }> {
@@ -101,29 +108,55 @@ export async function fetchCommentCount(blogId: string): Promise<number> {
 
 export async function fetchComments(blogId: string): Promise<BlogComment[]> {
     if (!isUuid(blogId)) return [];
+
+    // We fetch likes count and if user liked (conceptually hard in one go without params)
+    // Here we just fetch counts. User like status needs separate check or join logic if user_id known.
+    // For simplicity, we fetch all.
     const { data, error } = await supabase
         .from('blog_comments')
-        .select('*, author:authors(name, avatar_url)')
+        .select(`
+            *,
+            author:authors(name, avatar_url),
+            likes:comment_likes(count)
+        `)
         .eq('blog_id', blogId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true }); // ASC for chronological discussion
 
     if (error) {
+        console.error("Fetch comments error:", error);
         return [];
     }
 
     return data as BlogComment[];
 }
 
-export async function addComment(blogId: string, userId: string, content: string): Promise<{ success: boolean; data?: BlogComment; error?: string }> {
+// Separate function to check which comments user liked (batch)
+export async function fetchUserCommentLikes(commentIds: string[], userId: string): Promise<Set<string>> {
+    if (!commentIds.length || !userId) return new Set();
+
+    const { data, error } = await supabase
+        .from('comment_likes')
+        .select('comment_id')
+        .in('comment_id', commentIds)
+        .eq('user_id', userId);
+
+    if (error) return new Set();
+    return new Set(data.map(l => l.comment_id));
+}
+
+export async function addComment(blogId: string, userId: string, content: string, parentId: string | null = null): Promise<{ success: boolean; data?: BlogComment; error?: string }> {
     if (!isUuid(blogId)) return { success: false, error: 'Cannot comment on demo blogs' };
     try {
+        const payload: any = {
+            blog_id: blogId,
+            user_id: userId,
+            content: content
+        };
+        if (parentId) payload.parent_id = parentId;
+
         const { data, error } = await supabase
             .from('blog_comments')
-            .insert({
-                blog_id: blogId,
-                user_id: userId,
-                content: content
-            })
+            .insert(payload)
             .select('*, author:authors(name, avatar_url)')
             .single();
 
@@ -133,6 +166,20 @@ export async function addComment(blogId: string, userId: string, content: string
     } catch (err: any) {
         return { success: false, error: err.message };
     }
+}
+
+export async function updateComment(commentId: string, content: string): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase
+        .from('blog_comments')
+        .update({
+            content: content,
+            is_edited: true,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', commentId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
 }
 
 export async function deleteComment(commentId: string): Promise<{ success: boolean; error?: string }> {
@@ -145,4 +192,27 @@ export async function deleteComment(commentId: string): Promise<{ success: boole
         return { success: false, error: error.message };
     }
     return { success: true };
+}
+
+export async function toggleCommentLike(commentId: string, userId: string): Promise<{ liked: boolean; error?: string }> {
+    try {
+        const { data: existing, error: fetchError } = await supabase
+            .from('comment_likes')
+            .select('id')
+            .eq('comment_id', commentId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        if (existing) {
+            await supabase.from('comment_likes').delete().eq('id', existing.id);
+            return { liked: false };
+        } else {
+            await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId });
+            return { liked: true };
+        }
+    } catch (err: any) {
+        return { liked: false, error: err.message };
+    }
 }
