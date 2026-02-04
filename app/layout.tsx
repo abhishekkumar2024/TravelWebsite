@@ -12,7 +12,7 @@ export const metadata: Metadata = {
         default: 'CamelThar - Travel Stories from the Land of Kings',
         template: '%s | CamelThar',
     },
-    metadataBase: new URL('https://camelthar.com'),
+    metadataBase: new URL('https://www.camelthar.com'),
     alternates: {
         canonical: './',
     },

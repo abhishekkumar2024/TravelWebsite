@@ -6,5 +6,5 @@ Disallow: /submit
 Disallow: /edit
 Disallow: /my-blogs
 
-Host: https://camelthar.com
-Sitemap: https://camelthar.com/sitemap.xml
+Host: https://www.camelthar.com
+Sitemap: https://www.camelthar.com/sitemap.xml
