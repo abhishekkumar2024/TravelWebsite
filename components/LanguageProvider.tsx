@@ -8,13 +8,13 @@ interface LanguageContextType {
     lang: Language;
     setLang: (lang: Language) => void;
     t: (en: string, hi: string) => string;
+    mounted: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const [lang, setLangState] = useState<Language>('en');
-
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -27,14 +27,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     const setLang = (newLang: Language) => {
         setLangState(newLang);
-        localStorage.setItem('language', newLang);
-        document.body.classList.toggle('hindi', newLang === 'hi');
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('language', newLang);
+            document.body.classList.toggle('hindi', newLang === 'hi');
+        }
     };
 
-    const t = (en: string, hi: string) => (lang === 'hi' ? hi : en);
+    // Always return English during SSR to prevent hydration mismatch
+    const t = (en: string, hi: string) => {
+        if (!mounted) return en;
+        return lang === 'hi' ? hi : en;
+    };
 
     return (
-        <LanguageContext.Provider value={{ lang, setLang, t }}>
+        <LanguageContext.Provider value={{ lang, setLang, t, mounted }}>
             {children}
         </LanguageContext.Provider>
     );

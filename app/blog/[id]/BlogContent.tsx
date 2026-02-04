@@ -16,7 +16,7 @@ interface BlogContentProps {
 }
 
 export default function BlogContent({ blog }: BlogContentProps) {
-    const { lang, t } = useLanguage();
+    const { lang, t, mounted } = useLanguage();
     const searchParams = useSearchParams();
 
     useEffect(() => {
@@ -32,11 +32,13 @@ export default function BlogContent({ blog }: BlogContentProps) {
         }
     }, [searchParams]);
 
-    const title = lang === 'hi' ? blog.title_hi : blog.title_en;
-    const content = lang === 'hi' ? blog.content_hi : blog.content_en;
+    // Use English content for SSR, then switch to lang-based on client
+    const title = mounted && lang === 'hi' ? blog.title_hi : blog.title_en;
+    const content = mounted && lang === 'hi' ? blog.content_hi : blog.content_en;
 
+    const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
     const date = new Date(blog.publishedAt).toLocaleDateString(
-        lang === 'hi' ? 'hi-IN' : 'en-US',
+        dateLocale,
         { dateStyle: 'long' }
     );
 

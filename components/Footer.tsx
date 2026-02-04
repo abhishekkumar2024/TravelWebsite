@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useLanguage } from './LanguageProvider';
 
 export default function Footer() {
-    const { t } = useLanguage();
+    const { t, mounted } = useLanguage();
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');

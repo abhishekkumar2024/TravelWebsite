@@ -49,7 +49,8 @@ export default function CommentButton({ blogId, slug, variant = 'default' }: Com
             router.push(`/login?redirectTo=${encodeURIComponent(targetUrl)}`);
         } else {
             // Check if we are already explicitly on this blog page
-            const isCurrentPage = window.location.pathname === blogPath;
+            const currentPathname = typeof window !== 'undefined' ? window.location.pathname : '';
+            const isCurrentPage = currentPathname === blogPath;
 
             if (isCurrentPage) {
                 const element = document.getElementById('comments-section');

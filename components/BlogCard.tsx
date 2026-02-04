@@ -14,13 +14,15 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ blog, priority = false }: BlogCardProps) {
-    const { lang } = useLanguage();
+    const { lang, mounted } = useLanguage();
 
-    const title = lang === 'hi' ? blog.title_hi : blog.title_en;
-    const excerpt = lang === 'hi' ? blog.excerpt_hi : blog.excerpt_en;
+    const title = lang === 'hi' && mounted ? blog.title_hi : blog.title_en;
+    const excerpt = lang === 'hi' && mounted ? blog.excerpt_hi : blog.excerpt_en;
 
+    // Use consistent locale for SSR (en-US), then switch to lang-based on client
+    const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
     const date = new Date(blog.publishedAt || blog.created_at || new Date()).toLocaleDateString(
-        lang === 'hi' ? 'hi-IN' : 'en-US',
+        dateLocale,
         { month: 'short', day: 'numeric', year: 'numeric' }
     );
 

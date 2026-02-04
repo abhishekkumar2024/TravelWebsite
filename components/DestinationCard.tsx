@@ -10,10 +10,11 @@ interface DestinationCardProps {
 }
 
 export default function DestinationCard({ destination }: DestinationCardProps) {
-    const { lang, t } = useLanguage();
+    const { lang, t, mounted } = useLanguage();
 
-    const name = lang === 'hi' ? destination.name_hi : destination.name_en;
-    const tagline = lang === 'hi' ? destination.tagline_hi : destination.tagline_en;
+    // Use English for SSR, then switch to lang-based on client
+    const name = mounted && lang === 'hi' ? destination.name_hi : destination.name_en;
+    const tagline = mounted && lang === 'hi' ? destination.tagline_hi : destination.tagline_en;
 
     return (
         <Link

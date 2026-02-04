@@ -80,7 +80,7 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         e.preventDefault();
 
         if (!user) {
-            const currentPath = window.location.pathname;
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
             router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
             return;
         }
@@ -143,7 +143,7 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
                         </p>
                         <button
                             onClick={() => {
-                                const currentPath = window.location.pathname;
+                                const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
                                 router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
                             }}
                             className="px-6 py-2 bg-royal-blue text-white font-semibold rounded-lg hover:bg-opacity-90 transition-all"

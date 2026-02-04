@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getAuthorProfile } from '@/lib/supabaseAuthors';
 
 export default function Navbar() {
-    const { lang, setLang, t } = useLanguage();
+    const { lang, setLang, t, mounted } = useLanguage();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -114,7 +114,7 @@ export default function Navbar() {
                         </button>
                     </div>
 
-                    {user && (
+                    {mounted && user && (
                         <div className="flex items-center gap-2">
                             <Link
                                 href="/my-blogs"
@@ -200,7 +200,7 @@ export default function Navbar() {
                             {t('Travel Essentials', 'यात्रा आवश्यकताएं')}
                         </Link>
 
-                        {user && (
+                        {mounted && user && (
                             <>
                                 <Link
                                     href="/my-blogs"

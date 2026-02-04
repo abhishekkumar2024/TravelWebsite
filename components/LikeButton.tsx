@@ -57,7 +57,7 @@ export default function LikeButton({ blogId, variant = 'default' }: LikeButtonPr
 
     const handleLike = async () => {
         if (!user) {
-            const currentPath = window.location.pathname;
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
             router.push(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
             return;
         }
