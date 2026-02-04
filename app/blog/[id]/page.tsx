@@ -45,6 +45,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!blog) {
         return {
             title: 'Blog Not Found',
+            robots: {
+                index: false,
+                follow: false,
+            },
         };
     }
 

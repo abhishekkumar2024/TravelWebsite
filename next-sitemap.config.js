@@ -48,17 +48,6 @@ module.exports = {
     additionalPaths: async (config) => {
         const result = [];
 
-        // Add demo blog URLs (these are always available)
-        const demoSlugs = [
-            'jaipur-pink-city-guide',
-            'jaisalmer-desert-safari',
-            'udaipur-city-of-lakes'
-        ];
-
-        for (const slug of demoSlugs) {
-            result.push(await config.transform(config, `/blog/${slug}`));
-        }
-
         // Fetch published blogs from Supabase (if available at build time)
         try {
             const { createClient } = require('@supabase/supabase-js');

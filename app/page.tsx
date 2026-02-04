@@ -8,23 +8,46 @@ import { useLanguage } from '@/components/LanguageProvider';
 
 import BlogCard from '@/components/BlogCard';
 import DestinationCard from '@/components/DestinationCard';
-import { demoBlogs, demoDestinations, Destination } from '@/lib/data';
-import { fetchBlogCountsByDestination } from '@/lib/supabaseBlogs';
+import { demoBlogs, demoDestinations, Destination, BlogPost } from '@/lib/data';
+import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/supabaseBlogs';
 
 export default function HomePage() {
     const { t } = useLanguage();
     const [featuredDestinations, setFeaturedDestinations] = useState<Destination[]>(demoDestinations);
+    const [blogs, setBlogs] = useState<BlogPost[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const loadDestinations = async () => {
-            const counts = await fetchBlogCountsByDestination();
-            const updated = demoDestinations.map(dest => ({
-                ...dest,
-                blogCount: counts[dest.id.toLowerCase()] || 0
-            }));
-            setFeaturedDestinations(updated);
+        const loadPageData = async () => {
+            setLoading(true);
+            try {
+                // Load destinations
+                const counts = await fetchBlogCountsByDestination();
+                const updated = demoDestinations.map(dest => ({
+                    ...dest,
+                    blogCount: counts[dest.id.toLowerCase()] || 0
+                }));
+                setFeaturedDestinations(updated);
+
+                // Load blogs
+                const supabaseBlogs = await fetchPublishedBlogs(3);
+                if (supabaseBlogs.length >= 3) {
+                    setBlogs(supabaseBlogs);
+                } else if (supabaseBlogs.length > 0) {
+                    // Combine if fewer than 3, but prioritize real ones
+                    setBlogs([...supabaseBlogs, ...demoBlogs].slice(0, 3));
+                } else {
+                    // Fallback to demo only if no real blogs exist
+                    setBlogs(demoBlogs.slice(0, 3));
+                }
+            } catch (error) {
+                console.error('Error loading page data:', error);
+                setBlogs(demoBlogs.slice(0, 3));
+            } finally {
+                setLoading(false);
+            }
         };
-        loadDestinations();
+        loadPageData();
     }, []);
 
 
@@ -148,9 +171,28 @@ export default function HomePage() {
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {demoBlogs.slice(0, 3).map((blog) => (
-                            <BlogCard key={blog.id} blog={blog} />
-                        ))}
+                        {loading ? (
+                            // Simple loading state
+                            [1, 2, 3].map((i) => (
+                                <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse border border-gray-100 h-96">
+                                    <div className="h-48 bg-gray-200"></div>
+                                    <div className="p-6">
+                                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : blogs.length > 0 ? (
+                            blogs.map((blog) => (
+                                <BlogCard key={blog.id} blog={blog} />
+                            ))
+                        ) : (
+                            <div className="col-span-full text-center py-10 text-gray-400">
+                                {t('No blogs found', 'कोई ब्लॉग नहीं मिला')}
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-center mt-10">
