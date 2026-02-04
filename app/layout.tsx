@@ -12,6 +12,10 @@ export const metadata: Metadata = {
         default: 'CamelThar - Travel Stories from the Land of Kings',
         template: '%s | CamelThar',
     },
+    metadataBase: new URL('https://camelthar.com'),
+    alternates: {
+        canonical: './',
+    },
     description:
         'CamelThar - Your gateway to Rajasthan travel stories, destination guides, and insider tips. Discover Jaipur, Udaipur, Jaisalmer, Jodhpur, and more.',
     keywords: [
@@ -30,7 +34,7 @@ export const metadata: Metadata = {
     openGraph: {
         type: 'website',
         locale: 'en_IN',
-        url: 'https://camelthar.com',
+        url: './',
         siteName: 'CamelThar',
         title: 'CamelThar - Travel Stories from the Land of Kings',
         description:
@@ -70,7 +74,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
-                <link rel="canonical" href="https://camelthar.com" />
+
                 <meta name="referrer" content="strict-origin-when-cross-origin" />
                 <link
                     rel="preload"

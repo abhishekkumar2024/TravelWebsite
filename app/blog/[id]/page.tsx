@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description: blog.meta_description || blog.excerpt_en,
         keywords: blog.focus_keyword,
         alternates: {
-            canonical: blog.canonical_url,
+            canonical: blog.canonical_url || undefined,
         },
         openGraph: {
             title: blog.meta_title || blog.title_en,
