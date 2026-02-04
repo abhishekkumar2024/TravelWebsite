@@ -9,6 +9,7 @@ import AffiliateProducts from '@/components/AffiliateProducts';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
 import CommentSection from '@/components/CommentSection';
+import RelatedReads from '@/components/RelatedReads';
 import type { BlogPost } from '@/lib/data';
 
 interface BlogContentProps {
@@ -128,6 +129,12 @@ export default function BlogContent({ blog }: BlogContentProps) {
                     <div className="mt-12 pt-8 border-t border-gray-100">
                         <AffiliateProducts destination={blog.destination} limit={4} />
                     </div>
+
+                    {/* Related Reads - You Can Also Read Section */}
+                    <RelatedReads
+                        currentBlogId={blog.id}
+                        destination={blog.destination}
+                    />
 
                     {/* Comments Section */}
                     <div id="comments-section">

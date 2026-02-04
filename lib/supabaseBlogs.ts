@@ -396,3 +396,4 @@ export async function fetchBlogCountsByDestination(): Promise<Record<string, num
 
     return counts;
 }
+
