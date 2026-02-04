@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /submit
+Disallow: /edit
+Disallow: /my-blogs
+
+Host: https://camelthar.com
+Sitemap: https://camelthar.com/sitemap.xml
