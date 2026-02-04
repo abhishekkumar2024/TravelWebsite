@@ -14,9 +14,10 @@ import type { BlogPost } from '@/lib/data';
 
 interface BlogContentProps {
     blog: BlogPost;
+    relatedBlogs?: any[];
 }
 
-export default function BlogContent({ blog }: BlogContentProps) {
+export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProps) {
     const { lang, t, mounted } = useLanguage();
     const searchParams = useSearchParams();
 
@@ -131,10 +132,9 @@ export default function BlogContent({ blog }: BlogContentProps) {
                     </div>
 
                     {/* Related Reads - You Can Also Read Section */}
-                    <RelatedReads
-                        currentBlogId={blog.id}
-                        destination={blog.destination}
-                    />
+                    {relatedBlogs.length > 0 && (
+                        <RelatedReads blogs={relatedBlogs} />
+                    )}
 
                     {/* Comments Section */}
                     <div id="comments-section">

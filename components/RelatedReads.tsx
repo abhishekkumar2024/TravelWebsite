@@ -1,75 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import { supabase } from '@/lib/supabaseClient';
 
+// Simplified interface that matches what we fetch
 interface RelatedBlog {
     slug: string;
     title_en: string;
     title_hi: string;
+    cover_image?: string;
 }
 
 interface RelatedReadsProps {
-    currentBlogId: string;
-    destination?: string;
+    blogs: RelatedBlog[];
 }
 
-export default function RelatedReads({ currentBlogId, destination }: RelatedReadsProps) {
+export default function RelatedReads({ blogs }: RelatedReadsProps) {
     const { lang, t, mounted } = useLanguage();
-    const [relatedBlogs, setRelatedBlogs] = useState<RelatedBlog[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        async function loadRelatedBlogs() {
-            if (!destination) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                // Automatically get related blogs by destination
-                // Exclude current blog, show max 3, order by newest
-                const { data, error } = await supabase
-                    .from('blogs')
-                    .select('slug, title_en, title_hi')
-                    .eq('status', 'published')
-                    .eq('destination', destination)
-                    .neq('id', currentBlogId)
-                    .order('created_at', { ascending: false })
-                    .limit(3);
-
-                if (!error && data) {
-                    setRelatedBlogs(data);
-                }
-            } catch (error) {
-                console.error('Error fetching related blogs:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        loadRelatedBlogs();
-    }, [currentBlogId, destination]);
 
     // Don't render if no blogs found
-    if (!loading && relatedBlogs.length === 0) {
+    if (!blogs || blogs.length === 0) {
         return null;
-    }
-
-    if (loading) {
-        return (
-            <div className="mt-12 pt-8 border-t border-gray-200">
-                <div className="animate-pulse">
-                    <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
-                    <div className="space-y-3">
-                        <div className="h-16 bg-gray-200 rounded"></div>
-                        <div className="h-16 bg-gray-200 rounded"></div>
-                    </div>
-                </div>
-            </div>
-        );
     }
 
     return (
@@ -92,7 +43,7 @@ export default function RelatedReads({ currentBlogId, destination }: RelatedRead
             </h3>
 
             <div className="space-y-3">
-                {relatedBlogs.map((blog) => {
+                {blogs.map((blog) => {
                     const title = mounted && lang === 'hi' ? blog.title_hi : blog.title_en;
 
                     return (

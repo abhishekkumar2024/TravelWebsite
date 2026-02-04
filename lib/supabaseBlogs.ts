@@ -397,3 +397,27 @@ export async function fetchBlogCountsByDestination(): Promise<Record<string, num
     return counts;
 }
 
+/**
+ * Fetch related blogs by destination (Server-Side Helper)
+ * Used to fix orphan pages by linking related content
+ */
+export async function fetchRelatedBlogs(destination: string, currentId: string): Promise<any[]> {
+    if (!destination) return [];
+
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('slug, title_en, title_hi, cover_image, created_at')
+        .eq('status', 'published')
+        .eq('destination', destination)
+        .neq('id', currentId)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+    if (error) {
+        console.error('[supabaseBlogs] fetchRelatedBlogs error:', error.message);
+        return [];
+    }
+
+    return data || [];
+}
+

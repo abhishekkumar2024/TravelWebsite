@@ -1,4 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
+require('dotenv').config({ path: '.env.local' });
+
 module.exports = {
     siteUrl: 'https://www.camelthar.com',
     generateRobotsTxt: true,
