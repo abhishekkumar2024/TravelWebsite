@@ -23,6 +23,16 @@ const destinations = [
     { value: 'jodhpur', label: 'Jodhpur' },
     { value: 'pushkar', label: 'Pushkar' },
     { value: 'mount-abu', label: 'Mount Abu' },
+    { value: 'ajmer', label: 'Ajmer' },
+    { value: 'bikaner', label: 'Bikaner' },
+    { value: 'chittorgarh', label: 'Chittorgarh' },
+    { value: 'kumbhalgarh', label: 'Kumbhalgarh' },
+    { value: 'ranthambore', label: 'Ranthambore' },
+    { value: 'bharatpur', label: 'Bharatpur' },
+    { value: 'alwar', label: 'Alwar' },
+    { value: 'kota', label: 'Kota' },
+    { value: 'bundi', label: 'Bundi' },
+    { value: 'shekhawati', label: 'Shekhawati' },
     { value: 'other', label: 'Other' },
 ];
 
@@ -591,20 +601,56 @@ export default function SubmitPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                {t('Destination', 'स्थान')}
+                                                {t('Destinations', 'स्थान')}
                                             </label>
+
+                                            {/* Multi-select Tags */}
+                                            <div className="mb-2 flex flex-wrap gap-2">
+                                                {destination.split(',').filter(Boolean).map((city) => {
+                                                    const label = destinations.find(d => d.value === city)?.label || city;
+                                                    return (
+                                                        <span key={city} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                                                            {label}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const validCities = destination.split(',').filter(c => c && c !== city);
+                                                                    setDestination(validCities.join(','));
+                                                                }}
+                                                                className="ml-2 text-blue-600 hover:text-blue-900 focus:outline-none"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+
                                             <select
-                                                value={destination}
-                                                onChange={(e) => setDestination(e.target.value)}
-                                                required
+                                                value=""
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (!val) return;
+
+                                                    const currentCities = destination.split(',').filter(Boolean);
+                                                    if (!currentCities.includes(val)) {
+                                                        const newCities = [...currentCities, val];
+                                                        setDestination(newCities.join(','));
+                                                    }
+                                                    // Reset select to empty by keeping value="" and handling change
+                                                }}
                                                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-desert-gold"
                                             >
-                                                {destinations.map((d) => (
+                                                <option value="">{t('Add a destination...', 'एक गंतव्य जोड़ें...')}</option>
+                                                {destinations.filter(d => d.value && !destination.split(',').includes(d.value)).map((d) => (
                                                     <option key={d.value} value={d.value}>
                                                         {d.label}
                                                     </option>
                                                 ))}
                                             </select>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {t('You can select multiple cities.', 'आप कई शहरों का चयन कर सकते हैं।')}
+                                            </p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -642,10 +688,10 @@ export default function SubmitPage() {
                                                 Title (English)
                                             </label>
                                             <span className={`text-xs font-medium ${titleEn.length > 0 && titleEn.length <= 60
-                                                    ? 'text-green-600'
-                                                    : titleEn.length > 60
-                                                        ? 'text-orange-500'
-                                                        : 'text-gray-400'
+                                                ? 'text-green-600'
+                                                : titleEn.length > 60
+                                                    ? 'text-orange-500'
+                                                    : 'text-gray-400'
                                                 }`}>
                                                 {titleEn.length}/60
                                             </span>
@@ -680,10 +726,10 @@ export default function SubmitPage() {
                                                 Short Excerpt (English)
                                             </label>
                                             <span className={`text-xs font-medium ${excerptEn.length >= 150 && excerptEn.length <= 160
-                                                    ? 'text-green-600'
-                                                    : excerptEn.length > 160
-                                                        ? 'text-orange-500'
-                                                        : 'text-gray-400'
+                                                ? 'text-green-600'
+                                                : excerptEn.length > 160
+                                                    ? 'text-orange-500'
+                                                    : 'text-gray-400'
                                                 }`}>
                                                 {excerptEn.length}/160
                                             </span>
@@ -694,8 +740,8 @@ export default function SubmitPage() {
                                             required
                                             rows={2}
                                             className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-desert-gold ${excerptEn.length >= 150 && excerptEn.length <= 160
-                                                    ? 'border-green-200'
-                                                    : 'border-gray-200'
+                                                ? 'border-green-200'
+                                                : 'border-gray-200'
                                                 }`}
                                             placeholder="A brief summary of your blog..."
                                         />

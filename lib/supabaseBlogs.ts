@@ -388,10 +388,16 @@ export async function fetchBlogCountsByDestination(): Promise<Record<string, num
 
     const counts: Record<string, number> = {};
     data?.forEach((blog) => {
-        const dest = blog.destination?.toLowerCase();
-        if (dest) {
-            counts[dest] = (counts[dest] || 0) + 1;
-        }
+        if (!blog.destination) return;
+
+        // Handle comma-separated destinations
+        const dests = blog.destination.toLowerCase().split(',');
+        dests.forEach((d: string) => {
+            const dest = d.trim();
+            if (dest) {
+                counts[dest] = (counts[dest] || 0) + 1;
+            }
+        });
     });
 
     return counts;
@@ -404,11 +410,18 @@ export async function fetchBlogCountsByDestination(): Promise<Record<string, num
 export async function fetchRelatedBlogs(destination: string, currentId: string): Promise<any[]> {
     if (!destination) return [];
 
+    const destinations = destination.split(',').map(d => d.trim()).filter(Boolean);
+    if (destinations.length === 0) return [];
+
+    // Create an OR query for all destinations
+    // Format: destination.ilike.%dest1%,destination.ilike.%dest2%
+    const orQuery = destinations.map(d => `destination.ilike.%${d}%`).join(',');
+
     const { data, error } = await supabase
         .from('blogs')
         .select('slug, title_en, title_hi, cover_image, created_at')
         .eq('status', 'published')
-        .eq('destination', destination)
+        .or(orQuery)
         .neq('id', currentId)
         .order('created_at', { ascending: false })
         .limit(3);
