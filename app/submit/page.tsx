@@ -637,9 +637,19 @@ export default function SubmitPage() {
 
                                     {/* Title */}
                                     <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Title (English)
-                                        </label>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Title (English)
+                                            </label>
+                                            <span className={`text-xs font-medium ${titleEn.length > 0 && titleEn.length <= 60
+                                                    ? 'text-green-600'
+                                                    : titleEn.length > 60
+                                                        ? 'text-orange-500'
+                                                        : 'text-gray-400'
+                                                }`}>
+                                                {titleEn.length}/60
+                                            </span>
+                                        </div>
                                         <input
                                             type="text"
                                             value={titleEn}
@@ -665,17 +675,33 @@ export default function SubmitPage() {
 
                                     {/* Excerpt */}
                                     <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Short Excerpt (English)
-                                        </label>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Short Excerpt (English)
+                                            </label>
+                                            <span className={`text-xs font-medium ${excerptEn.length >= 150 && excerptEn.length <= 160
+                                                    ? 'text-green-600'
+                                                    : excerptEn.length > 160
+                                                        ? 'text-orange-500'
+                                                        : 'text-gray-400'
+                                                }`}>
+                                                {excerptEn.length}/160
+                                            </span>
+                                        </div>
                                         <textarea
                                             value={excerptEn}
                                             onChange={(e) => setExcerptEn(e.target.value)}
                                             required
                                             rows={2}
-                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-desert-gold"
+                                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-desert-gold ${excerptEn.length >= 150 && excerptEn.length <= 160
+                                                    ? 'border-green-200'
+                                                    : 'border-gray-200'
+                                                }`}
                                             placeholder="A brief summary of your blog..."
                                         />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {t('Ideal length: 150-160 characters for best SEO.', 'आदर्श लंबाई: सर्वश्रेष्ठ एसईओ के लिए 150-160 अक्षर।')}
+                                        </p>
                                     </div>
 
                                     {/* Rich Text Editor */}
@@ -759,43 +785,69 @@ export default function SubmitPage() {
                                             <div className="p-6 space-y-6 border-t border-gray-200">
                                                 {/* Meta Title */}
                                                 <div>
-                                                    <label className="block mb-2 font-semibold text-gray-700">
-                                                        {t('Meta Title', 'मेटा शीर्षक')}
-                                                        <span className="ml-2 text-xs text-gray-400 font-normal">
-                                                            ({metaTitle.length}/60 {t('characters', 'अक्षर')})
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <label className="font-semibold text-gray-700">
+                                                            {t('Meta Title', 'मेटा शीर्षक')}
+                                                        </label>
+                                                        <span className={`text-xs font-medium ${metaTitle.length >= 50 && metaTitle.length <= 60
+                                                            ? 'text-green-600'
+                                                            : metaTitle.length > 60
+                                                                ? 'text-red-500'
+                                                                : 'text-orange-500'
+                                                            }`}>
+                                                            {metaTitle.length}/60
                                                         </span>
-                                                    </label>
+                                                    </div>
                                                     <input
                                                         type="text"
                                                         value={metaTitle}
                                                         onChange={(e) => setMetaTitle(e.target.value)}
                                                         placeholder={titleEn || t('Enter meta title for search engines...', 'खोज इंजन के लिए मेटा शीर्षक दर्ज करें...')}
                                                         maxLength={60}
-                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
+                                                        className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-all ${metaTitle.length >= 50 && metaTitle.length <= 60
+                                                            ? 'border-green-200 focus:border-green-500'
+                                                            : 'border-gray-200 focus:border-royal-blue'
+                                                            }`}
                                                     />
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {t('Ideal: 50-60 characters. Appears in browser tabs and search results.', 'आदर्श: 50-60 अक्षर। ब्राउज़र टैब और खोज परिणामों में दिखाई देता है।')}
+                                                    <p className="text-xs text-gray-500 mt-1 flex items-center justify-between">
+                                                        <span>{t('Ideal: 50-60 characters.', 'आदर्श: 50-60 अक्षर।')}</span>
+                                                        {metaTitle.length < 50 && (
+                                                            <span className="text-orange-500">{t('Too short', 'बहुत छोटा')}</span>
+                                                        )}
                                                     </p>
                                                 </div>
 
                                                 {/* Meta Description */}
                                                 <div>
-                                                    <label className="block mb-2 font-semibold text-gray-700">
-                                                        {t('Meta Description', 'मेटा विवरण')}
-                                                        <span className="ml-2 text-xs text-gray-400 font-normal">
-                                                            ({metaDescription.length}/160 {t('characters', 'अक्षर')})
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <label className="font-semibold text-gray-700">
+                                                            {t('Meta Description', 'मेटा विवरण')}
+                                                        </label>
+                                                        <span className={`text-xs font-medium ${metaDescription.length >= 150 && metaDescription.length <= 160
+                                                            ? 'text-green-600'
+                                                            : metaDescription.length > 160
+                                                                ? 'text-red-500'
+                                                                : 'text-orange-500'
+                                                            }`}>
+                                                            {metaDescription.length}/160
                                                         </span>
-                                                    </label>
+                                                    </div>
                                                     <textarea
                                                         value={metaDescription}
                                                         onChange={(e) => setMetaDescription(e.target.value)}
                                                         placeholder={excerptEn || t('Enter a compelling description for search engines...', 'खोज इंजन के लिए आकर्षक विवरण दर्ज करें...')}
                                                         maxLength={160}
                                                         rows={3}
-                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all resize-none"
+                                                        className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-all resize-none ${metaDescription.length >= 150 && metaDescription.length <= 160
+                                                            ? 'border-green-200 focus:border-green-500'
+                                                            : 'border-gray-200 focus:border-royal-blue'
+                                                            }`}
                                                     />
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {t('Ideal: 150-160 characters. This appears below your title in search results.', 'आदर्श: 150-160 अक्षर। यह खोज परिणामों में आपके शीर्षक के नीचे दिखाई देता है।')}
+                                                    <p className="text-xs text-gray-500 mt-1 flex items-center justify-between">
+                                                        <span>{t('Ideal: 150-160 characters.', 'आदर्श: 150-160 अक्षर।')}</span>
+                                                        {metaDescription.length < 150 && (
+                                                            <span className="text-orange-500">{t('Too short', 'बहुत छोटा')}</span>
+                                                        )}
                                                     </p>
                                                 </div>
 
@@ -813,24 +865,6 @@ export default function SubmitPage() {
                                                     />
                                                     <p className="text-xs text-gray-400 mt-1">
                                                         {t('The main keyword you want this post to rank for.', 'मुख्य कीवर्ड जिसके लिए आप चाहते हैं कि यह पोस्ट रैंक करे।')}
-                                                    </p>
-                                                </div>
-
-                                                {/* Canonical URL */}
-                                                <div>
-                                                    <label className="block mb-2 font-semibold text-gray-700">
-                                                        {t('Canonical URL', 'कैनोनिकल यूआरएल')}
-                                                        <span className="ml-2 text-xs text-gray-400 font-normal">({t('Optional', 'वैकल्पिक')})</span>
-                                                    </label>
-                                                    <input
-                                                        type="url"
-                                                        value={canonicalUrl}
-                                                        onChange={(e) => setCanonicalUrl(e.target.value)}
-                                                        placeholder="https://..."
-                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
-                                                    />
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {t('Use if this content was originally published elsewhere.', 'उपयोग करें यदि यह सामग्री मूल रूप से कहीं और प्रकाशित हुई थी।')}
                                                     </p>
                                                 </div>
 

@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description: blog.meta_description || blog.excerpt_en,
         keywords: blog.focus_keyword,
         alternates: {
-            canonical: blog.canonical_url || pageUrl,
+            canonical: pageUrl,
         },
         robots: {
             index: !isDemoBlog,
