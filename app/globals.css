@@ -48,7 +48,7 @@ body.hindi {
 
 /* Prose styles for blog content */
 .prose {
-    max-width: 65ch;
+    max-width: 100%;
     color: #374151;
 }
 
@@ -119,6 +119,17 @@ body.hindi {
 .tiptap-editor {
     min-height: 300px;
     outline: none;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Desktop: comfortable reading width, centered */
+@media (min-width: 768px) {
+    .tiptap-editor {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 
 .tiptap-editor:focus {
