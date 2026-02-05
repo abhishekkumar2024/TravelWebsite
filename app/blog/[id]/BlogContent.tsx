@@ -10,6 +10,7 @@ import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
 import CommentSection from '@/components/CommentSection';
 import RelatedReads from '@/components/RelatedReads';
+import ShareButton from '@/components/ShareButton';
 import type { BlogPost } from '@/lib/data';
 
 interface BlogContentProps {
@@ -84,6 +85,10 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                     <div className="flex items-center gap-6">
                         <LikeButton blogId={blog.id} />
                         <CommentButton blogId={blog.id} slug={blog.slug} />
+                        <ShareButton
+                            title={title}
+                            text={blog.excerpt_en || 'Check out this amazing blog from CamelThar!'}
+                        />
                     </div>
 
                     <div className="flex gap-2">

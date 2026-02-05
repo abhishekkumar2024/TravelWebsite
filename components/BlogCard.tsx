@@ -7,6 +7,7 @@ import type { BlogPost } from '@/lib/data';
 import { useState, useEffect } from 'react';
 import LikeButton from './LikeButton';
 import CommentButton from './CommentButton';
+import ShareButton from './ShareButton';
 
 interface BlogCardProps {
     blog: BlogPost;
@@ -97,6 +98,12 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
                 <div className="flex items-center gap-4">
                     <LikeButton blogId={blog.id} variant="compact" />
                     <CommentButton blogId={blog.id} slug={blog.slug} variant="compact" />
+                    <ShareButton
+                        title={title}
+                        text={excerpt || title}
+                        url={mounted ? `${window.location.origin}/blog/${blog.slug || blog.id}` : `https://camelthar.com/blog/${blog.slug || blog.id}`}
+                        compact={true}
+                    />
                 </div>
             </div>
         </div>
