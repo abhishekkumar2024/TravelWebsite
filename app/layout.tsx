@@ -64,6 +64,9 @@ export const metadata: Metadata = {
         shortcut: '/logo-round.png?v=4',
         apple: '/logo-round.png?v=4',
     },
+    other: {
+        'p:domain_verify': '8babaaa14408702493a829fbe247adda',
+    },
 };
 
 export default function RootLayout({
