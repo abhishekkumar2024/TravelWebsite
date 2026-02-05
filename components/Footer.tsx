@@ -110,6 +110,12 @@ export default function Footer() {
                             <Link href="/destinations" className="text-gray-400 hover:text-desert-gold transition-colors">
                                 {t('Destinations', 'स्थान')}
                             </Link>
+                            <Link href="/about" className="text-gray-400 hover:text-desert-gold transition-colors">
+                                {t('About Us', 'हमारे बारे में')}
+                            </Link>
+                            <Link href="/contact" className="text-gray-400 hover:text-desert-gold transition-colors">
+                                {t('Contact Us', 'संपर्क करें')}
+                            </Link>
                             <Link href="/submit" className="text-gray-400 hover:text-desert-gold transition-colors">
                                 {t('Submit Blog', 'ब्लॉग जमा करें')}
                             </Link>
