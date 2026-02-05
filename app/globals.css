@@ -82,12 +82,17 @@ body.hindi {
 
 .prose img {
     border-radius: 0.75rem;
-    margin: 1.5rem 0;
-    width: 100%;
-    max-height: 500px;
-    /* Limit height to avoid too much scrolling */
-    object-fit: cover;
-    /* Crop neatly if too tall */
+    margin: 1.5rem auto;
+    /* Center images */
+    display: block;
+    width: auto;
+    /* Allow natural width scaling */
+    max-width: 100%;
+    /* Ensure it doesn't overflow container */
+    height: auto;
+    /* Maintain aspect ratio */
+    max-height: 600px;
+    /* Limit height to prevent taking up too much screen */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
