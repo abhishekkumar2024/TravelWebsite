@@ -54,12 +54,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const pageUrl = `https://www.camelthar.com/blog/${blog.slug || blog.id}`;
 
+    // distinct demo blogs from real blogs
+    const isDemoBlog = demoBlogs.some((demo) => demo.id === blog.id);
+
     return {
         title: blog.meta_title || blog.title_en,
         description: blog.meta_description || blog.excerpt_en,
         keywords: blog.focus_keyword,
         alternates: {
             canonical: blog.canonical_url || pageUrl,
+        },
+        robots: {
+            index: !isDemoBlog,
+            follow: !isDemoBlog,
         },
         openGraph: {
             title: blog.meta_title || blog.title_en,
