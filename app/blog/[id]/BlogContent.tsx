@@ -2,15 +2,28 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
-import AffiliateProducts from '@/components/AffiliateProducts';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
-import CommentSection from '@/components/CommentSection';
-import RelatedReads from '@/components/RelatedReads';
 import type { BlogPost } from '@/lib/data';
+
+// Lazy load non-critical components to reduce initial bundle
+const AffiliateProducts = dynamic(() => import('@/components/AffiliateProducts'), {
+    loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />,
+    ssr: false, // Don't SSR these - load on client
+});
+
+const CommentSection = dynamic(() => import('@/components/CommentSection'), {
+    loading: () => <div className="h-48 bg-gray-100 animate-pulse rounded-lg" />,
+    ssr: false,
+});
+
+const RelatedReads = dynamic(() => import('@/components/RelatedReads'), {
+    loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />,
+});
 
 interface BlogContentProps {
     blog: BlogPost;
@@ -47,14 +60,16 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
     return (
         <article className="pt-24 pb-20 px-4">
             <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm overflow-hidden">
-                {/* Cover Image */}
+                {/* Cover Image - LCP optimization */}
                 <div className="h-96 relative">
                     <Image
                         src={blog.coverImage}
                         alt={title}
                         fill
+                        sizes="(max-width: 768px) 100vw, 896px"
                         className="object-cover"
                         priority
+                        fetchPriority="high"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 p-8 text-white">

@@ -74,6 +74,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
+                {/* Preconnect to external domains for faster loading */}
+                <link rel="preconnect" href="https://res.cloudinary.com" />
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link rel="dns-prefetch" href="https://res.cloudinary.com" />
 
                 <meta name="referrer" content="strict-origin-when-cross-origin" />
                 <link
