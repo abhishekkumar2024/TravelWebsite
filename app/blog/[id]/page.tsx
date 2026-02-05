@@ -2,35 +2,39 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { demoBlogs, BlogPost } from '@/lib/data';
 import { fetchBlogById, fetchRelatedBlogs } from '@/lib/supabaseBlogs';
 import BlogContent from './BlogContent';
 
-// Force dynamic rendering - don't cache, always fetch fresh data
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Enable ISR - cache pages for 60 seconds, then revalidate in background
+// This dramatically improves TTFB for repeat visitors
+export const revalidate = 60;
 
-// Use React cache to deduplicate requests during rendering
-const getBlogData = cache(async (id: string): Promise<BlogPost | null> => {
-    // 1. Check demo blogs first
-    const demoBlog = demoBlogs.find(b => b.id === id);
-    if (demoBlog) {
-        return demoBlog;
-    }
-
-    // 2. Check Supabase
-    try {
-        const supabaseBlog = await fetchBlogById(id);
-        if (supabaseBlog) {
-            return supabaseBlog;
+// Use Next.js cache for persistent caching across requests
+const getBlogData = unstable_cache(
+    async (id: string): Promise<BlogPost | null> => {
+        // 1. Check demo blogs first (instant)
+        const demoBlog = demoBlogs.find(b => b.id === id);
+        if (demoBlog) {
+            return demoBlog;
         }
-    } catch (error) {
-        console.error('[BlogPage] Error fetching blog from Supabase:', error);
-    }
 
-    return null;
-});
+        // 2. Check Supabase
+        try {
+            const supabaseBlog = await fetchBlogById(id);
+            if (supabaseBlog) {
+                return supabaseBlog;
+            }
+        } catch (error) {
+            console.error('[BlogPage] Error fetching blog from Supabase:', error);
+        }
+
+        return null;
+    },
+    ['blog-data'], // cache key prefix
+    { revalidate: 60, tags: ['blogs'] } // cache for 60 seconds
+);
 
 interface PageProps {
     params: {
@@ -96,18 +100,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
 }
 
+// Cached related blogs fetch
+const getRelatedBlogs = unstable_cache(
+    async (destination: string, currentId: string) => {
+        return fetchRelatedBlogs(destination, currentId);
+    },
+    ['related-blogs'],
+    { revalidate: 60, tags: ['blogs'] }
+);
+
 export default async function BlogPage({ params }: PageProps) {
     const { id } = params;
 
-    // This call is deduplicated thanks to `cache`
+    // Fetch blog data (cached)
     const blog = await getBlogData(id);
 
     if (!blog) {
         notFound();
     }
 
-    // Fetch related blogs for "You Can Also Read" section (Server-Side for SEO)
-    const relatedBlogs = await fetchRelatedBlogs(blog.destination, blog.id);
+    // Fetch related blogs (cached, for SEO)
+    const relatedBlogs = await getRelatedBlogs(blog.destination, blog.id);
 
     return (
         <Suspense fallback={<div className="pt-32 pb-20 text-center text-gray-500">Loading blog...</div>}>
