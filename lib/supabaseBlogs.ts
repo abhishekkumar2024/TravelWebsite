@@ -419,18 +419,46 @@ export async function fetchRelatedBlogs(destination: string, currentId: string):
 
     const { data, error } = await supabase
         .from('blogs')
-        .select('slug, title_en, title_hi, cover_image, created_at')
+        .select('slug, title_en, title_hi, cover_image, created_at, destination') // Fetch destination for scoring
         .eq('status', 'published')
         .or(orQuery)
         .neq('id', currentId)
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(20); // Fetch larger pool to re-rank
 
     if (error) {
         console.error('[supabaseBlogs] fetchRelatedBlogs error:', error.message);
         return [];
     }
 
-    return data || [];
+    if (!data) return [];
+
+    // Calculate relevance score: number of matching destinations
+    const sourceDests = new Set(destinations.map(d => d.toLowerCase()));
+
+    const scoredBlogs = data.map(blog => {
+        let score = 0;
+        if (blog.destination) {
+            const blogDests = blog.destination.split(',').map((d: string) => d.trim().toLowerCase());
+            // Count intersections
+            blogDests.forEach((d: string) => {
+                if (sourceDests.has(d)) {
+                    score++;
+                }
+            });
+        }
+        return { ...blog, score };
+    });
+
+    // Sort by relevance (score desc), then by newness (created_at desc)
+    scoredBlogs.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score; // Higher score first
+        }
+        // If scores are equal, maintain published date order (which matches original query order)
+        return 0;
+    });
+
+    return scoredBlogs.slice(0, 6);
 }
 
