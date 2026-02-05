@@ -19,10 +19,9 @@ const nextConfig = {
                 hostname: 'res.cloudinary.com',
             },
         ],
-        // Enable image optimization for better performance
-        unoptimized: false,
-        // Cache optimized images for 1 year
-        minimumCacheTTL: 31536000,
+        // Keep unoptimized since Cloudinary already handles image optimization
+        // This avoids additional server-side processing latency
+        unoptimized: true,
     },
 
     // Enable compression
