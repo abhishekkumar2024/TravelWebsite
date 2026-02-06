@@ -122,8 +122,76 @@ export default async function BlogPage({ params }: PageProps) {
     // Fetch related blogs (cached, for SEO)
     const relatedBlogs = await getRelatedBlogs(blog.destination, blog.id);
 
+    // structured data for rich snippets
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: blog.meta_title || blog.title_en,
+        description: blog.meta_description || blog.excerpt_en,
+        image: blog.coverImage.startsWith('http') ? blog.coverImage : `https://www.camelthar.com${blog.coverImage}`,
+        datePublished: blog.publishedAt ? new Date(blog.publishedAt).toISOString() : new Date(blog.created_at || Date.now()).toISOString(),
+        dateModified: blog.updated_at ? new Date(blog.updated_at).toISOString() : new Date(blog.publishedAt || Date.now()).toISOString(),
+        author: {
+            '@type': 'Person',
+            name: blog.author?.name || 'CamelThar Explorer',
+            url: `https://www.camelthar.com/author/${blog.author?.name?.toLowerCase().replace(/\s+/g, '-')}` // hypothetical author page
+        },
+        publisher: {
+            '@type': 'Organization',
+            name: 'CamelThar',
+            logo: {
+                '@type': 'ImageObject',
+                url: 'https://www.camelthar.com/logo.png' // Ensure you have a logo at this path or update it
+            }
+        },
+        mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': `https://www.camelthar.com/blog/${blog.slug || blog.id}`
+        },
+        keywords: blog.focus_keyword
+    };
+
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com'
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Destinations',
+                item: 'https://www.camelthar.com/destinations'
+            },
+            {
+                '@type': 'ListItem',
+                position: 3,
+                name: blog.destination,
+                item: `https://www.camelthar.com/destinations/${blog.destination}`
+            },
+            {
+                '@type': 'ListItem',
+                position: 4,
+                name: blog.title_en,
+                item: `https://www.camelthar.com/blog/${blog.slug || blog.id}`
+            }
+        ]
+    };
+
     return (
         <Suspense fallback={<div className="pt-32 pb-20 text-center text-gray-500">Loading blog...</div>}>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
             <BlogContent blog={blog} relatedBlogs={relatedBlogs} />
         </Suspense>
     );
