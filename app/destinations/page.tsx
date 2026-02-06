@@ -95,7 +95,7 @@ export default function DestinationsPage() {
                                                 {dest.bestTime}
                                             </div>
                                             <Link
-                                                href={`/blogs?destination=${dest.id}`}
+                                                href={`/destinations/${dest.id}`}
                                                 className="text-desert-gold font-semibold text-sm hover:underline"
                                             >
                                                 {dest.blogCount} {t('blogs', 'ब्लॉग')} →

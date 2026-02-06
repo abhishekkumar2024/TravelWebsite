@@ -5,7 +5,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 
 import BlogCard from '@/components/BlogCard';
 import AffiliateProducts from '@/components/AffiliateProducts';
-import { demoBlogs, BlogPost } from '@/lib/data';
+import { BlogPost } from '@/lib/data';
 import { fetchPublishedBlogs } from '@/lib/supabaseBlogs';
 
 const destinations = ['all', 'jaipur', 'udaipur', 'jaisalmer', 'jodhpur', 'pushkar'];
@@ -38,7 +38,7 @@ export default function BlogsPage() {
 
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
-    const [blogs, setBlogs] = useState<BlogPost[]>(demoBlogs);
+    const [blogs, setBlogs] = useState<BlogPost[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -51,15 +51,10 @@ export default function BlogsPage() {
 
                 if (supabaseBlogs.length > 0) {
                     setBlogs(supabaseBlogs);
-                } else {
-                    setBlogs(demoBlogs);
                 }
             } catch (e) {
                 // eslint-disable-next-line no-console
-                console.error('Error loading blogs from Supabase, using demoBlogs:', e);
-                if (mounted) {
-                    setBlogs(demoBlogs);
-                }
+                console.error('Error loading blogs from Supabase:', e);
             } finally {
                 if (mounted) {
                     setLoading(false);

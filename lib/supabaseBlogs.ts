@@ -462,3 +462,22 @@ export async function fetchRelatedBlogs(destination: string, currentId: string):
     return scoredBlogs.slice(0, 6);
 }
 
+/**
+ * Fetch all blogs for a specific destination silo page
+ */
+export async function fetchBlogsByDestination(destinationSlug: string): Promise<BlogPost[]> {
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('*, authors(name, avatar_url, email)')
+        .eq('status', 'published')
+        .ilike('destination', `%${destinationSlug}%`) // Loose match to handle "Jaipur, Rajasthan"
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[supabaseBlogs] fetchBlogsByDestination error:', error.message);
+        return [];
+    }
+
+    return (data || []).map(mapRowToBlog);
+}
+
