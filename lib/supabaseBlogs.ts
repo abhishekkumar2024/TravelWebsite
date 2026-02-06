@@ -459,7 +459,7 @@ export async function fetchRelatedBlogs(destination: string, currentId: string):
         return 0;
     });
 
-    return scoredBlogs.slice(0, 6);
+    return scoredBlogs.slice(0, 3);
 }
 
 /**

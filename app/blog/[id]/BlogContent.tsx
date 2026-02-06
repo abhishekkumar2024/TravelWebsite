@@ -59,6 +59,15 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 p-8 text-white">
+                        <nav className="flex items-center gap-2 text-sm text-white/80 mb-6 tracking-wide">
+                            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+                            <span>›</span>
+                            <Link href="/destinations" className="hover:text-white transition-colors">Destinations</Link>
+                            <span>›</span>
+                            <Link href={`/destinations/${blog.destination}`} className="hover:text-white transition-colors capitalize">
+                                {blog.destination}
+                            </Link>
+                        </nav>
                         <span className="inline-block px-3 py-1 bg-desert-gold text-xs font-bold uppercase rounded-full mb-4">
                             {blog.category}
                         </span>
@@ -150,10 +159,10 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                 {/* Back to Blogs */}
                 <div className="px-8 pb-8 md:px-12 md:pb-12">
                     <Link
-                        href="/blogs"
-                        className="inline-flex items-center gap-2 text-desert-gold font-semibold hover:underline"
+                        href={`/destinations/${blog.destination}`}
+                        className="inline-flex items-center gap-2 text-desert-gold font-semibold hover:underline capitalize"
                     >
-                        ← Back to all blogs
+                        ← Explore more about {blog.destination}
                     </Link>
                 </div>
             </div>
