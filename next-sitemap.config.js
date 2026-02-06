@@ -15,6 +15,18 @@ module.exports = {
                 allow: '/',
                 disallow: ['/admin', '/login', '/submit', '/edit', '/my-blogs'],
             },
+            {
+                userAgent: 'Amazonbot',
+                disallow: ['/'],
+            },
+            {
+                userAgent: 'Applebot-Extended',
+                disallow: ['/'],
+            },
+            {
+                userAgent: 'Bytespider',
+                disallow: ['/'],
+            },
         ],
     },
     // Transform function to set priorities for specific pages
