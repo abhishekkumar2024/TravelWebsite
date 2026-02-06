@@ -25,7 +25,7 @@ function mapRowToBlog(row: any): BlogPost {
         excerpt_hi: row.excerpt_hi ?? row.excerpt_en ?? '',
         content_en: row.content_en ?? '',
         content_hi: row.content_hi ?? row.content_en ?? '',
-        destination: row.destination ?? 'other',
+        destination: row.destination ?? 'rajasthan',
         category: row.category ?? 'Travel',
         coverImage:
             row.cover_image ||

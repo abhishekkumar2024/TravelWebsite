@@ -32,7 +32,7 @@ const destinations = [
     { value: 'kota', label: 'Kota' },
     { value: 'bundi', label: 'Bundi' },
     { value: 'shekhawati', label: 'Shekhawati' },
-    { value: 'other', label: 'Other' },
+    { value: 'rajasthan', label: 'Rajasthan (Other)' },
 ];
 
 const categories = [
