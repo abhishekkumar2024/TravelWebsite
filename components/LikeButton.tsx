@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { toggleLike, fetchLikeStatus, fetchLikeCount } from '@/lib/supabaseInteractions';
+import { useLoginModal } from './LoginModalContext';
 
 interface LikeButtonProps {
     blogId: string;
@@ -22,62 +23,100 @@ export function LikeCount({ blogId }: { blogId: string }) {
 }
 
 export default function LikeButton({ blogId, variant = 'default' }: LikeButtonProps) {
-    const router = useRouter();
     const [liked, setLiked] = useState(false);
     const [count, setCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
 
+    const { openLoginModal, pendingAction, clearPendingAction } = useLoginModal();
     const isCompact = variant === 'compact';
 
+    // 1. Initial Load & Auth Listener
     useEffect(() => {
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
 
-            const [status, likeCount] = await Promise.all([
-                user ? fetchLikeStatus(blogId, user.id) : Promise.resolve(false),
-                fetchLikeCount(blogId)
-            ]);
+            // Initial fetches
+            const countVal = await fetchLikeCount(blogId);
+            setCount(countVal);
 
-            setLiked(status);
-            setCount(likeCount);
+            if (user) {
+                const status = await fetchLikeStatus(blogId, user.id);
+                setLiked(status);
+            }
             setLoading(false);
         };
 
         init();
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user || null);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            const newUser = session?.user || null;
+            setUser(newUser);
+
+            // Re-fetch status on auth change
+            if (newUser) {
+                const status = await fetchLikeStatus(blogId, newUser.id);
+                setLiked(status);
+            } else {
+                setLiked(false);
+            }
         });
 
         return () => subscription.unsubscribe();
     }, [blogId]);
 
-    const handleLike = async () => {
-        if (!user) {
-            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-            router.push(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
-            return;
+    // 2. Handle Pending Action (Like)
+    useEffect(() => {
+        if (user && pendingAction?.type === 'like' && pendingAction.id === blogId) {
+            const processPendingLike = async () => {
+                // Ensure we don't unlike if already liked
+                const isAlreadyLiked = await fetchLikeStatus(blogId, user.id);
+                if (!isAlreadyLiked) {
+                    await handleLikeInternal(user.id, false, count);
+                }
+                clearPendingAction();
+            };
+            processPendingLike();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, pendingAction, blogId]); // count excluded to avoid stale closure issues if managed inside
 
+    // Internal handler that doesn't rely on 'user' state closure if passed explicitly
+    const handleLikeInternal = async (userId: string, currentLiked: boolean, currentCount: number) => {
         // Optimistic update
-        const newLiked = !liked;
-        const newCount = newLiked ? count + 1 : count - 1;
+        const newLiked = !currentLiked;
+        const newCount = newLiked ? currentCount + 1 : currentCount - 1;
         setLiked(newLiked);
         setCount(newCount);
 
-        const { liked: finalLiked, error } = await toggleLike(blogId, user.id);
+        const { liked: finalLiked, error } = await toggleLike(blogId, userId);
 
         if (error) {
             // Revert on error
             setLiked(!newLiked);
-            setCount(count);
+            setCount(currentCount);
             alert('Failed to update like status');
-        } else {
-            setLiked(finalLiked);
+            return;
         }
+        setLiked(finalLiked);
+    };
+
+    const handleClick = () => {
+        if (!user) {
+            openLoginModal({
+                message: 'Login to like this post',
+                pendingAction: { type: 'like', id: blogId },
+                onSuccess: () => {
+                    // This callback runs immediately after transparent login (e.g. Email)
+                    // We can try to run logic here directly IF the state is updated?
+                    // No, better to rely on the useEffect(user + pendingAction) which handles both cases consistently.
+                    // The Context sets pendingAction before onSuccess.
+                }
+            });
+            return;
+        }
+        handleLikeInternal(user.id, liked, count);
     };
 
     if (loading) {
@@ -95,7 +134,7 @@ export default function LikeButton({ blogId, variant = 'default' }: LikeButtonPr
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleLike();
+                    handleClick();
                 }}
                 className={`flex items-center justify-center rounded-full transition-all duration-300 ${isCompact ? 'p-1.5' : 'p-2'} ${liked ? 'bg-red-50 text-red-500 scale-110' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
                 title={liked ? 'Unlike' : 'Like'}

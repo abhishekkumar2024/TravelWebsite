@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/components/LanguageProvider';
+import { LoginModalProvider } from '@/components/LoginModalContext';
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -99,10 +100,12 @@ export default function RootLayout({
             </head>
             <body className="bg-gray-50">
                 <LanguageProvider>
-                    <SessionTimeout />
-                    <Navbar />
-                    <main>{children}</main>
-                    <Footer />
+                    <LoginModalProvider>
+                        <SessionTimeout />
+                        <Navbar />
+                        <main>{children}</main>
+                        <Footer />
+                    </LoginModalProvider>
                 </LanguageProvider>
             </body>
         </html>

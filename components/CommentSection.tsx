@@ -14,6 +14,7 @@ import {
     isUuid
 } from '@/lib/supabaseInteractions';
 import { useLanguage } from './LanguageProvider';
+import { useLoginModal } from './LoginModalContext';
 import { useState, useEffect, FormEvent } from 'react';
 
 interface CommentSectionProps {
@@ -23,6 +24,8 @@ interface CommentSectionProps {
 export default function CommentSection({ blogId }: CommentSectionProps) {
     const router = useRouter();
     const { t } = useLanguage();
+    const { openLoginModal, pendingAction, clearPendingAction } = useLoginModal();
+
     const [comments, setComments] = useState<BlogComment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
@@ -115,11 +118,59 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         }
     }, [user, comments.length]); // depend on length change or user
 
+    // Handle Pending Actions (Comment / Like Comment)
+    useEffect(() => {
+        if (!user || !pendingAction) return;
+
+        // Pending Comment
+        if (pendingAction.type === 'comment' && pendingAction.id === blogId && pendingAction.data?.content) {
+            const { content, parentId } = pendingAction.data;
+            setNewComment(content);
+
+            // Auto-submit
+            const submitPending = async () => {
+                setSubmitting(true);
+                const { success, data, error } = await addComment(blogId, user.id, content, parentId);
+                if (success && data) {
+                    setComments(prev => [data, ...prev]); // Optimistic-ish, or wait for realtime
+                    setNewComment('');
+                } else {
+                    alert(error || 'Failed to post comment');
+                }
+                setSubmitting(false);
+                clearPendingAction();
+            };
+            submitPending();
+        }
+
+        // Pending Comment Like
+        if (pendingAction.type === 'like_comment' && pendingAction.id) { // id is commentId
+            const commentId = pendingAction.id;
+            const processLike = async () => {
+                // Check if already liked logic is complex here as likedComments update is async in other effect.
+                // We'll trust the user check or just try toggle.
+                // Assuming we want to ensure LIKE. 
+                // We'll call the internal handler.
+
+                await handleToggleLikeInternal(commentId, user.id);
+                clearPendingAction();
+            };
+            processLike();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, pendingAction]);
+
     const handlePostComment = async (e: FormEvent, content: string, parentId: string | null = null) => {
         e.preventDefault();
         if (!user) {
-            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-            router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
+            openLoginModal({
+                message: 'Login to post your comment',
+                pendingAction: {
+                    type: 'comment',
+                    id: blogId,
+                    data: { content, parentId }
+                }
+            });
             return;
         }
 
@@ -154,13 +205,7 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         return success;
     };
 
-    const handleToggleLike = async (commentId: string) => {
-        if (!user) {
-            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-            router.push(`/login?redirectTo=${encodeURIComponent(currentPath + '?scroll=comments')}`);
-            return;
-        }
-
+    const handleToggleLikeInternal = async (commentId: string, userId: string) => {
         // Optimistic Update
         const isLiked = likedComments.has(commentId);
         const newSet = new Set(likedComments);
@@ -178,11 +223,22 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
             return c;
         }));
 
-        const { error } = await toggleCommentLike(commentId, user.id);
+        const { error } = await toggleCommentLike(commentId, userId);
         if (error) {
             // Revert on error (optional)
             console.error(error);
         }
+    }
+
+    const handleToggleLike = async (commentId: string) => {
+        if (!user) {
+            openLoginModal({
+                message: 'Login to like this comment',
+                pendingAction: { type: 'like_comment', id: commentId }
+            });
+            return;
+        }
+        await handleToggleLikeInternal(commentId, user.id);
     };
 
     const rootComments = buildCommentTree(comments);
@@ -199,9 +255,36 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
             {/* Main Input */}
             <div className="mb-10">
                 {!user ? (
-                    <div className="bg-sand p-6 rounded-2xl text-center">
-                        <p className="text-gray-600 mb-4">{t('Please login to join conversation', 'चर्चा में शामिल होने के लिए कृपया लॉगिन करें')}</p>
-                        <button onClick={() => router.push('/login')} className="px-6 py-2 bg-royal-blue text-white rounded-lg">{t('Login', 'लॉगिन')}</button>
+                    <div className="relative bg-gray-50/50 rounded-xl overflow-hidden p-6 border border-gray-100">
+                        {/* Blurry Background Layer */}
+                        <div className="filter blur-sm select-none pointer-events-none opacity-40">
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0" />
+                                <div className="flex-1">
+                                    <div className="w-full h-24 bg-white rounded-xl border border-gray-200 p-4 text-gray-400">
+                                        {t('Share your thoughts...', 'अपने विचार साझा करें...')}
+                                    </div>
+                                    <div className="flex justify-end mt-2">
+                                        <button className="px-6 py-2 bg-gray-300 text-white font-bold rounded-lg">
+                                            {t('Post', 'पोस्ट करें')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CTA Overlay */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/30 backdrop-blur-[1px]">
+                            <p className="text-gray-900 font-bold mb-2 text-lg">
+                                {t('Join the conversation', 'चर्चा में शामिल हों')}
+                            </p>
+                            <button
+                                onClick={() => openLoginModal({ message: t('Login to join the discussion', 'चर्चा में शामिल होने के लिए लॉगिन करें') })}
+                                className="px-8 py-2.5 bg-royal-blue text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 transform"
+                            >
+                                {t('Login to Comment', 'टिप्पणी करने के लिए लॉगिन करें')}
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <form onSubmit={(e) => handlePostComment(e, newComment)} className="flex gap-4">

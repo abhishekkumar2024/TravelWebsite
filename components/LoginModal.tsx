@@ -10,6 +10,8 @@ interface LoginModalProps {
     onClose: () => void;
     onLoginSuccess: () => void;
     isModal?: boolean;
+    title?: string;
+    message?: string;
 }
 
 export default function LoginModal({
@@ -17,6 +19,8 @@ export default function LoginModal({
     onClose,
     onLoginSuccess,
     isModal = true,
+    title,
+    message: customMessage,
 }: LoginModalProps) {
     const { t } = useLanguage();
 
@@ -155,7 +159,7 @@ export default function LoginModal({
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/submit`,
+                redirectTo: window.location.href,
             },
         });
 
@@ -189,12 +193,12 @@ export default function LoginModal({
                         ? t('Create Account', 'खाता बनाएं')
                         : view === 'forgot-password'
                             ? t('Reset Password', 'पासवर्ड रीसेट करें')
-                            : t('Login', 'लॉगिन')}
+                            : (title || t('Login', 'लॉगिन'))}
                 </h2>
                 <p className="text-gray-600 text-sm">
                     {view === 'forgot-password'
                         ? t('Enter your email to receive a reset link', 'रीसेट लिंक प्राप्त करने के लिए अपना ईमेल दर्ज करें')
-                        : t('Submit your travel stories', 'अपनी यात्रा कहानियां साझा करें')}
+                        : (customMessage || t('Submit your travel stories', 'अपनी यात्रा कहानियां साझा करें'))}
                 </p>
             </div>
 
