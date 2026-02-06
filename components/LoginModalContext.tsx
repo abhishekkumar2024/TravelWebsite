@@ -1,12 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import LoginModal from './LoginModal';
 
 export type PendingAction = {
     type: 'like' | 'comment' | 'like_comment' | 'other';
     id?: string; // blogId or commentId
     data?: any; // e.g. comment content
+    returnUrl?: string; // URL to redirect back to after login
 };
 
 interface LoginModalContextType {
@@ -31,6 +33,9 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
         onSuccess?: () => void;
     }>({});
 
+    const router = useRouter();
+    const pathname = usePathname();
+
     // Persistent pending action state
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
@@ -43,6 +48,12 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
                     const parsed = JSON.parse(stored);
                     if (parsed && parsed.type) {
                         setPendingAction(parsed);
+
+                        // Handle Redirect (Fix for Google Login landing on Home)
+                        if (parsed.returnUrl && parsed.returnUrl !== window.location.pathname) {
+                            // Use replace to avoid history stack buildup
+                            router.replace(parsed.returnUrl);
+                        }
                     } else {
                         localStorage.removeItem('post_action_after_login');
                     }
@@ -52,7 +63,7 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
                 }
             }
         }
-    }, []);
+    }, [router]);
 
     const openLoginModal = (options: {
         title?: string;
@@ -67,8 +78,12 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
         });
 
         if (options.pendingAction) {
-            setPendingAction(options.pendingAction);
-            localStorage.setItem('post_action_after_login', JSON.stringify(options.pendingAction));
+            const actionWithUrl = {
+                ...options.pendingAction,
+                returnUrl: options.pendingAction.returnUrl || pathname || window.location.pathname
+            };
+            setPendingAction(actionWithUrl);
+            localStorage.setItem('post_action_after_login', JSON.stringify(actionWithUrl));
         }
 
         setIsOpen(true);
