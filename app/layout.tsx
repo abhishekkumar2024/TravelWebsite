@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { LoginModalProvider } from '@/components/LoginModalContext';
@@ -99,6 +100,18 @@ export default function RootLayout({
                     href="/images/rajasthan-desert-hero.webp"
                     media="(min-width: 769px)"
                 />
+                <Script
+                    src="https://www.googletagmanager.com/gtag/js?id=G-XDGHJTQKE3"
+                    strategy="afterInteractive"
+                />
+                <Script id="ga4" strategy="afterInteractive">
+                    {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-XDGHJTQKE3');
+          `}
+                </Script>
             </head>
             <body className="bg-gray-50">
                 <LanguageProvider>
