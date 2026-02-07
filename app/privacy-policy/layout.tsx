@@ -10,6 +10,8 @@ export const metadata: Metadata = {
         url: '/privacy-policy/',
         title: 'Privacy Policy | CamelThar',
         description: 'Learn how CamelThar collects, uses, and protects your data.',
+        siteName: 'CamelThar',
+        type: 'website',
         images: [
             {
                 url: '/camelthar_logo.png',

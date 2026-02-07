@@ -12,6 +12,8 @@ export const metadata: Metadata = {
         url: '/essentials/',
         title: 'Trip Essentials - Gear Up for Rajasthan | CamelThar',
         description: 'Find everything you need for your trip to the Land of Kings.',
+        siteName: 'CamelThar',
+        type: 'website',
         images: [
             {
                 url: '/images/rajasthan-desert-hero.webp',

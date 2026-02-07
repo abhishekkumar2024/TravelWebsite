@@ -10,6 +10,8 @@ export const metadata: Metadata = {
         url: '/terms-of-service/',
         title: 'Terms of Service | CamelThar',
         description: 'Read the terms and conditions for using CamelThar services.',
+        siteName: 'CamelThar',
+        type: 'website',
         images: [
             {
                 url: '/camelthar_logo.png',
