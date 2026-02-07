@@ -8,6 +8,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 
 import BlogCard from '@/components/BlogCard';
 import DestinationCard from '@/components/DestinationCard';
+import FAQSection from '@/components/FAQSection';
 import { demoBlogs, demoDestinations, Destination, BlogPost } from '@/lib/data';
 import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/supabaseBlogs';
 
@@ -232,6 +233,9 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+
+            {/* FAQ Section */}
+            <FAQSection />
 
             {/* Submit CTA */}
             <section className="py-20 px-4 bg-sand">
