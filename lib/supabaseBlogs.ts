@@ -37,7 +37,7 @@ function mapRowToBlog(row: any): BlogPost {
             email: row.authors.email || row.author?.email
         } : (row.author ?? { name: 'Traveler' }),
         readTime: row.read_time ?? '5 min',
-        publishedAt: row.published_at ? new Date(row.published_at) : new Date(row.created_at ?? Date.now()),
+        publishedAt: row.published_at ? new Date(row.published_at).toISOString() : new Date(row.created_at ?? Date.now()).toISOString(),
         status: (row.status ?? 'published') as 'pending' | 'approved' | 'rejected',
         views: row.views ?? 0,
         // SEO Fields

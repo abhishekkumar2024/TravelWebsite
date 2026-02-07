@@ -56,7 +56,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         };
     }
 
-    const pageUrl = `https://www.camelthar.com/blog/${blog.slug || blog.id}`;
+    const pageSlug = blog.slug || blog.id;
+    const pagePath = `/blog/${pageSlug}/`;
 
     // distinct demo blogs from real blogs
     const isDemoBlog = demoBlogs.some((demo) => demo.id === blog.id);
@@ -66,7 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description: blog.meta_description || blog.excerpt_en,
         keywords: blog.focus_keyword,
         alternates: {
-            canonical: pageUrl,
+            canonical: pagePath, // Uses metadataBase from layout
         },
         robots: {
             index: !isDemoBlog,
@@ -75,7 +76,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         openGraph: {
             title: blog.meta_title || blog.title_en,
             description: blog.meta_description || blog.excerpt_en,
-            url: pageUrl,
+            url: pagePath,
             siteName: 'CamelThar',
             locale: 'en_US',
             type: 'article',
@@ -134,7 +135,7 @@ export default async function BlogPage({ params }: PageProps) {
         author: {
             '@type': 'Person',
             name: blog.author?.name || 'CamelThar Explorer',
-            url: `https://www.camelthar.com/author/${blog.author?.name?.toLowerCase().replace(/\s+/g, '-')}` // hypothetical author page
+            url: `https://www.camelthar.com/author/${blog.author?.name?.toLowerCase().replace(/\s+/g, '-')}/` // hypothetical author page
         },
         publisher: {
             '@type': 'Organization',
@@ -146,7 +147,7 @@ export default async function BlogPage({ params }: PageProps) {
         },
         mainEntityOfPage: {
             '@type': 'WebPage',
-            '@id': `https://www.camelthar.com/blog/${blog.slug || blog.id}`
+            '@id': `https://www.camelthar.com/blog/${blog.slug || blog.id}/`
         },
         keywords: blog.focus_keyword
     };
@@ -159,25 +160,25 @@ export default async function BlogPage({ params }: PageProps) {
                 '@type': 'ListItem',
                 position: 1,
                 name: 'Home',
-                item: 'https://www.camelthar.com'
+                item: 'https://www.camelthar.com/'
             },
             {
                 '@type': 'ListItem',
                 position: 2,
                 name: 'Destinations',
-                item: 'https://www.camelthar.com/destinations'
+                item: 'https://www.camelthar.com/destinations/'
             },
             {
                 '@type': 'ListItem',
                 position: 3,
                 name: blog.destination,
-                item: `https://www.camelthar.com/destinations/${blog.destination}`
+                item: `https://www.camelthar.com/destinations/${blog.destination}/`
             },
             {
                 '@type': 'ListItem',
                 position: 4,
                 name: blog.title_en,
-                item: `https://www.camelthar.com/blog/${blog.slug || blog.id}`
+                item: `https://www.camelthar.com/blog/${blog.slug || blog.id}/`
             }
         ]
     };

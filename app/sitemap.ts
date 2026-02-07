@@ -13,15 +13,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq('status', 'published')
 
     const blogEntries = (blogs || []).map((blog) => ({
-        url: `${baseUrl}/blog/${blog.slug || blog.id}`,
+        url: `${baseUrl}/blog/${blog.slug || blog.id}/`,
         lastModified: new Date(blog.updated_at),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
     }))
 
     return [
-        { url: baseUrl, lastModified: new Date(), priority: 1.0 },
-        { url: `${baseUrl}/destinations`, lastModified: new Date(), priority: 0.9 },
+        { url: `${baseUrl}/`, lastModified: new Date(), priority: 1.0 },
+        { url: `${baseUrl}/destinations/`, lastModified: new Date(), priority: 0.9 },
         ...blogEntries,
     ]
 }

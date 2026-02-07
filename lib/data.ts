@@ -19,7 +19,7 @@ export interface BlogPost {
     images?: string[];
     author: Author;
     readTime: string;
-    publishedAt: Date;
+    publishedAt: string;
     status: 'pending' | 'approved' | 'rejected' | 'published';
     views: number;
     meta_title?: string;
@@ -68,7 +68,7 @@ export const demoBlogs: BlogPost[] = [
         coverImage: '/images/jaipur-hawa-mahal.webp',
         author: { name: 'Rahul Sharma', avatar: 'https://i.pravatar.cc/150?img=11' },
         readTime: '8 min',
-        publishedAt: new Date('2024-01-15'),
+        publishedAt: new Date('2024-01-15').toISOString(),
         status: 'approved',
         views: 1250,
     },
@@ -88,7 +88,7 @@ export const demoBlogs: BlogPost[] = [
         coverImage: '/images/udaipur-lake-palace.webp',
         author: { name: 'Priya Patel', avatar: 'https://i.pravatar.cc/150?img=5' },
         readTime: '6 min',
-        publishedAt: new Date('2024-01-10'),
+        publishedAt: new Date('2024-01-10').toISOString(),
         status: 'approved',
         views: 890,
     },
@@ -108,7 +108,7 @@ export const demoBlogs: BlogPost[] = [
         coverImage: '/images/jaisalmer-desert-safari.webp',
         author: { name: 'Amit Kumar', avatar: 'https://i.pravatar.cc/150?img=12' },
         readTime: '10 min',
-        publishedAt: new Date('2024-01-05'),
+        publishedAt: new Date('2024-01-05').toISOString(),
         status: 'approved',
         views: 2100,
     },
@@ -127,7 +127,7 @@ export const demoBlogs: BlogPost[] = [
         coverImage: '/images/jodhpur.webp',
         author: { name: 'Sneha Agarwal', avatar: 'https://i.pravatar.cc/150?img=9' },
         readTime: '7 min',
-        publishedAt: new Date('2024-01-01'),
+        publishedAt: new Date('2024-01-01').toISOString(),
         status: 'approved',
         views: 750,
     },
@@ -146,7 +146,7 @@ export const demoBlogs: BlogPost[] = [
         coverImage: '/images/pushkar.webp',
         author: { name: 'Vikram Singh', avatar: 'https://i.pravatar.cc/150?img=15' },
         readTime: '5 min',
-        publishedAt: new Date('2023-12-28'),
+        publishedAt: new Date('2023-12-28').toISOString(),
         status: 'approved',
         views: 420,
     },
@@ -165,7 +165,7 @@ export const demoBlogs: BlogPost[] = [
         coverImage: '/images/jaipur-hawa-mahal.webp',
         author: { name: 'Anita Mehra', avatar: 'https://i.pravatar.cc/150?img=20' },
         readTime: '6 min',
-        publishedAt: new Date('2023-12-20'),
+        publishedAt: new Date('2023-12-20').toISOString(),
         status: 'approved',
         views: 380,
     },
