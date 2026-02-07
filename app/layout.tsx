@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     openGraph: {
         type: 'website',
         locale: 'en_IN',
-        url: 'https://www.camelthar.com',
+        url: '/',
         siteName: 'CamelThar',
         title: 'CamelThar - Travel Stories from the Land of Kings',
         description:

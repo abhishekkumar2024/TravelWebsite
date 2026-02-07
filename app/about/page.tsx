@@ -6,10 +6,13 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
     title: 'About Us | CamelThar',
     description: 'Learn about CamelThar, our mission to showcase the beauty of Rajasthan, and the team behind the stories.',
+    alternates: {
+        canonical: '/about/',
+    },
     openGraph: {
         title: 'About CamelThar - Our Mission & Story',
         description: 'Discover the heart behind CamelThar and our passion for Rajasthan travel.',
-        url: '/about',
+        url: '/about/',
         siteName: 'CamelThar',
         type: 'website',
         images: [

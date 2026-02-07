@@ -6,12 +6,12 @@ export const metadata: Metadata = {
     title: 'Travel Blogs | CamelThar',
     description: 'Read the latest travel stories, guides, and tips from Rajasthan. Explore diverse destinations and cultural insights.',
     alternates: {
-        canonical: '/blogs',
+        canonical: '/blogs/',
     },
     openGraph: {
         title: 'Travel Blogs - Rajasthan Travel Stories | CamelThar',
         description: 'Discover Rajasthan through authentic travel stories and guides. From Jaipur to Jaisalmer, explore the land of kings.',
-        url: '/blogs',
+        url: '/blogs/',
         siteName: 'CamelThar',
         type: 'website',
         images: [

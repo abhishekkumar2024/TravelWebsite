@@ -4,12 +4,12 @@ export const metadata: Metadata = {
     title: 'Contact Us | CamelThar',
     description: "Have questions about Rajasthan? Want to share your travel story? Get in touch with the CamelThar team. We'd love to hear from you.",
     alternates: {
-        canonical: '/contact',
+        canonical: '/contact/',
     },
     openGraph: {
         title: 'Contact CamelThar - Get in Touch',
         description: 'Connect with us for collaborations, travel tips, or to share your Rajasthan experiences.',
-        url: '/contact',
+        url: '/contact/',
         siteName: 'CamelThar',
         type: 'website',
         images: [

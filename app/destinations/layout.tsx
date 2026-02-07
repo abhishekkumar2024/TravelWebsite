@@ -4,12 +4,12 @@ export const metadata: Metadata = {
     title: 'Explore Rajasthan Destinations | CamelThar',
     description: 'Discover the best places to visit in Rajasthan. Explore Jaipur, Udaipur, Jaisalmer, Jodhpur, and more with our comprehensive travel guides.',
     alternates: {
-        canonical: '/destinations',
+        canonical: '/destinations/',
     },
     openGraph: {
         title: 'Explore Rajasthan - Top Destinations | CamelThar',
         description: 'Plan your perfect trip to Rajasthan. Discover majesty in every corner of the Land of Kings.',
-        url: '/destinations',
+        url: '/destinations/',
         siteName: 'CamelThar',
         type: 'website',
         images: [
