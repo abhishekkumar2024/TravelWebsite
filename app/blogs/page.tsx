@@ -8,6 +8,27 @@ export const metadata: Metadata = {
     alternates: {
         canonical: '/blogs',
     },
+    openGraph: {
+        title: 'Travel Blogs - Rajasthan Travel Stories | CamelThar',
+        description: 'Discover Rajasthan through authentic travel stories and guides. From Jaipur to Jaisalmer, explore the land of kings.',
+        url: '/blogs',
+        siteName: 'CamelThar',
+        type: 'website',
+        images: [
+            {
+                url: '/images/rajasthan-desert-hero.webp',
+                width: 1200,
+                height: 630,
+                alt: 'CamelThar Travel Blogs',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Travel Blogs | CamelThar',
+        description: 'Read the latest travel stories and guides from across Rajasthan.',
+        images: ['/images/rajasthan-desert-hero.webp'],
+    },
 };
 
 // Revalidate every hour

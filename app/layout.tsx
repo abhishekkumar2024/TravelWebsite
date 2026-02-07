@@ -35,11 +35,11 @@ export const metadata: Metadata = {
     openGraph: {
         type: 'website',
         locale: 'en_IN',
-        url: './',
+        url: 'https://www.camelthar.com',
         siteName: 'CamelThar',
         title: 'CamelThar - Travel Stories from the Land of Kings',
         description:
-            'Explore Rajasthan through travel stories, destination guides, and insider tips.',
+            'Explore Rajasthan through travel stories, destination guides, and insider tips. Discover the magic of Jaipur, Udaipur, and beyond.',
         images: [
             {
                 url: '/camelthar_logo.png',
@@ -51,6 +51,8 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
+        site: '@CamelThar',
+        creator: '@CamelThar',
         title: 'CamelThar - Travel Stories from the Land of Kings',
         description:
             'Explore Rajasthan through travel stories, destination guides, and insider tips.',

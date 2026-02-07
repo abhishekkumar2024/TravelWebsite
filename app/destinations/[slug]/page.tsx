@@ -23,13 +23,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const destination = demoDestinations.find((d) => d.id === params.slug);
     if (!destination) return { title: 'Destination Not Found' };
 
+    const pagePath = `/destinations/${params.slug}/`;
+
     return {
-        title: `${destination.name_en} Travel Guide - Best Places & Blogs`,
+        title: `${destination.name_en} Travel Guide - Best Places & Blogs | CamelThar`,
         description: destination.description_en,
+        alternates: {
+            canonical: pagePath,
+        },
         openGraph: {
-            title: `Explore ${destination.name_en} - CamelThar`,
+            title: `${destination.name_en} Travel Guide – CamelThar`,
+            description: destination.description_en,
+            url: pagePath,
+            siteName: 'CamelThar',
+            type: 'website',
+            images: [
+                {
+                    url: destination.coverImage,
+                    width: 1200,
+                    height: 630,
+                    alt: `${destination.name_en} Travel Guide`,
+                },
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${destination.name_en} Travel Guide – CamelThar`,
             description: destination.description_en,
             images: [destination.coverImage],
+            site: '@CamelThar',
         },
     };
 }

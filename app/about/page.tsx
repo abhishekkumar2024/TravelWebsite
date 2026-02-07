@@ -6,6 +6,27 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
     title: 'About Us | CamelThar',
     description: 'Learn about CamelThar, our mission to showcase the beauty of Rajasthan, and the team behind the stories.',
+    openGraph: {
+        title: 'About CamelThar - Our Mission & Story',
+        description: 'Discover the heart behind CamelThar and our passion for Rajasthan travel.',
+        url: '/about',
+        siteName: 'CamelThar',
+        type: 'website',
+        images: [
+            {
+                url: '/images/rajasthan-desert-hero.webp',
+                width: 1200,
+                height: 630,
+                alt: 'About CamelThar',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'About CamelThar',
+        description: 'The story behind the Land of Kings travel site.',
+        images: ['/images/rajasthan-desert-hero.webp'],
+    },
 };
 
 export default function AboutPage() {
