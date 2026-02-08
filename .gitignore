@@ -34,3 +34,7 @@ out
 backup_images/
 
 scripts/
+
+# Generated content
+public/images/optimized/
+test.json

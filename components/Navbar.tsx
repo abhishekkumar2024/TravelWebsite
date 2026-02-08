@@ -65,10 +65,10 @@ export default function Navbar() {
                 <div className="flex justify-start">
                     <Link href="/" className="flex items-center gap-2">
                         <Image
-                            src="/camelthar_logo.webp"
+                            src="/logo-sm.webp"
                             alt="CamelThar Logo"
-                            width={50}
-                            height={50}
+                            width={48}
+                            height={48}
                             className="h-12 w-auto rounded-full"
                         />
                         <span className="text-xl font-bold text-royal-blue whitespace-nowrap">
