@@ -5,6 +5,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 
 
+import { submitContactForm } from '@/lib/supabaseContact';
+
 export default function ContactPage() {
     const [formData, setFormData] = useState({
         name: '',
@@ -12,18 +14,23 @@ export default function ContactPage() {
         subject: '',
         message: ''
     });
-    const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+    const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('submitting');
+        setErrorMessage('');
 
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const result = await submitContactForm(formData);
 
-        // For now, mockup success. Later hook up to Supabase or API.
-        setStatus('success');
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        if (result.success) {
+            setStatus('success');
+            setFormData({ name: '', email: '', subject: '', message: '' });
+        } else {
+            setStatus('error');
+            setErrorMessage(result.error || 'Failed to send message. Please try again.');
+        }
     };
 
     return (
@@ -111,6 +118,11 @@ export default function ContactPage() {
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-6">
+                                {status === 'error' && (
+                                    <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm mb-4">
+                                        {errorMessage}
+                                    </div>
+                                )}
                                 <div>
                                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
                                     <input
