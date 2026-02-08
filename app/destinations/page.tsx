@@ -54,10 +54,11 @@ export default function DestinationsPage() {
                             const description = lang === 'hi' ? dest.description_hi : dest.description_en;
 
                             return (
-                                <div
+                                <Link
+                                    href={`/destinations/${dest.id}`}
                                     key={dest.id}
                                     id={dest.id}
-                                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:-translate-y-2 hover:shadow-xl transition-all duration-300"
+                                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group block"
                                 >
                                     <div className="relative h-56 overflow-hidden">
                                         <Image
@@ -94,15 +95,14 @@ export default function DestinationsPage() {
                                                 </span>{' '}
                                                 {dest.bestTime}
                                             </div>
-                                            <Link
-                                                href={`/destinations/${dest.id}`}
-                                                className="text-desert-gold font-semibold text-sm hover:underline"
+                                            <span
+                                                className="text-desert-gold font-semibold text-sm group-hover:underline"
                                             >
                                                 {dest.blogCount} {t('blogs', 'ब्लॉग')} →
-                                            </Link>
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             );
                         })}
                     </div>
