@@ -43,6 +43,10 @@ export interface Destination {
     attractions: string[];
     bestTime: string;
     blogCount: number;
+    imageCredits?: {
+        name: string;
+        url: string;
+    };
 }
 
 export const demoBlogs: BlogPost[] = [
@@ -249,6 +253,23 @@ export const demoDestinations: Destination[] = [
         attractions: ['Dilwara Temples', 'Nakki Lake', 'Guru Shikhar', 'Sunset Point'],
         bestTime: 'Mar - Jun',
         blogCount: 6,
+    },
+    {
+        id: 'bikaner',
+        name_en: 'Bikaner',
+        name_hi: 'बीकानेर',
+        tagline_en: 'The Camel Country',
+        tagline_hi: 'ऊंटों का देश',
+        description_en: 'Visit Bikaner, famous for the invincible Junagarh Fort, Karni Mata Temple, and its annual Camel Festival. A vibrant desert city with rich history.',
+        description_hi: 'अपराजित जूनागढ़ किले, करणी माता मंदिर और वार्षिक ऊंट उत्सव के लिए प्रसिद्ध।',
+        coverImage: 'https://images.unsplash.com/photo-1590766940554-634a7ed41450?q=80&w=2670&auto=format&fit=crop',
+        attractions: ['Junagarh Fort', 'Karni Mata Temple', 'Camel Research Farm', 'Rampuria Haveli'],
+        bestTime: 'Oct - Mar',
+        blogCount: 0,
+        imageCredits: {
+            name: 'Unsplash',
+            url: 'https://unsplash.com/photos/brown-concrete-building-during-daytime-X9gh4J4_w98'
+        }
     },
 ];
 

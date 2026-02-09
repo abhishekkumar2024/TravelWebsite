@@ -7,14 +7,19 @@ import BlogCard from '@/components/BlogCard';
 import AffiliateProducts from '@/components/AffiliateProducts';
 import { BlogPost } from '@/lib/data';
 
-const destinations = ['all', 'jaipur', 'udaipur', 'jaisalmer', 'jodhpur', 'pushkar'];
+
+
 
 interface BlogsClientProps {
     initialBlogs: BlogPost[];
+    destinations: string[];
 }
 
-export default function BlogsClient({ initialBlogs }: BlogsClientProps) {
+export default function BlogsClient({ initialBlogs, destinations: initialDestinations }: BlogsClientProps) {
     const { t, lang } = useLanguage();
+
+    // Ensure 'all' is the first option
+    const destinations = ['all', ...initialDestinations];
 
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
@@ -32,7 +37,7 @@ export default function BlogsClient({ initialBlogs }: BlogsClientProps) {
     // Memoize filtered blogs to prevent unnecessary re-renders
     const filteredBlogs = useMemo(() => {
         const result = blogs.filter((blog) => {
-            const matchesFilter = filter === 'all' || blog.destination === filter;
+            const matchesFilter = filter === 'all' || (blog.destination && blog.destination.toLowerCase().includes(filter));
             const title = lang === 'hi' ? blog.title_hi : blog.title_en;
             const excerpt = lang === 'hi' ? blog.excerpt_hi : blog.excerpt_en;
             const matchesSearch =

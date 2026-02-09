@@ -103,6 +103,12 @@ export default async function DestinationDetailsPage({ params }: Props) {
                         </span>
                         <h1 className="text-4xl md:text-7xl font-bold mb-3 font-outfit drop-shadow-md">{destination.name_en}</h1>
                         <p className="text-lg md:text-2xl opacity-90 font-light max-w-2xl drop-shadow-sm">{destination.tagline_en}</p>
+
+                        {destination.imageCredits && (
+                            <div className="absolute bottom-4 right-6 text-[10px] md:text-xs text-white/40 hover:text-white/80 transition-colors z-10">
+                                Image Source: <a href={destination.imageCredits.url} target="_blank" rel="nofollow noopener noreferrer" className="underline">{destination.imageCredits.name}</a>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

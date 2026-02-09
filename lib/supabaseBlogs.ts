@@ -503,3 +503,35 @@ export async function fetchBlogsByDestination(destinationSlug: string): Promise<
     return (data || []).map(mapRowToBlog);
 }
 
+
+/**
+ * Fetch all unique destinations that have at least one published blog
+ */
+export async function fetchAvailableDestinations(): Promise<string[]> {
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('destination')
+        .eq('status', 'published');
+
+    if (error) {
+        console.error('[supabaseBlogs] fetchAvailableDestinations error:', error.message);
+        return [];
+    }
+
+    const destinationSet = new Set<string>();
+
+    data?.forEach(blog => {
+        if (!blog.destination) return;
+
+        // Handle comma-separated destinations and normalize
+        const parts = blog.destination.split(',');
+        parts.forEach((p: string) => {
+            const cleanDest = p.trim().toLowerCase();
+            if (cleanDest && cleanDest !== 'rajasthan') { // Optional: exclude generic state tag if desired, or keep it
+                destinationSet.add(cleanDest);
+            }
+        });
+    });
+
+    return Array.from(destinationSet).sort();
+}

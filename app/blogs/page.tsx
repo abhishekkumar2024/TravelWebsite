@@ -1,4 +1,4 @@
-import { fetchPublishedBlogs } from '@/lib/supabaseBlogs';
+import { fetchPublishedBlogs, fetchAvailableDestinations } from '@/lib/supabaseBlogs';
 import BlogsClient from './BlogsClient';
 import { Metadata } from 'next';
 
@@ -37,7 +37,8 @@ export const revalidate = 3600;
 export default async function BlogsPage() {
     // 1. Fetch data on the server
     const blogs = await fetchPublishedBlogs();
+    const destinations = await fetchAvailableDestinations();
 
     // 2. Pass data to the Client Component
-    return <BlogsClient initialBlogs={blogs} />;
+    return <BlogsClient initialBlogs={blogs} destinations={destinations} />;
 }
