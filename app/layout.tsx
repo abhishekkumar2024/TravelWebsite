@@ -111,6 +111,51 @@ export default function RootLayout({
             gtag('config', 'G-BG1VBT8E8B');
           `}
                 </Script>
+
+                {/* Organization structured data for brand visibility */}
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            '@context': 'https://schema.org',
+                            '@type': 'Organization',
+                            name: 'CamelThar',
+                            url: 'https://www.camelthar.com',
+                            logo: 'https://www.camelthar.com/camelthar_logo.png',
+                            description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips.',
+                            sameAs: [
+                                'https://twitter.com/CamelThar',
+                                'https://www.instagram.com/camelthar',
+                            ],
+                            contactPoint: {
+                                '@type': 'ContactPoint',
+                                contactType: 'customer service',
+                                url: 'https://www.camelthar.com/contact/',
+                            },
+                        }),
+                    }}
+                />
+
+                {/* WebSite structured data for sitelinks search box */}
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            '@context': 'https://schema.org',
+                            '@type': 'WebSite',
+                            name: 'CamelThar',
+                            url: 'https://www.camelthar.com',
+                            potentialAction: {
+                                '@type': 'SearchAction',
+                                target: {
+                                    '@type': 'EntryPoint',
+                                    urlTemplate: 'https://www.camelthar.com/blogs/?search={search_term_string}',
+                                },
+                                'query-input': 'required name=search_term_string',
+                            },
+                        }),
+                    }}
+                />
             </head>
             <body className="bg-gray-50 font-sans">
                 <LanguageProvider>

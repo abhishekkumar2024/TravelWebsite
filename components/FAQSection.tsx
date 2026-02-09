@@ -51,8 +51,27 @@ export default function FAQSection() {
         setOpenIndex(openIndex === index ? null : index);
     };
 
+    // Generate FAQPage structured data for rich snippets in Google
+    const faqJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((faq) => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: faq.answer,
+            },
+        })),
+    };
+
     return (
         <section className="py-20 px-4 bg-gray-50">
+            {/* FAQ Structured Data for Google Rich Snippets */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -68,8 +87,8 @@ export default function FAQSection() {
                         <div
                             key={index}
                             className={`bg-white rounded-xl overflow-hidden transition-all duration-300 ${openIndex === index
-                                    ? 'shadow-lg ring-1 ring-royal-blue/10'
-                                    : 'shadow-sm hover:shadow-md'
+                                ? 'shadow-lg ring-1 ring-royal-blue/10'
+                                : 'shadow-sm hover:shadow-md'
                                 }`}
                         >
                             <button
@@ -82,8 +101,8 @@ export default function FAQSection() {
                                     {t(faq.question, faq.questionHi)}
                                 </span>
                                 <span className={`flex-shrink-0 ml-4 w-8 h-8 flex items-center justify-center rounded-full transition-transform duration-300 ${openIndex === index
-                                        ? 'bg-royal-blue text-white rotate-180'
-                                        : 'bg-gray-100 text-gray-500'
+                                    ? 'bg-royal-blue text-white rotate-180'
+                                    : 'bg-gray-100 text-gray-500'
                                     }`}>
                                     <svg
                                         className="w-5 h-5"

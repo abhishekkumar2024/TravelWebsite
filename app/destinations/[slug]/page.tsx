@@ -68,8 +68,70 @@ export default async function DestinationDetailsPage({ params }: Props) {
     // Fetch blogs dynamically for this destination
     const blogs = await fetchBlogsByDestination(params.slug);
 
+    // Tourist Destination structured data for rich search results
+    const touristDestinationJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'TouristDestination',
+        name: destination.name_en,
+        description: destination.description_en,
+        image: destination.coverImage.startsWith('http')
+            ? destination.coverImage
+            : `https://www.camelthar.com${destination.coverImage}`,
+        url: `https://www.camelthar.com/destinations/${params.slug}/`,
+        containedInPlace: {
+            '@type': 'State',
+            name: 'Rajasthan',
+            containedInPlace: {
+                '@type': 'Country',
+                name: 'India',
+            },
+        },
+        touristType: ['Cultural Tourist', 'Heritage Tourist', 'Adventure Tourist'],
+        includesAttraction: destination.attractions.map((attr) => ({
+            '@type': 'TouristAttraction',
+            name: attr,
+            isAccessibleForFree: false,
+        })),
+        publicAccess: true,
+    };
+
+    // Breadcrumb structured data
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com/',
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Destinations',
+                item: 'https://www.camelthar.com/destinations/',
+            },
+            {
+                '@type': 'ListItem',
+                position: 3,
+                name: destination.name_en,
+                item: `https://www.camelthar.com/destinations/${params.slug}/`,
+            },
+        ],
+    };
+
     return (
         <main className="min-h-screen pt-28">
+            {/* Structured Data for SEO */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(touristDestinationJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
             {/* Top Breadcrumbs */}
             <div className="max-w-7xl mx-auto px-4 mb-6">
                 <nav className="flex items-center gap-2 text-sm text-gray-500 font-medium overflow-x-auto whitespace-nowrap pb-2 md:pb-0 no-scrollbar">
