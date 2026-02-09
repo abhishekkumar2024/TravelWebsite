@@ -30,3 +30,31 @@ export async function submitContactForm(formData: ContactMessage): Promise<{ suc
         return { success: false, error: err?.message || 'Unexpected error' };
     }
 }
+
+export async function fetchContactMessages(): Promise<any[]> {
+    const { data, error } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[supabaseContact] fetchContactMessages error:', error.message);
+        return [];
+    }
+
+    return data || [];
+}
+
+export async function updateMessageStatus(id: string, status: string): Promise<{ success: boolean; error: string | null }> {
+    const { error } = await supabase
+        .from('contact_messages')
+        .update({ status })
+        .eq('id', id);
+
+    if (error) {
+        console.error('[supabaseContact] updateMessageStatus error:', error.message);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true, error: null };
+}

@@ -10,7 +10,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
 
 type BlogStatus = 'pending' | 'published' | 'rejected' | 'draft';
-type MainTab = 'blogs' | 'products';
+type MainTab = 'blogs' | 'products' | 'messages';
 
 import {
     fetchAllProductsForAdmin,
@@ -18,6 +18,10 @@ import {
     updateProduct,
     deleteProduct
 } from '@/lib/supabaseProducts';
+import {
+    fetchContactMessages,
+    updateMessageStatus
+} from '@/lib/supabaseContact';
 import { AffiliateProduct } from '@/app/essentials/EssentialsContent';
 
 export default function AdminPage() {
@@ -29,6 +33,7 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<BlogStatus>('pending');
     const [blogs, setBlogs] = useState<any[]>([]);
     const [products, setProducts] = useState<AffiliateProduct[]>([]);
+    const [messages, setMessages] = useState<any[]>([]);
     const [stats, setStats] = useState({
         total: 0,
         pending: 0,
@@ -58,8 +63,10 @@ export default function AdminPage() {
             if (mainTab === 'blogs') {
                 loadStats();
                 loadBlogs();
-            } else {
+            } else if (mainTab === 'products') {
                 loadProducts();
+            } else if (mainTab === 'messages') {
+                loadMessages();
             }
         }
     }, [authenticated, mainTab, activeTab]);
@@ -92,6 +99,27 @@ export default function AdminPage() {
     const loadProducts = async () => {
         const productsData = await fetchAllProductsForAdmin();
         setProducts(productsData);
+    };
+
+    const loadMessages = async () => {
+        const messagesData = await fetchContactMessages();
+        setMessages(messagesData);
+    };
+
+    const handleUpdateMessageStatus = async (id: string, status: string) => {
+        setProcessing(id);
+        try {
+            const result = await updateMessageStatus(id, status);
+            if (result.success) {
+                await loadMessages();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating message status:', error);
+        } finally {
+            setProcessing(null);
+        }
     };
 
     const handleProductSubmit = async (e: React.FormEvent) => {
@@ -310,6 +338,13 @@ export default function AdminPage() {
                             }`}
                     >
                         {t('Products', 'उत्पाद')}
+                    </button>
+                    <button
+                        onClick={() => setMainTab('messages')}
+                        className={`px-6 py-2 rounded-lg font-bold transition-all ${mainTab === 'messages' ? 'bg-white text-gray-900 shadow-lg' : 'text-white hover:bg-white/10'
+                            }`}
+                    >
+                        {t('Messages', 'संदेश')}
                     </button>
                 </div>
             </div>
@@ -565,6 +600,83 @@ export default function AdminPage() {
                                             >
                                                 {t('Delete', 'हटाएं')}
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {mainTab === 'messages' && (
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-white">{t('Contact Messages', 'संपर्क संदेश')}</h2>
+                        <button
+                            onClick={loadMessages}
+                            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            {t('Refresh', 'रीफ्रेश')}
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {messages.length === 0 ? (
+                            <div className="bg-white/10 backdrop-blur-lg rounded-lg p-12 text-center border border-white/20">
+                                <p className="text-gray-300 text-lg">
+                                    {t('No messages found', 'कोई संदेश नहीं मिला')}
+                                </p>
+                            </div>
+                        ) : (
+                            messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`bg-white/10 backdrop-blur-lg rounded-lg p-6 border transition-all ${msg.status === 'new' ? 'border-desert-gold/50 bg-white/15' : 'border-white/20'
+                                        }`}
+                                >
+                                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <h3 className="text-xl font-bold text-white">{msg.subject}</h3>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${msg.status === 'new' ? 'bg-desert-gold text-black' : 'bg-gray-500 text-white'
+                                                    }`}>
+                                                    {msg.status}
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm text-gray-400 mb-4">
+                                                <p><span className="text-gray-500">{t('From', 'से')}:</span> <span className="text-white">{msg.name}</span> ({msg.email})</p>
+                                                <p><span className="text-gray-500">{t('Date', 'तारीख')}:</span> {new Date(msg.created_at).toLocaleString()}</p>
+                                            </div>
+                                            <div className="bg-black/20 rounded-lg p-4 text-gray-200 whitespace-pre-wrap italic border border-white/5">
+                                                "{msg.message}"
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-row md:flex-col gap-2 justify-end">
+                                            {msg.status === 'new' ? (
+                                                <button
+                                                    onClick={() => handleUpdateMessageStatus(msg.id, 'read')}
+                                                    disabled={processing === msg.id}
+                                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+                                                >
+                                                    {t('Mark as Read', 'पढ़ा हुआ मानों')}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleUpdateMessageStatus(msg.id, 'new')}
+                                                    disabled={processing === msg.id}
+                                                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+                                                >
+                                                    {t('Mark as Unread', 'बिना पढ़ा हुआ मानों')}
+                                                </button>
+                                            )}
+                                            <a
+                                                href={`mailto:${msg.email}?subject=Re: ${msg.subject}`}
+                                                className="px-4 py-2 bg-royal-blue hover:bg-royal-blue/80 text-white rounded-lg text-sm font-semibold transition-all text-center"
+                                            >
+                                                {t('Reply via Email', 'ईमेल से जवाब दें')}
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
