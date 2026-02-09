@@ -2,18 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+/* Font families using CSS variables from next/font (no render-blocking @import) */
 
 /* Base Styles */
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--font-outfit), 'Outfit', sans-serif;
     background-color: #f7f7f7;
     min-height: 100vh;
 }
 
 body.hindi {
-    font-family: 'Noto Sans Devanagari', sans-serif;
+    font-family: var(--font-noto-sans-devanagari), 'Noto Sans Devanagari', sans-serif;
 }
 
 /* Gradient text */

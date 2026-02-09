@@ -1,16 +1,21 @@
 'use client';
 
-
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 import BlogCard from '@/components/BlogCard';
 import DestinationCard from '@/components/DestinationCard';
-import FAQSection from '@/components/FAQSection';
 import { demoBlogs, demoDestinations, Destination, BlogPost } from '@/lib/data';
 import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/supabaseBlogs';
+
+// Lazy load FAQSection - it's below the fold and doesn't need to block initial render
+const FAQSection = dynamic(() => import('@/components/FAQSection'), {
+    loading: () => <div className="py-20 px-4 bg-white animate-pulse"><div className="max-w-3xl mx-auto h-96 bg-gray-100 rounded-2xl"></div></div>,
+    ssr: true,
+});
 
 export default function HomePage() {
     const { t } = useLanguage();
@@ -186,8 +191,8 @@ export default function HomePage() {
                                 </div>
                             ))
                         ) : blogs.length > 0 ? (
-                            blogs.map((blog) => (
-                                <BlogCard key={blog.id} blog={blog} />
+                            blogs.map((blog, index) => (
+                                <BlogCard key={blog.id} blog={blog} priority={index === 0} />
                             ))
                         ) : (
                             <div className="col-span-full text-center py-10 text-gray-400">

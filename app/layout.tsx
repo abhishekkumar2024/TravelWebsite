@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
+import { outfit, notoSansDevanagari } from '@/lib/fonts';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { LoginModalProvider } from '@/components/LoginModalContext';
 
@@ -79,12 +80,10 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en">
+        <html lang="en" className={`${outfit.variable} ${notoSansDevanagari.variable}`}>
             <head>
                 {/* Preconnect to external domains for faster loading */}
                 <link rel="preconnect" href="https://res.cloudinary.com" />
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <link rel="dns-prefetch" href="https://res.cloudinary.com" />
 
                 <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -113,7 +112,7 @@ export default function RootLayout({
           `}
                 </Script>
             </head>
-            <body className="bg-gray-50">
+            <body className="bg-gray-50 font-sans">
                 <LanguageProvider>
                     <LoginModalProvider>
                         <SessionTimeout />

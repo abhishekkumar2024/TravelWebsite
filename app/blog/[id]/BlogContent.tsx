@@ -1,18 +1,32 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
-import AffiliateProducts from '@/components/AffiliateProducts';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
-import CommentSection from '@/components/CommentSection';
-import RelatedReads from '@/components/RelatedReads';
 import ShareButton from '@/components/ShareButton';
 import type { BlogPost } from '@/lib/data';
 import BackToTop from '@/components/BackToTop';
+
+// Lazy load heavy below-the-fold components
+const CommentSection = dynamic(() => import('@/components/CommentSection'), {
+    loading: () => <div className="mt-12 pt-8 border-t border-gray-100 animate-pulse"><div className="h-64 bg-gray-100 rounded-2xl"></div></div>,
+    ssr: false, // Don't render on server since it requires client-side auth
+});
+
+const AffiliateProducts = dynamic(() => import('@/components/AffiliateProducts'), {
+    loading: () => <div className="animate-pulse"><div className="h-32 bg-gray-100 rounded-xl"></div></div>,
+    ssr: true,
+});
+
+const RelatedReads = dynamic(() => import('@/components/RelatedReads'), {
+    loading: () => <div className="mt-12 pt-8 border-t border-gray-100 animate-pulse"><div className="h-48 bg-gray-100 rounded-2xl"></div></div>,
+    ssr: true,
+});
 
 interface BlogContentProps {
     blog: BlogPost;
