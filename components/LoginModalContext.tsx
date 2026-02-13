@@ -50,9 +50,23 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
                         setPendingAction(parsed);
 
                         // Handle Redirect (Fix for Google Login landing on Home)
-                        if (parsed.returnUrl && parsed.returnUrl !== window.location.pathname) {
-                            // Use replace to avoid history stack buildup
-                            router.replace(parsed.returnUrl);
+                        if (parsed.returnUrl) {
+                            // Compare just pathname (strip query params) to avoid redirect loops
+                            const returnPath = parsed.returnUrl.split('?')[0];
+                            if (returnPath !== window.location.pathname) {
+                                // Use replace to avoid history stack buildup
+                                router.replace(parsed.returnUrl);
+                            }
+
+                            // Scroll to comments section if this is a comment-related action
+                            if ((parsed.type === 'comment' || parsed.type === 'like_comment') && parsed.returnUrl.includes('scroll=comments')) {
+                                setTimeout(() => {
+                                    const el = document.getElementById('comments-section');
+                                    if (el) {
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                }, 1200); // Wait for page to fully load + CommentSection to render
+                            }
                         }
                     } else {
                         localStorage.removeItem('post_action_after_login');

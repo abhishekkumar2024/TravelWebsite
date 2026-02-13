@@ -6,6 +6,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import BlogCard from '@/components/BlogCard';
 import AffiliateProducts from '@/components/AffiliateProducts';
 import { BlogPost } from '@/lib/data';
+import { BlogInteractionsProvider } from '@/components/BlogInteractionsProvider';
 
 
 
@@ -123,11 +124,13 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredBlogs.map((blog) => (
-                                <BlogCard key={blog.id} blog={blog} />
-                            ))}
-                        </div>
+                        <BlogInteractionsProvider blogIds={filteredBlogs.map(b => b.id)}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredBlogs.map((blog) => (
+                                    <BlogCard key={blog.id} blog={blog} />
+                                ))}
+                            </div>
+                        </BlogInteractionsProvider>
                     )}
 
                     {/* Affiliate Products Section */}

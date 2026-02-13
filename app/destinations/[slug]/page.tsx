@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { demoDestinations } from '@/lib/data';
 import { fetchBlogsByDestination } from '@/lib/supabaseBlogs';
-import BlogCard from '@/components/BlogCard';
 import BackToTop from '@/components/BackToTop';
+import { DestinationBlogGrid } from '@/components/DestinationBlogGrid';
 
 // 1. Generate Static Paths for SEO (SSG)
 export async function generateStaticParams() {
@@ -214,11 +214,7 @@ export default async function DestinationDetailsPage({ params }: Props) {
                 </div>
 
                 {blogs.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                        {blogs.map(blog => (
-                            <BlogCard key={blog.id} blog={blog} />
-                        ))}
-                    </div>
+                    <DestinationBlogGrid blogs={blogs} />
                 ) : (
                     <div className="text-center py-24 bg-white rounded-[2rem] border-2 border-dashed border-sand/50">
                         <div className="w-20 h-20 bg-sand/30 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✍️</div>

@@ -10,6 +10,7 @@ import BlogCard from '@/components/BlogCard';
 import DestinationCard from '@/components/DestinationCard';
 import { demoBlogs, demoDestinations, Destination, BlogPost } from '@/lib/data';
 import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/supabaseBlogs';
+import { BlogInteractionsProvider } from '@/components/BlogInteractionsProvider';
 
 // Lazy load FAQSection - it's below the fold and doesn't need to block initial render
 const FAQSection = dynamic(() => import('@/components/FAQSection'), {
@@ -191,9 +192,11 @@ export default function HomePage() {
                                 </div>
                             ))
                         ) : blogs.length > 0 ? (
-                            blogs.map((blog, index) => (
-                                <BlogCard key={blog.id} blog={blog} priority={index === 0} />
-                            ))
+                            <BlogInteractionsProvider blogIds={blogs.map(b => b.id)}>
+                                {blogs.map((blog, index) => (
+                                    <BlogCard key={blog.id} blog={blog} priority={index === 0} />
+                                ))}
+                            </BlogInteractionsProvider>
                         ) : (
                             <div className="col-span-full text-center py-10 text-gray-400">
                                 {t('No blogs found', 'कोई ब्लॉग नहीं मिला')}

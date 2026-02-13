@@ -156,10 +156,25 @@ export default function LoginModal({
         setLoading(true);
         setError(null);
 
+        // Build redirect URL: use pending action's returnUrl if available
+        // This ensures Google OAuth redirects back to the correct page (e.g., blog post with ?scroll=comments)
+        let redirectUrl = window.location.href;
+        try {
+            const stored = localStorage.getItem('post_action_after_login');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed?.returnUrl) {
+                    redirectUrl = `${window.location.origin}${parsed.returnUrl}`;
+                }
+            }
+        } catch {
+            // Ignore parse errors, use default
+        }
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.href,
+                redirectTo: redirectUrl,
             },
         });
 

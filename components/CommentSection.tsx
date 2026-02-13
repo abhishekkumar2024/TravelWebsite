@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
     fetchComments,
@@ -23,6 +23,7 @@ interface CommentSectionProps {
 
 export default function CommentSection({ blogId }: CommentSectionProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const { t } = useLanguage();
     const { openLoginModal, pendingAction, clearPendingAction } = useLoginModal();
 
@@ -168,7 +169,8 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
                 pendingAction: {
                     type: 'comment',
                     id: blogId,
-                    data: { content, parentId }
+                    data: { content, parentId },
+                    returnUrl: `${pathname}?scroll=comments`
                 }
             });
             return;
@@ -234,7 +236,7 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         if (!user) {
             openLoginModal({
                 message: 'Login to like this comment',
-                pendingAction: { type: 'like_comment', id: commentId }
+                pendingAction: { type: 'like_comment', id: commentId, returnUrl: `${pathname}?scroll=comments` }
             });
             return;
         }
@@ -279,7 +281,14 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
                                 {t('Join the conversation', 'चर्चा में शामिल हों')}
                             </p>
                             <button
-                                onClick={() => openLoginModal({ message: t('Login to join the discussion', 'चर्चा में शामिल होने के लिए लॉगिन करें') })}
+                                onClick={() => openLoginModal({
+                                    message: t('Login to join the discussion', 'चर्चा में शामिल होने के लिए लॉगिन करें'),
+                                    pendingAction: {
+                                        type: 'comment',
+                                        id: blogId,
+                                        returnUrl: `${pathname}?scroll=comments`
+                                    }
+                                })}
                                 className="px-8 py-2.5 bg-royal-blue text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 transform"
                             >
                                 {t('Login to Comment', 'टिप्पणी करने के लिए लॉगिन करें')}
