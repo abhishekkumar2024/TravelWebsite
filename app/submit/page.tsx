@@ -240,9 +240,9 @@ export default function SubmitPage() {
     }, [wordCount]);
 
     // Upload image used inside the rich-text editor
-    const handleImageUpload = useCallback(async (file: File): Promise<string> => {
+    const handleImageUpload = useCallback(async (file: File, onProgress?: (percent: number) => void): Promise<string> => {
         try {
-            const downloadURL = await uploadBlogImage(file);
+            const downloadURL = await uploadBlogImage(file, onProgress);
 
             // Add to uploaded images list
             setUploadedImages((prev) => [...prev, downloadURL]);

@@ -22,7 +22,7 @@ interface TipTapEditorProps {
     content: string;
     onChange: (html: string) => void;
     placeholder?: string;
-    onImageUpload?: (file: File) => Promise<string>;
+    onImageUpload?: (file: File, onProgress?: (percent: number) => void) => Promise<string>;
 }
 
 export default function TipTapEditor({
@@ -33,10 +33,10 @@ export default function TipTapEditor({
 }: TipTapEditorProps) {
     const [showImageModal, setShowImageModal] = useState(false);
     const [selectedImageAttrs, setSelectedImageAttrs] = useState<any>(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
 
     // Ref to queue an image for alt-text editing after upload.
-    // ProseMirror handlers (handlePaste/handleDrop) are closures created once
-    // by useEditor, so we use a ref to communicate back to React safely.
     const pendingImageRef = useRef<{ src: string; alt: string } | null>(null);
 
     // Effect: when a pending image is set by a ProseMirror handler, open the modal
@@ -50,6 +50,10 @@ export default function TipTapEditor({
             }
         }, 200);
         return () => clearInterval(interval);
+    }, []);
+
+    const handleUploadProgress = useCallback((percent: number) => {
+        setUploadProgress(percent);
     }, []);
 
     const editor = useEditor({
@@ -72,7 +76,7 @@ export default function TipTapEditor({
             Superscript,
             TiptapImage.configure({
                 inline: false,
-                allowBase64: false, // IMPORTANT: base64 images make payloads enormous (5-15MB each) causing submit timeouts
+                allowBase64: false, // IMPORTANT: base64 images make payloads enormous
                 HTMLAttributes: {
                     class: 'editor-image rounded-xl max-w-full mx-auto my-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-royal-blue/50 transition-all',
                 },
@@ -98,7 +102,7 @@ export default function TipTapEditor({
             attributes: {
                 class: 'tiptap-editor prose prose-lg md:prose-xl max-w-none focus:outline-none min-h-[260px] p-4',
             },
-            // Intercept pasted images: upload to Cloudinary instead of embedding base64
+            // Intercept pasted images
             handlePaste: (view, event) => {
                 const items = event.clipboardData?.items;
                 if (!items || !onImageUpload) return false;
@@ -108,18 +112,23 @@ export default function TipTapEditor({
                         event.preventDefault();
                         const file = items[i].getAsFile();
                         if (file) {
+                            setIsUploading(true);
+                            setUploadProgress(0);
                             compressImage(file).then(compressedFile => {
-                                return onImageUpload(compressedFile);
+                                return onImageUpload(compressedFile, handleUploadProgress);
                             }).then((url) => {
                                 view.dispatch(
                                     view.state.tr.replaceSelectionWith(
                                         view.state.schema.nodes.image.create({ src: url, alt: '' })
                                     )
                                 );
-                                // Queue modal open via ref (safe from stale closure)
                                 pendingImageRef.current = { src: url, alt: '' };
                             }).catch((err) => {
                                 console.error('Paste image upload failed:', err);
+                                alert('Upload failed');
+                            }).finally(() => {
+                                setIsUploading(false);
+                                setUploadProgress(0);
                             });
                         }
                         return true;
@@ -127,7 +136,7 @@ export default function TipTapEditor({
                 }
                 return false;
             },
-            // Intercept dropped files: upload to Cloudinary
+            // Intercept dropped files
             handleDrop: (view, event) => {
                 const files = event.dataTransfer?.files;
                 if (!files || files.length === 0 || !onImageUpload) return false;
@@ -139,29 +148,45 @@ export default function TipTapEditor({
                 const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
                 mediaFiles.forEach((file, idx) => {
+                    setIsUploading(true);
+                    setUploadProgress(0);
+
                     if (file.type.startsWith('video/')) {
+                        if (file.size > 400 * 1024 * 1024) {
+                            alert('Video file is too large. Please upload videos under 400MB.');
+                            setIsUploading(false);
+                            return;
+                        }
                         // Video handling
-                        onImageUpload(file).then((url) => {
+                        onImageUpload(file, handleUploadProgress).then((url) => {
                             const node = view.state.schema.nodes.video.create({ src: url });
                             const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
                             view.dispatch(tr);
-                        }).catch(err => console.error('Video drop upload failed:', err));
+                        }).catch(err => {
+                            console.error('Video drop upload failed:', err);
+                            alert('Video upload failed');
+                        }).finally(() => {
+                            setIsUploading(false);
+                            setUploadProgress(0);
+                        });
                     } else {
                         // Image handling
                         compressImage(file).then(compressedFile => {
-                            return onImageUpload(compressedFile).then(url => ({ url, file }));
+                            return onImageUpload(compressedFile, handleUploadProgress).then(url => ({ url, file }));
                         }).then(({ url, file }) => {
                             const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
                             const node = view.state.schema.nodes.image.create({ src: url, alt: suggestedAlt });
                             const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
                             view.dispatch(tr);
 
-                            // Queue modal for first image only
                             if (idx === 0) {
                                 pendingImageRef.current = { src: url, alt: suggestedAlt };
                             }
                         }).catch((err) => {
                             console.error('Drop image upload failed:', err);
+                        }).finally(() => {
+                            setIsUploading(false);
+                            setUploadProgress(0);
                         });
                     }
                 });
@@ -170,7 +195,6 @@ export default function TipTapEditor({
             handleClick: (view, pos, event) => {
                 const target = event.target as HTMLElement;
 
-                // Check if clicked on an image
                 if (target.tagName === 'IMG') {
                     const imgElement = target as HTMLImageElement;
                     setSelectedImageAttrs({
@@ -187,18 +211,13 @@ export default function TipTapEditor({
         },
     });
 
-    // Sync editor content when content prop changes externally (e.g., draft restore)
+    // Content sync logic...
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
-            // Only update if content is different and not empty
-            // This prevents cursor position issues during normal typing
             const currentContent = editor.getHTML();
             const isCurrentEmpty = currentContent === '<p></p>' || currentContent === '';
             const isNewEmpty = content === '<p></p>' || content === '';
 
-            // Update if: 
-            // 1. New content has value and current is empty (draft restore)
-            // 2. New content is significantly different (external update)
             if ((isCurrentEmpty && !isNewEmpty) ||
                 (!isNewEmpty && content !== currentContent && content.length > currentContent.length + 50)) {
                 editor.commands.setContent(content);
@@ -206,12 +225,11 @@ export default function TipTapEditor({
         }
     }, [content, editor]);
 
-    // Handle keyboard shortcut for image editing
+    // Keyboard shortcuts...
     useEffect(() => {
         if (!editor) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Double-click or Enter on selected image
             if (e.key === 'Enter' && editor.isActive('image')) {
                 const { node } = editor.state.selection as any;
                 if (node?.type?.name === 'image') {
@@ -235,13 +253,13 @@ export default function TipTapEditor({
             if (!editor || !onImageUpload) return;
 
             try {
+                setIsUploading(true);
+                setUploadProgress(0);
                 const compressedFile = await compressImage(file);
-                const url = await onImageUpload(compressedFile);
-                // Clean filename for suggested alt: "IMG_2847" → "IMG 2847", "hawa-mahal-sunset.jpg" → "hawa mahal sunset"
+                const url = await onImageUpload(compressedFile, handleUploadProgress);
                 const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
                 editor.chain().focus().setImage({ src: url, alt: suggestedAlt }).run();
 
-                // Auto-open the edit modal so the author can add a proper alt text
                 setSelectedImageAttrs({
                     src: url,
                     alt: suggestedAlt,
@@ -252,9 +270,12 @@ export default function TipTapEditor({
             } catch (error) {
                 console.error('Failed to upload image:', error);
                 alert('Failed to upload image. Please try again.');
+            } finally {
+                setIsUploading(false);
+                setUploadProgress(0);
             }
         },
-        [editor, onImageUpload]
+        [editor, onImageUpload, handleUploadProgress]
     );
 
     const handleImageSelect = useCallback(() => {
@@ -277,23 +298,27 @@ export default function TipTapEditor({
         input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file && onImageUpload) {
-                if (file.size > 100 * 1024 * 1024) { // 100MB limit
-                    alert('Video file is too large. Please upload videos under 100MB.');
+                if (file.size > 400 * 1024 * 1024) { // 400MB limit
+                    alert('Video file is too large. Please upload videos under 400MB.');
                     return;
                 }
 
                 try {
-                    // Reuse the upload function since it now points to /auto/upload
-                    const url = await onImageUpload(file);
+                    setIsUploading(true);
+                    setUploadProgress(0);
+                    const url = await onImageUpload(file, handleUploadProgress);
                     editor?.chain().focus().setVideo({ src: url }).run();
                 } catch (error) {
                     console.error('Failed to upload video:', error);
                     alert('Failed to upload video.');
+                } finally {
+                    setIsUploading(false);
+                    setUploadProgress(0);
                 }
             }
         };
         input.click();
-    }, [editor, onImageUpload]);
+    }, [editor, onImageUpload, handleUploadProgress]);
 
     const addLink = useCallback(() => {
         if (!editor) return;
@@ -306,7 +331,6 @@ export default function TipTapEditor({
     const handleImageSave = useCallback((attrs: { alt: string; title: string; width: string; align: string }) => {
         if (!editor || !selectedImageAttrs) return;
 
-        // Find and update the image in the editor
         const { state } = editor;
         let imagePos: number | null = null;
 
@@ -319,7 +343,6 @@ export default function TipTapEditor({
         });
 
         if (imagePos !== null) {
-            // Create style string for width and alignment
             const alignClass = attrs.align === 'left' ? 'mr-auto ml-0' :
                 attrs.align === 'right' ? 'ml-auto mr-0' :
                     'mx-auto';
@@ -343,7 +366,6 @@ export default function TipTapEditor({
     const handleEditImageClick = useCallback(() => {
         if (!editor) return;
 
-        // Check if an image is currently selected
         const { node } = editor.state.selection as any;
         if (node?.type?.name === 'image') {
             setSelectedImageAttrs({
@@ -368,7 +390,28 @@ export default function TipTapEditor({
 
     return (
         <>
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden focus-within:border-desert-gold/80 focus-within:shadow-md transition-all">
+            <div className={`rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden focus-within:border-desert-gold/80 focus-within:shadow-md transition-all relative`}>
+                {/* Upload Progress Overlay */}
+                {isUploading && (
+                    <div className="absolute inset-0 z-50 bg-white/90 flex flex-col items-center justify-center animate-fade-in">
+                        <div className="w-64">
+                            <div className="flex justify-between mb-2">
+                                <span className="text-sm font-semibold text-royal-blue">Uploading Media...</span>
+                                <span className="text-sm font-bold text-gray-700">{uploadProgress}%</span>
+                            </div>
+                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                                <div
+                                    className="h-full bg-gradient-to-r from-royal-blue to-desert-gold transition-all duration-300 ease-out"
+                                    style={{ width: `${uploadProgress}%` }}
+                                ></div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                Please wait while we process your file.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
                     <div className="flex flex-col">
                         <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -395,7 +438,6 @@ export default function TipTapEditor({
                 </div>
             </div>
 
-            {/* Image Edit Modal */}
             {selectedImageAttrs && (
                 <ImageEditModal
                     isOpen={showImageModal}

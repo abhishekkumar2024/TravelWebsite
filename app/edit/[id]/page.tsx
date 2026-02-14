@@ -232,9 +232,9 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
         return Math.max(1, Math.round(wordCount / 200));
     }, [wordCount]);
 
-    const handleImageUpload = useCallback(async (file: File): Promise<string> => {
+    const handleImageUpload = useCallback(async (file: File, onProgress?: (percent: number) => void): Promise<string> => {
         try {
-            const downloadURL = await uploadBlogImage(file);
+            const downloadURL = await uploadBlogImage(file, onProgress);
             setUploadedImages((prev) => [...prev, downloadURL]);
             return downloadURL;
         } catch (error: any) {
