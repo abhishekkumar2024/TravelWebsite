@@ -1,5 +1,5 @@
 'use client';
-
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface LivePreviewProps {
@@ -17,11 +17,15 @@ export default function LivePreview({
     category,
     authorName,
 }: LivePreviewProps) {
-    const today = new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    });
+    const [today, setToday] = useState<string>('');
+
+    useEffect(() => {
+        setToday(new Date().toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        }));
+    }, []);
 
     return (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden h-full">
@@ -33,7 +37,7 @@ export default function LivePreview({
                 {/* Cover Image */}
                 <div className="h-48 relative bg-gray-200">
                     {coverImage ? (
-                        <Image src={coverImage} alt="Cover" fill className="object-cover" />
+                        <Image src={coverImage} alt={title || 'Blog cover image'} fill className="object-cover" />
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">

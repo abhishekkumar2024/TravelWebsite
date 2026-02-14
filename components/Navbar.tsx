@@ -124,7 +124,7 @@ export default function Navbar() {
                                     <div className="relative w-6 h-6 rounded-full overflow-hidden border border-white shadow-sm">
                                         <Image
                                             src={avatarUrl}
-                                            alt="Profile"
+                                            alt={user?.user_metadata?.name || 'Profile photo'}
                                             fill
                                             className="object-cover"
                                         />

@@ -103,18 +103,28 @@ export default function ImageEditModal({ isOpen, onClose, imageAttrs, onSave }: 
                     {/* Alt Text */}
                     <div>
                         <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                            Alt Text <span className="text-xs text-gray-400 font-normal">(for SEO & accessibility)</span>
+                            Alt Text <span className="text-xs text-red-400 font-normal">* Required for SEO</span>
                         </label>
                         <input
                             type="text"
                             value={alt}
                             onChange={(e) => setAlt(e.target.value)}
-                            placeholder="Describe the image for screen readers..."
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all text-sm"
+                            placeholder='e.g. "Amber Fort courtyard view during morning light"'
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-all text-sm ${!alt || alt === 'Uploaded image' || /^IMG[_ ]\d/i.test(alt)
+                                    ? 'border-amber-300 bg-amber-50/50 focus:border-amber-500'
+                                    : 'border-gray-200 focus:border-royal-blue'
+                                }`}
+                            autoFocus
                         />
-                        <p className="text-xs text-gray-400 mt-1">
-                            💡 Good alt text improves SEO and helps visually impaired users.
-                        </p>
+                        {(!alt || alt === 'Uploaded image' || /^IMG[_ ]\d/i.test(alt)) ? (
+                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                ⚠️ Descriptive alt text helps your images rank in Google Image Search.
+                            </p>
+                        ) : (
+                            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                ✅ Great! Format: [Place] + [Subject] + [Context]
+                            </p>
+                        )}
                     </div>
 
                     {/* Caption/Title */}
@@ -143,8 +153,8 @@ export default function ImageEditModal({ isOpen, onClose, imageAttrs, onSave }: 
                                     type="button"
                                     onClick={() => setWidth(preset.value)}
                                     className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${width === preset.value
-                                            ? 'bg-royal-blue text-white'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-royal-blue text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     {preset.label}
@@ -173,8 +183,8 @@ export default function ImageEditModal({ isOpen, onClose, imageAttrs, onSave }: 
                                     type="button"
                                     onClick={() => setAlign(option.value)}
                                     className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${align === option.value
-                                            ? 'bg-royal-blue text-white'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-royal-blue text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     <span>{option.icon}</span>

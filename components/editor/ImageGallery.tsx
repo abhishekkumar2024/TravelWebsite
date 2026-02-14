@@ -26,7 +26,7 @@ export default function ImageGallery({ images, onRemove, onInsert }: ImageGaller
                     >
                         <Image
                             src={url}
-                            alt={`Uploaded ${index + 1}`}
+                            alt={`Blog image ${index + 1}`}
                             fill
                             className="object-cover"
                         />

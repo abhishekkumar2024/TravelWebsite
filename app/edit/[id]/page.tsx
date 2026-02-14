@@ -259,7 +259,12 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     };
 
     const handleInsertImage = (url: string) => {
-        setContentEn((prev) => prev + `<img src="${url}" alt="Travel photo" />`);
+        const altText = prompt(
+            'Describe this image for SEO (e.g., "Hawa Mahal palace in Jaipur at sunset"):\n\nGood alt text helps Google rank your images in search results.',
+            titleEn || ''
+        );
+        const finalAlt = altText?.trim() || titleEn || destination || 'Rajasthan travel photo';
+        setContentEn((prev) => prev + `<img src="${url}" alt="${finalAlt.replace(/"/g, '&quot;')}" />`);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

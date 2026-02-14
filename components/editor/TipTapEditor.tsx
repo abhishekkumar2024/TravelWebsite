@@ -12,7 +12,7 @@ import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import Toolbar from './Toolbar';
 import ImageEditModal from './ImageEditModal';
 
@@ -31,6 +31,24 @@ export default function TipTapEditor({
 }: TipTapEditorProps) {
     const [showImageModal, setShowImageModal] = useState(false);
     const [selectedImageAttrs, setSelectedImageAttrs] = useState<any>(null);
+
+    // Ref to queue an image for alt-text editing after upload.
+    // ProseMirror handlers (handlePaste/handleDrop) are closures created once
+    // by useEditor, so we use a ref to communicate back to React safely.
+    const pendingImageRef = useRef<{ src: string; alt: string } | null>(null);
+
+    // Effect: when a pending image is set by a ProseMirror handler, open the modal
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (pendingImageRef.current) {
+                const { src, alt } = pendingImageRef.current;
+                pendingImageRef.current = null;
+                setSelectedImageAttrs({ src, alt, title: '', width: '100' });
+                setShowImageModal(true);
+            }
+        }, 200);
+        return () => clearInterval(interval);
+    }, []);
 
     const editor = useEditor({
         extensions: [
@@ -90,9 +108,11 @@ export default function TipTapEditor({
                             onImageUpload(file).then((url) => {
                                 view.dispatch(
                                     view.state.tr.replaceSelectionWith(
-                                        view.state.schema.nodes.image.create({ src: url, alt: 'Uploaded image' })
+                                        view.state.schema.nodes.image.create({ src: url, alt: '' })
                                     )
                                 );
+                                // Queue modal open via ref (safe from stale closure)
+                                pendingImageRef.current = { src: url, alt: '' };
                             }).catch((err) => {
                                 console.error('Paste image upload failed:', err);
                             });
@@ -113,11 +133,17 @@ export default function TipTapEditor({
                 event.preventDefault();
                 const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-                imageFiles.forEach((file) => {
+                imageFiles.forEach((file, idx) => {
                     onImageUpload(file).then((url) => {
-                        const node = view.state.schema.nodes.image.create({ src: url, alt: file.name.split('.')[0] });
+                        const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+                        const node = view.state.schema.nodes.image.create({ src: url, alt: suggestedAlt });
                         const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
                         view.dispatch(tr);
+
+                        // Queue modal open for first dropped image via ref
+                        if (idx === 0) {
+                            pendingImageRef.current = { src: url, alt: suggestedAlt };
+                        }
                     }).catch((err) => {
                         console.error('Drop image upload failed:', err);
                     });
@@ -193,7 +219,18 @@ export default function TipTapEditor({
 
             try {
                 const url = await onImageUpload(file);
-                editor.chain().focus().setImage({ src: url, alt: file.name.split('.')[0] }).run();
+                // Clean filename for suggested alt: "IMG_2847" → "IMG 2847", "hawa-mahal-sunset.jpg" → "hawa mahal sunset"
+                const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+                editor.chain().focus().setImage({ src: url, alt: suggestedAlt }).run();
+
+                // Auto-open the edit modal so the author can add a proper alt text
+                setSelectedImageAttrs({
+                    src: url,
+                    alt: suggestedAlt,
+                    title: '',
+                    width: '100',
+                });
+                setShowImageModal(true);
             } catch (error) {
                 console.error('Failed to upload image:', error);
                 alert('Failed to upload image. Please try again.');

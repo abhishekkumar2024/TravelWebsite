@@ -298,7 +298,7 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
                 ) : (
                     <form onSubmit={(e) => handlePostComment(e, newComment)} className="flex gap-4">
                         <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                            {user.user_metadata?.avatar_url && <Image src={user.user_metadata.avatar_url} alt="User" width={40} height={40} />}
+                            {user.user_metadata?.avatar_url && <Image src={user.user_metadata.avatar_url} alt={user.user_metadata?.name || user.email?.split('@')[0] || 'User avatar'} width={40} height={40} />}
                         </div>
                         <div className="flex-1">
                             <textarea

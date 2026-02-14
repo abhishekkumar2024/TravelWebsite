@@ -54,8 +54,8 @@ export default function ImageUploader({
             <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive
-                        ? 'border-desert-gold bg-desert-gold/5'
-                        : 'border-gray-300 hover:border-desert-gold'
+                    ? 'border-desert-gold bg-desert-gold/5'
+                    : 'border-gray-300 hover:border-desert-gold'
                     }`}
             >
                 <input {...getInputProps()} />
@@ -65,7 +65,7 @@ export default function ImageUploader({
                         <div className="relative h-40 w-full">
                             <Image
                                 src={currentImage}
-                                alt="Cover preview"
+                                alt={`${label} preview`}
                                 fill
                                 className="object-cover rounded-lg"
                             />
