@@ -31,9 +31,17 @@ function mapRowToBlog(row: any): BlogPost {
             '/images/jaipur-hawa-mahal.webp',
         images: row.images ?? [],
         author: row.authors ? {
+            id: row.authors.id,
             name: row.authors.name || row.author?.name || 'Traveler',
             avatar: row.authors.avatar_url || row.author?.avatar,
-            email: row.authors.email || row.author?.email
+            email: row.authors.email || row.author?.email,
+            bio: row.authors.bio,
+            slug: row.authors.slug,
+            website: row.authors.website,
+            twitter: row.authors.twitter,
+            instagram: row.authors.instagram,
+            linkedin: row.authors.linkedin,
+            youtube: row.authors.youtube
         } : (row.author ?? { name: 'Traveler' }),
         readTime: row.read_time ?? '5 min',
         publishedAt: row.published_at ? new Date(row.published_at).toISOString() : new Date(row.created_at ?? Date.now()).toISOString(),
@@ -51,7 +59,7 @@ function mapRowToBlog(row: any): BlogPost {
 export async function fetchPublishedBlogs(limit = 50): Promise<BlogPost[]> {
     const { data, error } = await supabase
         .from('blogs')
-        .select('*, authors(name, avatar_url, email)')
+        .select('*, authors(id, name, avatar_url, email, bio, slug, website, twitter, instagram, linkedin, youtube)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -71,7 +79,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
     // Build query based on whether it's a UUID or a slug
     let query = supabase
         .from('blogs')
-        .select('*, authors(name, avatar_url, email)');
+        .select('*, authors(id, name, avatar_url, email, bio, slug, website, twitter, instagram, linkedin, youtube)');
 
     if (isUuid) {
         query = query.or(`id.eq.${id},slug.eq.${id}`);
@@ -87,7 +95,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             if (isUuid) {
                 const { data: idData } = await supabase
                     .from('blogs')
-                    .select('*, authors(name, avatar_url, email)')
+                    .select('*, authors(id, name, avatar_url, email, bio, slug, website, twitter, instagram, linkedin, youtube)')
                     .eq('id', id)
                     .single();
                 if (idData) return mapRowToBlog(idData);
@@ -103,6 +111,27 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
     }
 
     return data ? mapRowToBlog(data) : null;
+}
+
+export async function fetchBlogsByAuthorSlug(slug: string): Promise<BlogPost[]> {
+    // First get author ID from slug
+    const { data: author, error: authorError } = await supabase
+        .from('authors')
+        .select('id')
+        .eq('slug', slug)
+        .single();
+
+    if (authorError || !author) return [];
+
+    const { data, error } = await supabase
+        .from('blogs')
+        .select('*, authors(id, name, avatar_url, email, bio, slug, website, twitter, instagram, linkedin, youtube)')
+        .eq('status', 'published')
+        .eq('author_id', author.id)
+        .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return data.map(mapRowToBlog);
 }
 
 export async function createBlog(payload: {
@@ -173,6 +202,8 @@ export async function createBlog(payload: {
                 // SEO Fields
                 meta_title: payload.meta_title || payload.title_en,
                 meta_description: payload.meta_description || payload.excerpt_en,
+                focus_keyword: payload.focus_keyword || null,
+                canonical_url: payload.canonical_url || null,
             })
             .select('id, slug')
             .single();

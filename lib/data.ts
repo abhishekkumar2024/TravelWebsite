@@ -1,8 +1,16 @@
 // Demo data for when Firebase is not configured
 export interface Author {
+    id: string;
     name: string;
     email?: string;
     avatar?: string;
+    bio?: string;
+    slug?: string;
+    website?: string;
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+    youtube?: string;
 }
 
 export interface BlogPost {
@@ -70,7 +78,7 @@ export const demoBlogs: BlogPost[] = [
         destination: 'jaipur',
         category: 'City Guide',
         coverImage: '/images/jaipur-hawa-mahal.webp',
-        author: { name: 'Rahul Sharma', avatar: 'https://i.pravatar.cc/150?img=11' },
+        author: { id: 'demo-1', name: 'Rahul Sharma', avatar: 'https://i.pravatar.cc/150?img=11' },
         readTime: '8 min',
         publishedAt: new Date('2024-01-15').toISOString(),
         status: 'approved',
@@ -90,7 +98,7 @@ export const demoBlogs: BlogPost[] = [
         destination: 'udaipur',
         category: 'Travel Story',
         coverImage: '/images/udaipur-lake-palace.webp',
-        author: { name: 'Priya Patel', avatar: 'https://i.pravatar.cc/150?img=5' },
+        author: { id: 'demo-2', name: 'Priya Patel', avatar: 'https://i.pravatar.cc/150?img=5' },
         readTime: '6 min',
         publishedAt: new Date('2024-01-10').toISOString(),
         status: 'approved',
@@ -110,7 +118,7 @@ export const demoBlogs: BlogPost[] = [
         destination: 'jaisalmer',
         category: 'Adventure',
         coverImage: '/images/jaisalmer-desert-safari.webp',
-        author: { name: 'Amit Kumar', avatar: 'https://i.pravatar.cc/150?img=12' },
+        author: { id: 'demo-3', name: 'Amit Kumar', avatar: 'https://i.pravatar.cc/150?img=12' },
         readTime: '10 min',
         publishedAt: new Date('2024-01-05').toISOString(),
         status: 'approved',
@@ -129,7 +137,7 @@ export const demoBlogs: BlogPost[] = [
         destination: 'jodhpur',
         category: 'City Guide',
         coverImage: '/images/jodhpur.webp',
-        author: { name: 'Sneha Agarwal', avatar: 'https://i.pravatar.cc/150?img=9' },
+        author: { id: 'demo-4', name: 'Sneha Agarwal', avatar: 'https://i.pravatar.cc/150?img=9' },
         readTime: '7 min',
         publishedAt: new Date('2024-01-01').toISOString(),
         status: 'approved',
@@ -148,7 +156,7 @@ export const demoBlogs: BlogPost[] = [
         destination: 'pushkar',
         category: 'Spiritual',
         coverImage: '/images/pushkar.webp',
-        author: { name: 'Vikram Singh', avatar: 'https://i.pravatar.cc/150?img=15' },
+        author: { id: 'demo-5', name: 'Vikram Singh', avatar: 'https://i.pravatar.cc/150?img=15' },
         readTime: '5 min',
         publishedAt: new Date('2023-12-28').toISOString(),
         status: 'approved',
@@ -167,7 +175,7 @@ export const demoBlogs: BlogPost[] = [
         destination: 'jaipur',
         category: 'Walking Tour',
         coverImage: '/images/jaipur-hawa-mahal.webp',
-        author: { name: 'Anita Mehra', avatar: 'https://i.pravatar.cc/150?img=20' },
+        author: { id: 'demo-6', name: 'Anita Mehra', avatar: 'https://i.pravatar.cc/150?img=20' },
         readTime: '6 min',
         publishedAt: new Date('2023-12-20').toISOString(),
         status: 'approved',

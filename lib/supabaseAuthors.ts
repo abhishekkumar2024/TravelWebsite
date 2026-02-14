@@ -1,5 +1,19 @@
 import { supabase } from './supabaseClient';
 
+export interface Author {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url?: string;
+    slug?: string; // used for /author/[slug] URL
+    bio?: string;
+    website?: string;
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+    youtube?: string;
+}
+
 export async function ensureAuthorExists(): Promise<string> {
     // ✅ Get ACTIVE session
     const { data: { session }, error: sessionError } =
@@ -41,6 +55,8 @@ export async function ensureAuthorExists(): Promise<string> {
                     || user.email?.split('@')[0]
                     || 'Traveler',
                 email: user.email,
+                // Default slug (handle potential dupes in UI logic later or leave null for now)
+                slug: user.user_metadata?.preferred_username || null
             });
 
         if (insertError) {
@@ -61,7 +77,7 @@ export async function ensureAuthorExists(): Promise<string> {
     return user.id;
 }
 
-export async function getAuthorProfile(userId: string) {
+export async function getAuthorProfile(userId: string): Promise<Author | null> {
     const { data, error } = await supabase
         .from('authors')
         .select('*')
@@ -75,7 +91,26 @@ export async function getAuthorProfile(userId: string) {
     return data;
 }
 
-export async function updateAuthorProfile(userId: string, updates: { name?: string; avatar_url?: string }) {
+export async function getAuthorBySlug(slug: string): Promise<Author | null> {
+    const { data, error } = await supabase
+        .from('authors')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+    if (error) {
+        // Not specifically logging not found as error since it might be valid lookup check
+        return null;
+    }
+    return data;
+}
+
+export async function updateAuthorProfile(userId: string, updates: Partial<Author>) {
+    // Basic validation for slug to avoid spaces/invalid chars if provided
+    if (updates.slug) {
+        updates.slug = updates.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+
     const { data, error } = await supabase
         .from('authors')
         .update(updates)
@@ -89,8 +124,6 @@ export async function updateAuthorProfile(userId: string, updates: { name?: stri
 
     if (!data || data.length === 0) {
         console.error('[supabaseAuthors] updateAuthorProfile: No rows updated. Check RLS policies.');
-        // Even if no rows returned, the update might have happened but we can't see it? 
-        // Usually it means no row matched or RLS blocked it.
         return { success: false, error: 'Update failed or permission denied' };
     }
 

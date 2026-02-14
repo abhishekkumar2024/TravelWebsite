@@ -5,6 +5,7 @@ import { getAuthorProfile, updateAuthorProfile } from '@/lib/supabaseAuthors';
 import { uploadAvatar } from '@/lib/upload';
 import { useLanguage } from './LanguageProvider';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface ProfileHeaderProps {
     userId: string;
@@ -146,6 +147,12 @@ export default function ProfileHeader({ userId, email, onProfileUpdate }: Profil
                 <p className="text-gray-500">{email}</p>
                 <div className="mt-2 flex gap-2 justify-center md:justify-start text-sm text-gray-400">
                     <span>{t('Member since', 'सदस्यता तिथि')} {new Date(profile.created_at || Date.now()).toLocaleDateString()}</span>
+                </div>
+                <div className="mt-4 flex gap-4 justify-center md:justify-start">
+                    <Link href="/profile" className="px-4 py-2 bg-royal-blue text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        Edit Full Profile & SEO
+                    </Link>
                 </div>
             </div>
         </div>

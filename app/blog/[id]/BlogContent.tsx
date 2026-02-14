@@ -14,6 +14,10 @@ import BackToTop from '@/components/BackToTop';
 import TableOfContents, { extractHeadings, injectHeadingIds } from '@/components/TableOfContents';
 
 // Lazy load heavy below-the-fold components
+const AuthorBox = dynamic(() => import('./AuthorBox'), {
+    loading: () => <div className="animate-pulse h-48 bg-gray-50 rounded-2xl mb-12"></div>
+});
+
 const CommentSection = dynamic(() => import('@/components/CommentSection'), {
     loading: () => <div className="mt-12 pt-8 border-t border-gray-100 animate-pulse"><div className="h-64 bg-gray-100 rounded-2xl"></div></div>,
     ssr: false, // Don't render on server since it requires client-side auth
@@ -173,6 +177,27 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                         </div>
                     </div>
 
+                    {/* Focus Keyword Tags — placed early for maximum SEO impact */}
+                    {blog.focus_keyword && (() => {
+                        const keywords = blog.focus_keyword.split(',').map((k: string) => k.trim()).filter(Boolean);
+                        if (keywords.length === 0) return null;
+                        return (
+                            <div className="flex flex-wrap items-center gap-2 mb-6">
+                                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                {keywords.map((keyword: string, idx: number) => (
+                                    <span
+                                        key={idx}
+                                        className="inline-block px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 text-royal-blue text-xs font-medium rounded-full border border-blue-100/80 hover:border-blue-200 hover:shadow-sm transition-all cursor-default"
+                                    >
+                                        {keyword}
+                                    </span>
+                                ))}
+                            </div>
+                        );
+                    })()}
+
                     {/* Table of Contents — helps Google show jump links in search results */}
                     <TableOfContents headings={headings} className="mb-8" />
 
@@ -181,6 +206,10 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                         className="prose prose-lg max-w-none"
                         dangerouslySetInnerHTML={{ __html: content }}
                     />
+
+                    {/* Author Box — Rich E-E-A-T signals */}
+                    <AuthorBox author={blog.author} />
+
 
                     {/* Affiliate Products */}
                     <div className="mt-12 pt-8 border-t border-gray-100">
@@ -224,7 +253,7 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
 
             {/* Premium Back to Top Button */}
             <BackToTop />
-        </article>
+        </article >
     );
 }
 
