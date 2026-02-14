@@ -38,6 +38,30 @@ interface BlogContentProps {
     relatedBlogs?: any[];
 }
 
+/**
+ * Processes blog HTML content to hide hashtag blocks and keyword dumps
+ * from users while keeping them in the DOM for SEO crawlers.
+ * Uses visually-hidden technique: content is invisible but still parsed by crawlers.
+ */
+function processContentForDisplay(html: string): string {
+    if (!html) return html;
+
+    // Pattern 1: Hide paragraphs that are primarily hashtag strings
+    // e.g., <p>#JaisalmerTourism #TheGoldenCity #RajasthanDiaries ...</p>
+    const hashtagBlockRegex = /(<p[^>]*>)(\s*(?:[^<]*#\w+[^<]*){3,})(<\/p>)/gi;
+    html = html.replace(hashtagBlockRegex, (match, openTag, content, closeTag) => {
+        // Only hide if the paragraph is mostly hashtags (more than 50% of words are hashtags)
+        const words = content.trim().split(/\s+/);
+        const hashtagCount = words.filter((w: string) => w.startsWith('#')).length;
+        if (hashtagCount >= 3 || hashtagCount / words.length > 0.4) {
+            return `${openTag}<span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true">${content}</span>${closeTag}`;
+        }
+        return match;
+    });
+
+    return html;
+}
+
 export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProps) {
     const { lang, t, mounted } = useLanguage();
     const searchParams = useSearchParams();
@@ -61,7 +85,9 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
 
     // Extract headings and inject anchor IDs for Table of Contents
     const headings = useMemo(() => extractHeadings(rawContent), [rawContent]);
-    const content = useMemo(() => injectHeadingIds(rawContent, headings), [rawContent, headings]);
+    const contentWithIds = useMemo(() => injectHeadingIds(rawContent, headings), [rawContent, headings]);
+    // Process content to hide hashtag blocks and keyword dumps from users
+    const content = useMemo(() => processContentForDisplay(contentWithIds), [contentWithIds]);
 
     const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
     const date = new Date(blog.publishedAt).toLocaleDateString(
@@ -177,22 +203,31 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                         </div>
                     </div>
 
-                    {/* Focus Keyword Tags — placed early for maximum SEO impact */}
+                    {/* Focus Keywords — SEO-only, visually hidden from users.
+                        Keywords are already in meta tags + structured data for full SEO coverage.
+                        This hidden section provides additional in-page signals for crawlers. */}
                     {blog.focus_keyword && (() => {
                         const keywords = blog.focus_keyword.split(',').map((k: string) => k.trim()).filter(Boolean);
                         if (keywords.length === 0) return null;
                         return (
-                            <div className="flex flex-wrap items-center gap-2 mb-6">
-                                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    width: '1px',
+                                    height: '1px',
+                                    padding: 0,
+                                    margin: '-1px',
+                                    overflow: 'hidden',
+                                    clip: 'rect(0, 0, 0, 0)',
+                                    whiteSpace: 'nowrap',
+                                    border: 0,
+                                }}
+                                role="navigation"
+                                aria-label="Blog topics"
+                            >
+                                <span>Topics: </span>
                                 {keywords.map((keyword: string, idx: number) => (
-                                    <span
-                                        key={idx}
-                                        className="inline-block px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 text-royal-blue text-xs font-medium rounded-full border border-blue-100/80 hover:border-blue-200 hover:shadow-sm transition-all cursor-default"
-                                    >
-                                        {keyword}
-                                    </span>
+                                    <span key={idx}>{keyword}{idx < keywords.length - 1 ? ', ' : ''}</span>
                                 ))}
                             </div>
                         );
