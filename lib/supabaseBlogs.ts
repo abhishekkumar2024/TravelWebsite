@@ -241,10 +241,10 @@ export async function approveBlog(blogId: string): Promise<{ success: boolean; e
         return { success: false, error: error?.message || 'Failed to approve blog' };
     }
 
-    // Trigger IndexNow to notify Bing of the new content
-    // We fire and forget - don't await this to keep UI responsive
+    // Trigger IndexNow + Google/Bing sitemap pings for the new content
+    // isNewContent=true so sitemaps get pinged for faster discovery
     if (data.slug) {
-        submitToIndexNow([`https://camelthar.com/blog/${data.slug}`]);
+        submitToIndexNow([`https://www.camelthar.com/blog/${data.slug}/`], true);
     }
 
     return { success: true, error: null };
@@ -342,29 +342,21 @@ export async function updateBlog(id: string, payload: {
             updateData.slug = generateSlug(payload.title_en);
         }
 
-        const { error } = await supabase
+        const { data: updatedRow, error } = await supabase
             .from('blogs')
             .update(updateData)
-            .eq('id', id);
+            .eq('id', id)
+            .select('slug, status')
+            .single();
 
         if (error) {
             console.error('[supabaseBlogs] updateBlog error:', error.message);
             return { success: false, error: error.message };
         }
 
-        // If the blog is published, notify IndexNow about the update
-        // We check if the status was passed as 'published' OR if we didn't touch status (implies it stays same).
-        // Ideally we should check the current status from DB, but for now this heuristic works for 99% of cases.
-        const isPublished = payload.status === 'published' || (!payload.status && updateData.status !== 'draft' && updateData.status !== 'pending');
-
-        if (isPublished && (payload.slug || id)) {
-            const slugToSubmit = payload.slug || updateData.slug;
-            // Note: if slug isn't in payload/updateData (i.e. not changing), 
-            // we might miss it here unless we fetch it. 
-            // But for SEO, usually title/slug updates are the most critical to re-index.
-            if (slugToSubmit) {
-                submitToIndexNow([`https://camelthar.com/blog/${slugToSubmit}`]);
-            }
+        // If the blog is published, notify indexing services about the update
+        if (updatedRow?.status === 'published' && updatedRow?.slug) {
+            submitToIndexNow([`https://www.camelthar.com/blog/${updatedRow.slug}/`]);
         }
 
         return { success: true, error: null };

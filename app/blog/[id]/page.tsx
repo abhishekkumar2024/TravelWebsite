@@ -5,7 +5,27 @@ import { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
 import { demoBlogs, BlogPost } from '@/lib/data';
 import { fetchBlogById, fetchRelatedBlogs } from '@/lib/supabaseBlogs';
+import { supabase } from '@/lib/supabaseClient';
 import BlogContent from './BlogContent';
+
+// Pre-generate all published blog pages at build time for faster indexing
+export async function generateStaticParams() {
+    const { data: blogs } = await supabase
+        .from('blogs')
+        .select('slug, id')
+        .eq('status', 'published');
+
+    const params = (blogs || []).map((blog) => ({
+        id: blog.slug || blog.id,
+    }));
+
+    // Also include demo blog IDs
+    const demoParams = demoBlogs.map((blog) => ({
+        id: blog.id,
+    }));
+
+    return [...params, ...demoParams];
+}
 
 // Enable ISR - cache pages for 60 seconds, then revalidate in background
 // This dramatically improves TTFB for repeat visitors
@@ -80,7 +100,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             siteName: 'CamelThar',
             locale: 'en_US',
             type: 'article',
-            publishedTime: blog.created_at,
+            publishedTime: blog.publishedAt || blog.created_at,
+            modifiedTime: blog.updated_at || blog.created_at,
             authors: blog.author?.name ? [blog.author.name] : ['CamelThar Team'],
             images: [
                 {
@@ -96,7 +117,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             title: blog.meta_title || blog.title_en,
             description: blog.meta_description || blog.excerpt_en,
             images: [blog.coverImage],
-            creator: '@CamelThar', // Replace with actual handle if available
+            creator: '@CamelThar',
         },
     };
 }
@@ -135,14 +156,13 @@ export default async function BlogPage({ params }: PageProps) {
         author: {
             '@type': 'Person',
             name: blog.author?.name || 'CamelThar Explorer',
-            url: `https://www.camelthar.com/author/${blog.author?.name?.toLowerCase().replace(/\s+/g, '-')}/` // hypothetical author page
         },
         publisher: {
             '@type': 'Organization',
             name: 'CamelThar',
             logo: {
                 '@type': 'ImageObject',
-                url: 'https://www.camelthar.com/logo.png' // Ensure you have a logo at this path or update it
+                url: 'https://www.camelthar.com/camelthar_logo.png'
             }
         },
         mainEntityOfPage: {

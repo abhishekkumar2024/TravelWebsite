@@ -39,6 +39,33 @@ export default async function BlogsPage() {
     const blogs = await fetchPublishedBlogs();
     const destinations = await fetchAvailableDestinations();
 
+    // ItemList structured data — helps Google understand this is a blog index
+    const itemListJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Travel Blogs | CamelThar',
+        description: 'Read the latest travel stories, guides, and tips from Rajasthan.',
+        url: 'https://www.camelthar.com/blogs/',
+        mainEntity: {
+            '@type': 'ItemList',
+            numberOfItems: blogs.length,
+            itemListElement: blogs.slice(0, 30).map((blog, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                name: blog.title_en,
+                url: `https://www.camelthar.com/blog/${blog.slug || blog.id}/`,
+            })),
+        },
+    };
+
     // 2. Pass data to the Client Component
-    return <BlogsClient initialBlogs={blogs} destinations={destinations} />;
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+            />
+            <BlogsClient initialBlogs={blogs} destinations={destinations} />
+        </>
+    );
 }
