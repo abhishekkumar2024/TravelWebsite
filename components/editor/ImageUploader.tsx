@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Image from 'next/image';
+import { compressImage } from '@/lib/compressImage';
 
 interface ImageUploaderProps {
     onUpload: (file: File) => Promise<string>;
@@ -23,12 +24,15 @@ export default function ImageUploader({
             if (!file) return;
 
             try {
-                // Show local preview immediately
+                // Show local preview immediately using the original file
                 const localUrl = URL.createObjectURL(file);
                 onImageChange(localUrl);
 
-                // Upload to server
-                const uploadedUrl = await onUpload(file);
+                // Compress image before upload
+                const compressedFile = await compressImage(file);
+
+                // Upload the compressed file
+                const uploadedUrl = await onUpload(compressedFile);
                 onImageChange(uploadedUrl);
             } catch (error) {
                 console.error('Upload failed:', error);
@@ -45,7 +49,7 @@ export default function ImageUploader({
             'image/*': ['.png', '.jpg', '.jpeg', '.webp'],
         },
         maxFiles: 1,
-        maxSize: 5 * 1024 * 1024, // 5MB
+        maxSize: 50 * 1024 * 1024, // 50MB limit for selection
     });
 
     return (
@@ -99,7 +103,7 @@ export default function ImageUploader({
                         <p className="text-gray-500">
                             {isDragActive ? 'Drop the image here...' : 'Drag & drop or click to upload'}
                         </p>
-                        <p className="text-gray-400 text-sm mt-1">PNG, JPG up to 5MB</p>
+                        <p className="text-gray-400 text-sm mt-1">PNG, JPG up to 50MB</p>
                     </>
                 )}
             </div>

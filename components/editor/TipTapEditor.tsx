@@ -15,6 +15,7 @@ import Superscript from '@tiptap/extension-superscript';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import Toolbar from './Toolbar';
 import ImageEditModal from './ImageEditModal';
+import { compressImage } from '@/lib/compressImage';
 
 interface TipTapEditorProps {
     content: string;
@@ -105,7 +106,9 @@ export default function TipTapEditor({
                         event.preventDefault();
                         const file = items[i].getAsFile();
                         if (file) {
-                            onImageUpload(file).then((url) => {
+                            compressImage(file).then(compressedFile => {
+                                return onImageUpload(compressedFile);
+                            }).then((url) => {
                                 view.dispatch(
                                     view.state.tr.replaceSelectionWith(
                                         view.state.schema.nodes.image.create({ src: url, alt: '' })
@@ -134,7 +137,9 @@ export default function TipTapEditor({
                 const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
                 imageFiles.forEach((file, idx) => {
-                    onImageUpload(file).then((url) => {
+                    compressImage(file).then(compressedFile => {
+                        return onImageUpload(compressedFile).then(url => ({ url, file }));
+                    }).then(({ url, file }) => {
                         const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
                         const node = view.state.schema.nodes.image.create({ src: url, alt: suggestedAlt });
                         const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
@@ -218,7 +223,8 @@ export default function TipTapEditor({
             if (!editor || !onImageUpload) return;
 
             try {
-                const url = await onImageUpload(file);
+                const compressedFile = await compressImage(file);
+                const url = await onImageUpload(compressedFile);
                 // Clean filename for suggested alt: "IMG_2847" → "IMG 2847", "hawa-mahal-sunset.jpg" → "hawa mahal sunset"
                 const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
                 editor.chain().focus().setImage({ src: url, alt: suggestedAlt }).run();
