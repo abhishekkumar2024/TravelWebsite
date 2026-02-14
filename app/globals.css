@@ -64,6 +64,7 @@ body.hindi {
     margin-top: 2rem;
     margin-bottom: 1rem;
     color: #1E3A5F;
+    scroll-margin-top: 100px; /* Account for fixed navbar on anchor scroll */
 }
 
 .prose h3 {
@@ -72,6 +73,7 @@ body.hindi {
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
     color: #1E3A5F;
+    scroll-margin-top: 100px; /* Account for fixed navbar on anchor scroll */
 }
 
 .prose p {

@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
@@ -11,6 +11,7 @@ import CommentButton from '@/components/CommentButton';
 import ShareButton from '@/components/ShareButton';
 import type { BlogPost } from '@/lib/data';
 import BackToTop from '@/components/BackToTop';
+import TableOfContents, { extractHeadings, injectHeadingIds } from '@/components/TableOfContents';
 
 // Lazy load heavy below-the-fold components
 const CommentSection = dynamic(() => import('@/components/CommentSection'), {
@@ -52,7 +53,11 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
 
     // Use English content for SSR, then switch to lang-based on client
     const title = mounted && lang === 'hi' ? blog.title_hi : blog.title_en;
-    const content = mounted && lang === 'hi' ? blog.content_hi : blog.content_en;
+    const rawContent = mounted && lang === 'hi' ? blog.content_hi : blog.content_en;
+
+    // Extract headings and inject anchor IDs for Table of Contents
+    const headings = useMemo(() => extractHeadings(rawContent), [rawContent]);
+    const content = useMemo(() => injectHeadingIds(rawContent, headings), [rawContent, headings]);
 
     const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
     const date = new Date(blog.publishedAt).toLocaleDateString(
@@ -167,6 +172,9 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                             <LikeButton blogId={blog.id} />
                         </div>
                     </div>
+
+                    {/* Table of Contents — helps Google show jump links in search results */}
+                    <TableOfContents headings={headings} className="mb-8" />
 
                     {/* Body - Render HTML content */}
                     <div
