@@ -16,6 +16,7 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import Toolbar from './Toolbar';
 import ImageEditModal from './ImageEditModal';
 import { compressImage } from '@/lib/compressImage';
+import Video from './VideoExtension';
 
 interface TipTapEditorProps {
     content: string;
@@ -86,6 +87,7 @@ export default function TipTapEditor({
                 placeholder,
                 emptyEditorClass: 'is-editor-empty',
             }),
+            Video,
         ],
         content,
         immediatelyRender: false,
@@ -125,33 +127,43 @@ export default function TipTapEditor({
                 }
                 return false;
             },
-            // Intercept dropped images: upload to Cloudinary instead of embedding base64
+            // Intercept dropped files: upload to Cloudinary
             handleDrop: (view, event) => {
                 const files = event.dataTransfer?.files;
                 if (!files || files.length === 0 || !onImageUpload) return false;
 
-                const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-                if (imageFiles.length === 0) return false;
+                const mediaFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
+                if (mediaFiles.length === 0) return false;
 
                 event.preventDefault();
                 const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-                imageFiles.forEach((file, idx) => {
-                    compressImage(file).then(compressedFile => {
-                        return onImageUpload(compressedFile).then(url => ({ url, file }));
-                    }).then(({ url, file }) => {
-                        const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
-                        const node = view.state.schema.nodes.image.create({ src: url, alt: suggestedAlt });
-                        const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
-                        view.dispatch(tr);
+                mediaFiles.forEach((file, idx) => {
+                    if (file.type.startsWith('video/')) {
+                        // Video handling
+                        onImageUpload(file).then((url) => {
+                            const node = view.state.schema.nodes.video.create({ src: url });
+                            const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
+                            view.dispatch(tr);
+                        }).catch(err => console.error('Video drop upload failed:', err));
+                    } else {
+                        // Image handling
+                        compressImage(file).then(compressedFile => {
+                            return onImageUpload(compressedFile).then(url => ({ url, file }));
+                        }).then(({ url, file }) => {
+                            const suggestedAlt = file.name.split('.')[0].replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+                            const node = view.state.schema.nodes.image.create({ src: url, alt: suggestedAlt });
+                            const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
+                            view.dispatch(tr);
 
-                        // Queue modal open for first dropped image via ref
-                        if (idx === 0) {
-                            pendingImageRef.current = { src: url, alt: suggestedAlt };
-                        }
-                    }).catch((err) => {
-                        console.error('Drop image upload failed:', err);
-                    });
+                            // Queue modal for first image only
+                            if (idx === 0) {
+                                pendingImageRef.current = { src: url, alt: suggestedAlt };
+                            }
+                        }).catch((err) => {
+                            console.error('Drop image upload failed:', err);
+                        });
+                    }
                 });
                 return true;
             },
@@ -258,6 +270,31 @@ export default function TipTapEditor({
         input.click();
     }, [addImage]);
 
+    const handleVideoSelect = useCallback(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file && onImageUpload) {
+                if (file.size > 100 * 1024 * 1024) { // 100MB limit
+                    alert('Video file is too large. Please upload videos under 100MB.');
+                    return;
+                }
+
+                try {
+                    // Reuse the upload function since it now points to /auto/upload
+                    const url = await onImageUpload(file);
+                    editor?.chain().focus().setVideo({ src: url }).run();
+                } catch (error) {
+                    console.error('Failed to upload video:', error);
+                    alert('Failed to upload video.');
+                }
+            }
+        };
+        input.click();
+    }, [editor, onImageUpload]);
+
     const addLink = useCallback(() => {
         if (!editor) return;
         const url = window.prompt('Enter URL:');
@@ -347,6 +384,7 @@ export default function TipTapEditor({
                     <Toolbar
                         editor={editor}
                         onImageClick={handleImageSelect}
+                        onVideoClick={handleVideoSelect}
                         onLinkClick={addLink}
                         onEditImageClick={handleEditImageClick}
                     />
