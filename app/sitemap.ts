@@ -16,16 +16,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const blogEntries = (blogs || []).map((blog) => ({
         url: `${baseUrl}/blog/${blog.slug || blog.id}/`,
         lastModified: new Date(blog.updated_at || Date.now()),
-        changeFrequency: 'weekly' as const,
-        priority: 0.8,
+        changeFrequency: 'daily' as const,
+        priority: 0.9,
     }))
 
     // 2. Add individual destination guides
     const destinationEntries = demoDestinations.map((dest) => ({
         url: `${baseUrl}/destinations/${dest.id}/`,
         lastModified: new Date(),
-        changeFrequency: 'monthly' as const,
-        priority: 0.7,
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
     }))
 
     return [
