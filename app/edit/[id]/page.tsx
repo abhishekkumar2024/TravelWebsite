@@ -9,7 +9,7 @@ import TipTapEditor from '@/components/editor/TipTapEditor';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal
-import { uploadBlogImage, uploadCoverImage } from '@/lib/upload';
+import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
 import { fetchBlogById, updateBlog } from '@/lib/supabaseBlogs';
 import { supabase } from '@/lib/supabaseClient';
 import { isAdmin } from '@/lib/admin';
@@ -298,6 +298,23 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
             }
 
+            // Filter uploadedImages to keep only those used in content or cover
+            const allContent = cleanContentEn + (cleanContentHi || '');
+            const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
+            const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
+
+            // Cleanup orphans from Cloudinary
+            if (orphanedImages.length > 0) {
+                console.log('Cleaning up orphaned images from edit:', orphanedImages.length);
+                orphanedImages.forEach(url => {
+                    const publicId = extractPublicIdFromUrl(url);
+                    if (publicId) {
+                        const type = url.includes('/video/') ? 'video' : 'image';
+                        deleteMedia(publicId, type);
+                    }
+                });
+            }
+
             const result = await updateBlog(params.id, {
                 title_en: titleEn,
                 title_hi: titleHi,
@@ -308,7 +325,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 destination,
                 category,
                 coverImage: coverImage || undefined,
-                images: uploadedImages,
+                images: usedImages,
                 // Keep existing status unless admin changes it? 
                 // Usually editing a published blog might require re-approval or stay published.
                 // For simplicity, we keep status as is, unless user explicitly requests "Submit for Review".

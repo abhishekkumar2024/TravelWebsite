@@ -9,7 +9,7 @@ import TipTapEditor from '@/components/editor/TipTapEditor';
 import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal import as we are using redirect now
-import { uploadBlogImage, uploadCoverImage } from '@/lib/upload';
+import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
 import { createBlog } from '@/lib/supabaseBlogs';
 import { supabase } from '@/lib/supabaseClient';
 import { ensureAuthorExists } from '@/lib/supabaseAuthors';
@@ -334,6 +334,24 @@ export default function SubmitPage() {
                 cleanContentEn = contentEn.replace(base64Pattern, '<!-- image removed: please use upload button -->');
                 cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
             }
+
+            // Filter uploadedImages to keep only those used in content or cover
+            const allContent = cleanContentEn + (cleanContentHi || '');
+            const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
+            const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
+
+            // Cleanup orphans from Cloudinary
+            if (orphanedImages.length > 0) {
+                console.log('Cleaning up orphaned images:', orphanedImages.length);
+                orphanedImages.forEach(url => {
+                    const publicId = extractPublicIdFromUrl(url);
+                    if (publicId) {
+                        const type = url.includes('/video/') ? 'video' : 'image';
+                        deleteMedia(publicId, type);
+                    }
+                });
+            }
+
             const blogData = {
                 author: {
                     name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler',
@@ -348,7 +366,7 @@ export default function SubmitPage() {
                 content_en: cleanContentEn,
                 content_hi: cleanContentHi,
                 coverImage: coverImage || '/images/jaipur-hawa-mahal.webp',
-                images: uploadedImages,
+                images: usedImages,
                 status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
                 // SEO Fields
                 meta_title: metaTitle || titleEn,

@@ -132,3 +132,59 @@ export async function uploadAvatar(file: File): Promise<string> {
 
     return data.secure_url;
 }
+
+export function extractPublicIdFromUrl(url: string): string | null {
+    try {
+        // Example: https://res.cloudinary.com/cloud/image/upload/v12345/blog-images/pic.jpg
+        // Or: https://res.cloudinary.com/cloud/image/upload/f_auto,q_auto/v12345/blog-images/pic.jpg
+        const splitUrl = url.split('/upload/');
+        if (splitUrl.length < 2) return null;
+
+        const path = splitUrl[1];
+        // Remove version if present (v12345/)
+        const withoutVersion = path.replace(/^v\d+\//, '');
+        // Remove transformations if present (f_auto,q_auto/)
+        // Simple heuristic: if it contains comma or starts with w_, h_, f_, q_, c_, g_
+        const parts = withoutVersion.split('/');
+        if (parts[0].includes(',') || /^[whfcqg]_/.test(parts[0])) {
+            parts.shift(); // Remove transformation part
+        }
+
+        // Remove version again? Sometimes transformations are followed by version
+        let cleanPath = parts.join('/');
+        if (cleanPath.startsWith('v') && /^\d+\//.test(cleanPath.substring(1))) {
+            cleanPath = cleanPath.replace(/^v\d+\//, '');
+        }
+
+        // Remove extension
+        const lastDotIndex = cleanPath.lastIndexOf('.');
+        if (lastDotIndex === -1) return cleanPath;
+        return cleanPath.substring(0, lastDotIndex);
+    } catch (error) {
+        console.error('Error extracting public ID:', error);
+        return null;
+    }
+}
+
+export async function deleteMedia(publicId: string, resourceType: 'video' | 'image'): Promise<boolean> {
+    try {
+        const response = await fetch('/api/media/delete', {
+            method: 'POST',
+            keepalive: true,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ publicId, resourceType }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to delete media:', await response.text());
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting media:', error);
+        return false;
+    }
+}
