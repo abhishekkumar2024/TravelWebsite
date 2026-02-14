@@ -267,13 +267,39 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
         setSubmitting(true);
 
         try {
+            // Safety: strip any base64 images from content before updating
+            // Base64 images can be 5-15 MB each, causing massive payloads and timeouts
+            let cleanContentEn = contentEn;
+            let cleanContentHi = contentHi || contentEn;
+
+            const base64Pattern = /(<img[^>]*src=["']data:image\/[^"']+["'][^>]*>)/gi;
+            const base64MatchesEn = contentEn.match(base64Pattern);
+            const base64MatchesHi = cleanContentHi.match(base64Pattern);
+
+            if (base64MatchesEn || base64MatchesHi) {
+                const count = (base64MatchesEn?.length || 0) + (base64MatchesHi?.length || 0);
+                const proceed = confirm(
+                    `⚠️ Found ${count} embedded image(s) in your content that could cause upload to fail or take very long.\n\n` +
+                    `These images will be removed. Please use the image upload button (📷) in the toolbar to add images instead.\n\n` +
+                    `Click OK to continue updating without embedded images, or Cancel to go back and fix them.`
+                );
+
+                if (!proceed) {
+                    setSubmitting(false);
+                    return;
+                }
+
+                cleanContentEn = contentEn.replace(base64Pattern, '<!-- image removed: please use upload button -->');
+                cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
+            }
+
             const result = await updateBlog(params.id, {
                 title_en: titleEn,
                 title_hi: titleHi,
                 excerpt_en: excerptEn,
                 excerpt_hi: excerptHi,
-                content_en: contentEn,
-                content_hi: contentHi,
+                content_en: cleanContentEn,
+                content_hi: cleanContentHi,
                 destination,
                 category,
                 coverImage: coverImage || undefined,

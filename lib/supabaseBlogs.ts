@@ -1,6 +1,5 @@
 import { supabase } from './supabaseClient';
 import { BlogPost } from './data';
-import { ensureAuthorExists } from './supabaseAuthors';
 import { submitToIndexNow } from './indexnow';
 
 /**
@@ -125,29 +124,32 @@ export async function createBlog(payload: {
     focus_keyword?: string;
     canonical_url?: string;
     slug?: string;
+    // Performance: caller can pass authorId if already verified (avoids redundant ensureAuthorExists)
+    authorId?: string;
 }): Promise<{ id: string | null; slug: string | null; error: string | null }> {
     try {
-        // Ensure author exists in the 'authors' table before inserting the blog
-        // This solves the "violates foreign key constraint" error
-        const authorId = await ensureAuthorExists();
+        // Use provided authorId or fall back to lightweight session check
+        let authorId = payload.authorId;
 
         if (!authorId) {
-            return { id: null, slug: null, error: 'Could not verify author information' };
+            // Lightweight: just get current session user ID instead of full ensureAuthorExists()
+            // The caller (submit page) should have already called ensureAuthorExists() on login
+            const { data: { session } } = await supabase.auth.getSession();
+            authorId = session?.user?.id;
+
+            if (!authorId) {
+                // Last resort: try getUser() 
+                const { data: { user } } = await supabase.auth.getUser();
+                authorId = user?.id;
+            }
+        }
+
+        if (!authorId) {
+            return { id: null, slug: null, error: 'User not logged in. Please login and try again.' };
         }
 
         // Default to 'pending' for approval workflow
         const blogStatus = payload.status || 'pending';
-
-        // Log the payload being sent (without sensitive data)
-        console.log('[supabaseBlogs] Attempting to create blog with payload:', {
-            title_en: payload.title_en,
-            destination: payload.destination,
-            category: payload.category,
-            status: blogStatus,
-            author_id: authorId,
-            has_content: !!payload.content_en,
-            images_count: payload.images?.length || 0,
-        });
 
         const { data, error } = await supabase
             .from('blogs')
@@ -164,7 +166,7 @@ export async function createBlog(payload: {
                 cover_image: payload.coverImage,
                 author: payload.author,
                 images: payload.images,
-                author_id: authorId, // Required for RLS policies
+                author_id: authorId,
                 status: blogStatus,
                 created_at: new Date().toISOString(),
                 published_at: blogStatus === 'published' ? new Date().toISOString() : null,
@@ -176,7 +178,6 @@ export async function createBlog(payload: {
             .single();
 
         if (error) {
-            // eslint-disable-next-line no-console
             console.error('[supabaseBlogs] createBlog error details:', {
                 message: error.message,
                 details: error.details,
@@ -187,7 +188,6 @@ export async function createBlog(payload: {
         }
 
         if (!data) {
-            // eslint-disable-next-line no-console
             console.error('[supabaseBlogs] createBlog: No data returned from insert');
             return { id: null, slug: null, error: 'No data returned from database' };
         }
@@ -195,7 +195,6 @@ export async function createBlog(payload: {
         console.log('[supabaseBlogs] Blog created successfully with ID:', data.id);
         return { id: data.id, slug: data.slug, error: null };
     } catch (err: any) {
-        // eslint-disable-next-line no-console
         console.error('[supabaseBlogs] createBlog unexpected error:', err);
         return { id: null, slug: null, error: err?.message || 'Unexpected error occurred' };
     }

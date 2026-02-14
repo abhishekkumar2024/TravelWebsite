@@ -302,6 +302,32 @@ export default function SubmitPage() {
         setSubmitting(true);
 
         try {
+            // Safety: strip any base64 images from content before submitting
+            // Base64 images can be 5-15 MB each, causing massive payloads and timeouts
+            let cleanContentEn = contentEn;
+            let cleanContentHi = contentHi || contentEn;
+
+            const base64Pattern = /(<img[^>]*src=["']data:image\/[^"']+["'][^>]*>)/gi;
+            const base64MatchesEn = contentEn.match(base64Pattern);
+            const base64MatchesHi = cleanContentHi.match(base64Pattern);
+
+            if (base64MatchesEn || base64MatchesHi) {
+                const count = (base64MatchesEn?.length || 0) + (base64MatchesHi?.length || 0);
+                const proceed = confirm(
+                    `⚠️ Found ${count} embedded image(s) in your content that could cause upload to fail or take very long.\n\n` +
+                    `These images will be removed. Please use the image upload button (📷) in the toolbar to add images instead.\n\n` +
+                    `Click OK to continue submitting without embedded images, or Cancel to go back and fix them.`
+                );
+
+                if (!proceed) {
+                    setSubmitting(false);
+                    return;
+                }
+
+                // Strip base64 images
+                cleanContentEn = contentEn.replace(base64Pattern, '<!-- image removed: please use upload button -->');
+                cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
+            }
             const blogData = {
                 author: {
                     name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler',
@@ -313,8 +339,8 @@ export default function SubmitPage() {
                 title_hi: titleHi || titleEn,
                 excerpt_en: excerptEn,
                 excerpt_hi: excerptHi || excerptEn,
-                content_en: contentEn,
-                content_hi: contentHi || contentEn,
+                content_en: cleanContentEn,
+                content_hi: cleanContentHi,
                 coverImage: coverImage || '/images/jaipur-hawa-mahal.webp',
                 images: uploadedImages,
                 status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
@@ -323,6 +349,8 @@ export default function SubmitPage() {
                 meta_description: metaDescription || excerptEn,
                 focus_keyword: focusKeyword,
                 canonical_url: canonicalUrl,
+                // Pass verified user ID to skip redundant auth check inside createBlog
+                authorId: user.id,
             };
 
             const { id, slug, error } = await createBlog(blogData);

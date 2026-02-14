@@ -52,7 +52,7 @@ export default function TipTapEditor({
             Superscript,
             TiptapImage.configure({
                 inline: false,
-                allowBase64: true,
+                allowBase64: false, // IMPORTANT: base64 images make payloads enormous (5-15MB each) causing submit timeouts
                 HTMLAttributes: {
                     class: 'editor-image rounded-xl max-w-full mx-auto my-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-royal-blue/50 transition-all',
                 },
@@ -76,6 +76,53 @@ export default function TipTapEditor({
         editorProps: {
             attributes: {
                 class: 'tiptap-editor prose prose-lg md:prose-xl max-w-none focus:outline-none min-h-[260px] p-4',
+            },
+            // Intercept pasted images: upload to Cloudinary instead of embedding base64
+            handlePaste: (view, event) => {
+                const items = event.clipboardData?.items;
+                if (!items || !onImageUpload) return false;
+
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith('image/')) {
+                        event.preventDefault();
+                        const file = items[i].getAsFile();
+                        if (file) {
+                            onImageUpload(file).then((url) => {
+                                view.dispatch(
+                                    view.state.tr.replaceSelectionWith(
+                                        view.state.schema.nodes.image.create({ src: url, alt: 'Uploaded image' })
+                                    )
+                                );
+                            }).catch((err) => {
+                                console.error('Paste image upload failed:', err);
+                            });
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            },
+            // Intercept dropped images: upload to Cloudinary instead of embedding base64
+            handleDrop: (view, event) => {
+                const files = event.dataTransfer?.files;
+                if (!files || files.length === 0 || !onImageUpload) return false;
+
+                const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+                if (imageFiles.length === 0) return false;
+
+                event.preventDefault();
+                const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+
+                imageFiles.forEach((file) => {
+                    onImageUpload(file).then((url) => {
+                        const node = view.state.schema.nodes.image.create({ src: url, alt: file.name.split('.')[0] });
+                        const tr = view.state.tr.insert(pos?.pos ?? view.state.selection.from, node);
+                        view.dispatch(tr);
+                    }).catch((err) => {
+                        console.error('Drop image upload failed:', err);
+                    });
+                });
+                return true;
             },
             handleClick: (view, pos, event) => {
                 const target = event.target as HTMLElement;
