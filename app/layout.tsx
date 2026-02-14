@@ -44,7 +44,7 @@ export const metadata: Metadata = {
             'Explore Rajasthan through travel stories, destination guides, and insider tips. Discover the magic of Jaipur, Udaipur, and beyond.',
         images: [
             {
-                url: '/camelthar_logo.png',
+                url: '/camelthar_logo.webp',
                 width: 512,
                 height: 512,
                 alt: 'CamelThar Logo',
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
         title: 'CamelThar - Travel Stories from the Land of Kings',
         description:
             'Explore Rajasthan through travel stories, destination guides, and insider tips.',
-        images: ['/camelthar_logo.png'],
+        images: ['/camelthar_logo.webp'],
     },
     robots: {
         index: true,
@@ -121,7 +121,7 @@ export default function RootLayout({
                             '@type': 'Organization',
                             name: 'CamelThar',
                             url: 'https://www.camelthar.com',
-                            logo: 'https://www.camelthar.com/camelthar_logo.png',
+                            logo: 'https://www.camelthar.com/camelthar_logo.webp',
                             description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips.',
                             sameAs: [
                                 'https://twitter.com/CamelThar',

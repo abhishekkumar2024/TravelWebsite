@@ -14,7 +14,7 @@ export const metadata: Metadata = {
         type: 'website',
         images: [
             {
-                url: '/camelthar_logo.png',
+                url: '/camelthar_logo.webp',
                 width: 512,
                 height: 512,
                 alt: 'CamelThar Logo',

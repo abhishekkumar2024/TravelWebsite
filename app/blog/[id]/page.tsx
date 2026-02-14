@@ -176,7 +176,7 @@ export default async function BlogPage({ params }: PageProps) {
             name: 'CamelThar',
             logo: {
                 '@type': 'ImageObject',
-                url: 'https://www.camelthar.com/camelthar_logo.png'
+                url: 'https://www.camelthar.com/camelthar_logo.webp'
             }
         },
         mainEntityOfPage: {
