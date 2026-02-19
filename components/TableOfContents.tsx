@@ -219,8 +219,9 @@ export default function TableOfContents({ headings, className = '' }: TableOfCon
 
             {/* Links */}
             <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[600px] opacity-100'
+                className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 overflow-hidden opacity-0' : 'max-h-[600px] overflow-y-auto opacity-100'
                     }`}
+                style={!isCollapsed ? { scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' } : undefined}
             >
                 <ol className="px-6 pb-5 space-y-1 list-none m-0">
                     {headings.map((heading, index) => {
