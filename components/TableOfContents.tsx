@@ -74,6 +74,20 @@ export function extractHeadings(html: string): TocHeading[] {
 }
 
 /**
+ * Decode common HTML entities so regex-extracted text can be compared
+ * with DOMParser-extracted text (which auto-decodes entities).
+ */
+function decodeEntities(text: string): string {
+    return text
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#0?39;/gi, "'")
+        .replace(/&#x27;/gi, "'");
+}
+
+/**
  * Inject anchor IDs into heading tags in the HTML content.
  * This modifies <h1>, <h2> and <h3> to include id="slug" attributes.
  */
@@ -83,7 +97,8 @@ export function injectHeadingIds(html: string, headings: TocHeading[]): string {
         if (headingIndex >= headings.length) return fullMatch;
 
         const heading = headings[headingIndex];
-        const plainText = content.replace(/<[^>]*>/g, '').trim();
+        // Decode HTML entities so "&amp;" matches "&" from DOMParser-extracted text
+        const plainText = decodeEntities(content.replace(/<[^>]*>/g, '')).trim();
 
         // Only replace if text matches (safety check)
         if (plainText === heading.text) {
