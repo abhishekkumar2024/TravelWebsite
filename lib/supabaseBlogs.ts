@@ -325,6 +325,7 @@ export async function fetchUserBlogs(): Promise<BlogPost[]> {
 }
 
 // Update an existing blog
+// Optimized: only sends changed fields, uses non-blocking IndexNow
 export async function updateBlog(id: string, payload: {
     destination?: string;
     category?: string;
@@ -342,29 +343,31 @@ export async function updateBlog(id: string, payload: {
     focus_keyword?: string;
     canonical_url?: string;
     slug?: string;
-}): Promise<{ success: boolean; error: string | null }> {
+}): Promise<{ success: boolean; slug: string | null; error: string | null }> {
     try {
         const updateData: any = {
             updated_at: new Date().toISOString(),
         };
 
-        if (payload.title_en) updateData.title_en = payload.title_en;
-        if (payload.title_hi) updateData.title_hi = payload.title_hi;
-        if (payload.excerpt_en) updateData.excerpt_en = payload.excerpt_en;
-        if (payload.excerpt_hi) updateData.excerpt_hi = payload.excerpt_hi;
-        if (payload.content_en) updateData.content_en = payload.content_en;
-        if (payload.content_hi) updateData.content_hi = payload.content_hi;
-        if (payload.destination) updateData.destination = payload.destination;
-        if (payload.category) updateData.category = payload.category;
-        if (payload.coverImage) updateData.cover_image = payload.coverImage;
-        if (payload.images) updateData.images = payload.images;
-        if (payload.status) updateData.status = payload.status;
+        // Use !== undefined so that empty strings and falsy values are still sent
+        // This prevents skipping intentional clears (e.g., clearing a meta_title)
+        if (payload.title_en !== undefined) updateData.title_en = payload.title_en;
+        if (payload.title_hi !== undefined) updateData.title_hi = payload.title_hi;
+        if (payload.excerpt_en !== undefined) updateData.excerpt_en = payload.excerpt_en;
+        if (payload.excerpt_hi !== undefined) updateData.excerpt_hi = payload.excerpt_hi;
+        if (payload.content_en !== undefined) updateData.content_en = payload.content_en;
+        if (payload.content_hi !== undefined) updateData.content_hi = payload.content_hi;
+        if (payload.destination !== undefined) updateData.destination = payload.destination;
+        if (payload.category !== undefined) updateData.category = payload.category;
+        if (payload.coverImage !== undefined) updateData.cover_image = payload.coverImage;
+        if (payload.images !== undefined) updateData.images = payload.images;
+        if (payload.status !== undefined) updateData.status = payload.status;
 
         // SEO Fields
-        if (payload.meta_title) updateData.meta_title = payload.meta_title;
-        if (payload.meta_description) updateData.meta_description = payload.meta_description;
-        if (payload.focus_keyword) updateData.focus_keyword = payload.focus_keyword;
-        if (payload.canonical_url) updateData.canonical_url = payload.canonical_url;
+        if (payload.meta_title !== undefined) updateData.meta_title = payload.meta_title;
+        if (payload.meta_description !== undefined) updateData.meta_description = payload.meta_description;
+        if (payload.focus_keyword !== undefined) updateData.focus_keyword = payload.focus_keyword;
+        if (payload.canonical_url !== undefined) updateData.canonical_url = payload.canonical_url;
 
         // Ensure slug is updated if title changes or if explicitly provided
         if (payload.slug) {
@@ -382,18 +385,18 @@ export async function updateBlog(id: string, payload: {
 
         if (error) {
             console.error('[supabaseBlogs] updateBlog error:', error.message);
-            return { success: false, error: error.message };
+            return { success: false, slug: null, error: error.message };
         }
 
-        // If the blog is published, notify indexing services about the update
+        // Fire-and-forget: notify indexing services (non-blocking)
         if (updatedRow?.status === 'published' && updatedRow?.slug) {
-            submitToIndexNow([`https://www.camelthar.com/blog/${updatedRow.slug}/`]);
+            submitToIndexNow([`https://www.camelthar.com/blog/${updatedRow.slug}/`]).catch(() => { });
         }
 
-        return { success: true, error: null };
+        return { success: true, slug: updatedRow?.slug || null, error: null };
     } catch (err: any) {
         console.error('[supabaseBlogs] updateBlog unexpected error:', err);
-        return { success: false, error: err?.message || 'Unexpected error' };
+        return { success: false, slug: null, error: err?.message || 'Unexpected error' };
     }
 }
 

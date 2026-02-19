@@ -340,18 +340,6 @@ export default function SubmitPage() {
             const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
             const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
 
-            // Cleanup orphans from Cloudinary
-            if (orphanedImages.length > 0) {
-                console.log('Cleaning up orphaned images:', orphanedImages.length);
-                orphanedImages.forEach(url => {
-                    const publicId = extractPublicIdFromUrl(url);
-                    if (publicId) {
-                        const type = url.includes('/video/') ? 'video' : 'image';
-                        deleteMedia(publicId, type);
-                    }
-                });
-            }
-
             const blogData = {
                 author: {
                     name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler',
@@ -386,6 +374,31 @@ export default function SubmitPage() {
                 }
                 throw new Error(error || 'Unknown error');
             }
+
+            // Non-blocking: cleanup orphans from Cloudinary
+            if (orphanedImages.length > 0) {
+                console.log('Cleaning up orphaned images:', orphanedImages.length);
+                orphanedImages.forEach(url => {
+                    const publicId = extractPublicIdFromUrl(url);
+                    if (publicId) {
+                        const type = url.includes('/video/') ? 'video' : 'image';
+                        deleteMedia(publicId, type).catch(() => { });
+                    }
+                });
+            }
+
+            // On-demand revalidation: bust ISR cache so new blog appears instantly
+            fetch('/api/revalidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paths: [
+                        '/blogs',   // blog listing page
+                        '/',        // homepage (may show latest blogs)
+                    ],
+                    tags: ['blogs'],
+                }),
+            }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
 
             // Clear draft on successful submission
             clearDraft();

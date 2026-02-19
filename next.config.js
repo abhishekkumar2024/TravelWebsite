@@ -68,32 +68,34 @@ const nextConfig = {
     async headers() {
         return [
             {
-                // Apply to blog pages - cache for 1 hour, stale-while-revalidate for 1 day
+                // Blog pages: CDN cache must match ISR revalidate (60s)
+                // Previously s-maxage=3600 caused 1-HOUR stale content after updates!
+                // On-demand revalidation (via /api/revalidate) also purges CDN cache
                 source: '/blog/:path*',
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+                        value: 'public, s-maxage=60, stale-while-revalidate=300',
                     },
                 ],
             },
             {
-                // Apply to destination pages
+                // Destination pages: cache for 5 minutes (rarely updated)
                 source: '/destinations/:path*',
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+                        value: 'public, s-maxage=300, stale-while-revalidate=600',
                     },
                 ],
             },
             {
-                // Apply to blogs listing page
+                // Blogs listing page: cache for 60s to show new posts quickly
                 source: '/blogs/:path*',
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=300, stale-while-revalidate=3600',
+                        value: 'public, s-maxage=60, stale-while-revalidate=300',
                     },
                 ],
             },

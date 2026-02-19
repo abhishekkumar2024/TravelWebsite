@@ -79,6 +79,18 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     const [pendingDraft, setPendingDraft] = useState<EditDraftData | null>(null);
     const draftInitialized = useRef(false);
     const blogDataLoaded = useRef(false);
+    // Track original data to compute diffs on submit (only send changed fields)
+    const originalData = useRef<{
+        titleEn: string; titleHi: string; excerptEn: string; excerptHi: string;
+        contentEn: string; contentHi: string; destination: string; category: string;
+        coverImage: string; images: string[];
+        metaTitle: string; metaDescription: string; focusKeyword: string; canonicalUrl: string;
+    }>({
+        titleEn: '', titleHi: '', excerptEn: '', excerptHi: '',
+        contentEn: '', contentHi: '', destination: '', category: '',
+        coverImage: '', images: [],
+        metaTitle: '', metaDescription: '', focusKeyword: '', canonicalUrl: '',
+    });
     const { saveDraft, loadDraft, clearDraft, scheduleAutoSave, lastSaved, isSaving, hasDraft, getLastSavedText } = useDraft('edit', params.id);
 
     useEffect(() => {
@@ -127,6 +139,24 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 setMetaDescription(blog.meta_description || '');
                 setFocusKeyword(blog.focus_keyword || '');
                 setCanonicalUrl(blog.canonical_url || '');
+
+                // Snapshot original data for diff-based updates
+                originalData.current = {
+                    titleEn: blog.title_en,
+                    titleHi: blog.title_hi,
+                    excerptEn: blog.excerpt_en,
+                    excerptHi: blog.excerpt_hi,
+                    contentEn: blog.content_en,
+                    contentHi: blog.content_hi,
+                    destination: blog.destination,
+                    category: blog.category,
+                    coverImage: blog.coverImage || '',
+                    images: blog.images || [],
+                    metaTitle: blog.meta_title || '',
+                    metaDescription: blog.meta_description || '',
+                    focusKeyword: blog.focus_keyword || '',
+                    canonicalUrl: blog.canonical_url || '',
+                };
 
                 // Mark blog data as loaded for draft comparison
                 blogDataLoaded.current = true;
@@ -270,6 +300,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+        const perfStart = performance.now();
 
         try {
             // Safety: strip any base64 images from content before updating
@@ -303,53 +334,117 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
             const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
 
-            // Cleanup orphans from Cloudinary
+            // Build payload with only the fields that actually changed
+            // This avoids sending massive unchanged content_en/content_hi on every save
+            const payload: Record<string, any> = {};
+
+            if (titleEn !== originalData.current.titleEn) payload.title_en = titleEn;
+            if (titleHi !== originalData.current.titleHi) payload.title_hi = titleHi;
+            if (excerptEn !== originalData.current.excerptEn) payload.excerpt_en = excerptEn;
+            if (excerptHi !== originalData.current.excerptHi) payload.excerpt_hi = excerptHi;
+            if (cleanContentEn !== originalData.current.contentEn) payload.content_en = cleanContentEn;
+            if (cleanContentHi !== originalData.current.contentHi) payload.content_hi = cleanContentHi;
+            if (destination !== originalData.current.destination) payload.destination = destination;
+            if (category !== originalData.current.category) payload.category = category;
+            if ((coverImage || '') !== (originalData.current.coverImage || '')) payload.coverImage = coverImage || undefined;
+            // Always send images if they changed (array comparison by JSON)
+            if (JSON.stringify(usedImages) !== JSON.stringify(originalData.current.images)) payload.images = usedImages;
+
+            // Status
+            if (currentStatus === 'rejected') payload.status = 'pending';
+
+            // SEO — only send if changed
+            if (metaTitle !== originalData.current.metaTitle) payload.meta_title = metaTitle;
+            if (metaDescription !== originalData.current.metaDescription) payload.meta_description = metaDescription;
+            if (focusKeyword !== originalData.current.focusKeyword) payload.focus_keyword = focusKeyword;
+            if (canonicalUrl !== originalData.current.canonicalUrl) payload.canonical_url = canonicalUrl;
+
+            // If nothing changed, skip the API call
+            const changedKeys = Object.keys(payload);
+            if (changedKeys.length === 0) {
+                setSubmitted(true);
+                clearDraft();
+                return;
+            }
+
+            // Performance: log payload size to help diagnose slowness
+            const payloadSize = new Blob([JSON.stringify(payload)]).size;
+            const payloadSizeKB = (payloadSize / 1024).toFixed(1);
+            console.log(`[Update] Payload: ${payloadSizeKB}KB, changed fields: [${changedKeys.join(', ')}]`);
+
+            // Guard: warn if payload is dangerously large (>400KB can timeout on Supabase free tier)
+            if (payloadSize > 400 * 1024) {
+                console.warn(`[Update] ⚠️ Large payload: ${payloadSizeKB}KB — this may cause slow updates or timeouts`);
+            }
+
+            // Timeout guard: abort if update takes more than 30 seconds
+            // This prevents the UI from hanging for an hour
+            console.time('[Update] Database update');
+            const updatePromise = updateBlog(params.id, payload);
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error(
+                    `Update timed out after 30 seconds. Your content may be too large (${payloadSizeKB}KB). ` +
+                    `Try reducing images or content size and try again.`
+                )), 30000)
+            );
+            const result = await Promise.race([updatePromise, timeoutPromise]);
+            console.timeEnd('[Update] Database update');
+
+            if (!result.success) {
+                throw new Error(result.error || 'Update failed');
+            }
+
+            console.log(`[Update] ✅ Completed in ${((performance.now() - perfStart) / 1000).toFixed(1)}s`);
+
+            // Non-blocking: cleanup orphaned images from Cloudinary
             if (orphanedImages.length > 0) {
                 console.log('Cleaning up orphaned images from edit:', orphanedImages.length);
                 orphanedImages.forEach(url => {
                     const publicId = extractPublicIdFromUrl(url);
                     if (publicId) {
                         const type = url.includes('/video/') ? 'video' : 'image';
-                        deleteMedia(publicId, type);
+                        deleteMedia(publicId, type).catch(() => { });
                     }
                 });
             }
 
-            const result = await updateBlog(params.id, {
-                title_en: titleEn,
-                title_hi: titleHi,
-                excerpt_en: excerptEn,
-                excerpt_hi: excerptHi,
-                content_en: cleanContentEn,
-                content_hi: cleanContentHi,
-                destination,
-                category,
-                coverImage: coverImage || undefined,
+            // On-demand revalidation: bust ISR cache so changes appear instantly
+            const slug = result.slug || params.id;
+            fetch('/api/revalidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paths: [
+                        `/blog/${slug}`,   // the specific blog page
+                        '/blogs',          // blog listing page
+                        '/',               // homepage (may show latest blogs)
+                    ],
+                    tags: ['blogs'],       // bust all unstable_cache entries tagged 'blogs'
+                }),
+            }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
+
+            // Update originalData to reflect new state (for subsequent edits)
+            originalData.current = {
+                titleEn, titleHi, excerptEn, excerptHi,
+                contentEn: cleanContentEn, contentHi: cleanContentHi,
+                destination, category,
+                coverImage: coverImage || '',
                 images: usedImages,
-                // Keep existing status unless admin changes it? 
-                // Usually editing a published blog might require re-approval or stay published.
-                // For simplicity, we keep status as is, unless user explicitly requests "Submit for Review".
-                // But here we just update content.
-                // If it was rejected, maybe set to pending?
-                status: currentStatus === 'rejected' ? 'pending' : undefined,
-
-                // SEO
-                meta_title: metaTitle,
-                meta_description: metaDescription,
-                focus_keyword: focusKeyword,
-                canonical_url: canonicalUrl,
-            });
-
-            if (!result.success) {
-                throw new Error(result.error || 'Update failed');
-            }
+                metaTitle, metaDescription, focusKeyword, canonicalUrl,
+            };
 
             setSubmitted(true);
             // Clear draft on successful submission
             clearDraft();
         } catch (error: any) {
             console.error('Submit error:', error);
-            alert(t('Failed to update. Please try again.', 'अपडेट करने में विफल। कृपया पुनः प्रयास करें।'));
+            const elapsed = ((performance.now() - perfStart) / 1000).toFixed(1);
+            console.error(`[Update] ❌ Failed after ${elapsed}s`);
+            alert(
+                error.message?.includes('timed out')
+                    ? error.message
+                    : t('Failed to update. Please try again.', 'अपडेट करने में विफल। कृपया पुनः प्रयास करें।')
+            );
         } finally {
             setSubmitting(false);
         }
