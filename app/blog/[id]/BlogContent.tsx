@@ -39,6 +39,18 @@ interface BlogContentProps {
 }
 
 /**
+ * Downgrade heading levels inside blog content HTML for proper SEO hierarchy.
+ * - h1 → h2  (page already has a real h1 for the blog title)
+ * - Ensures only ONE h1 per page, which is critical for SEO
+ * - The TOC component already handles mixed heading levels correctly
+ */
+function downgradeContentHeadings(html: string): string {
+    if (!html) return html;
+    // Convert <h1> → <h2> (preserving attributes and content)
+    return html.replace(/<(\/?)h1(\s|>)/gi, '<$1h2$2');
+}
+
+/**
  * Processes blog HTML content to hide hashtag blocks and keyword dumps
  * from users while keeping them in the DOM for SEO crawlers.
  * Uses visually-hidden technique: content is invisible but still parsed by crawlers.
@@ -83,10 +95,12 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
     const title = mounted && lang === 'hi' ? blog.title_hi : blog.title_en;
     const rawContent = mounted && lang === 'hi' ? blog.content_hi : blog.content_en;
 
-    // Extract headings and inject anchor IDs for Table of Contents
-    const headings = useMemo(() => extractHeadings(rawContent), [rawContent]);
-    const contentWithIds = useMemo(() => injectHeadingIds(rawContent, headings), [rawContent, headings]);
-    // Process content to hide hashtag blocks and keyword dumps from users
+    // Step 1: Downgrade h1→h2 in content (page already has a real h1 for blog title)
+    const normalizedContent = useMemo(() => downgradeContentHeadings(rawContent), [rawContent]);
+    // Step 2: Extract headings and inject anchor IDs for Table of Contents
+    const headings = useMemo(() => extractHeadings(normalizedContent), [normalizedContent]);
+    const contentWithIds = useMemo(() => injectHeadingIds(normalizedContent, headings), [normalizedContent, headings]);
+    // Step 3: Process content to hide hashtag blocks and keyword dumps from users
     const content = useMemo(() => processContentForDisplay(contentWithIds), [contentWithIds]);
 
     const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
