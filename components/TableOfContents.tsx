@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export interface TocHeading {
     id: string;
     text: string;
-    level: number; // 2 or 3
+    level: number; // 2 or 3 (h1 in content is treated as level 2)
 }
 
 /**
@@ -23,7 +23,9 @@ export function slugify(text: string): string {
 }
 
 /**
- * Extract headings (h2, h3) from an HTML string.
+ * Extract headings (h1, h2, h3) from an HTML string.
+ * h1 tags inside blog content are treated as h2 level in the TOC,
+ * since the page already has a proper h1 for the blog title.
  * Uses DOMParser when available (browser), falls back to regex (SSR).
  * Returns array of { id, text, level }
  */
@@ -33,6 +35,8 @@ export function extractHeadings(html: string): TocHeading[] {
 
     const addHeading = (level: number, text: string) => {
         if (!text) return;
+        // Treat h1 inside content as h2 level (page already has a real h1)
+        const tocLevel = level === 1 ? 2 : level;
         let id = slugify(text);
         // Handle duplicate IDs
         if (usedIds.has(id)) {
@@ -41,14 +45,14 @@ export function extractHeadings(html: string): TocHeading[] {
             id = `${id}-${counter}`;
         }
         usedIds.add(id);
-        headings.push({ id, text, level });
+        headings.push({ id, text, level: tocLevel });
     };
 
     // Prefer DOMParser (browser) — handles nested tags, line breaks, complex HTML safely
     if (typeof DOMParser !== 'undefined') {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const elements = doc.querySelectorAll('h2, h3');
+        const elements = doc.querySelectorAll('h1, h2, h3');
 
         elements.forEach((el) => {
             const level = parseInt(el.tagName.replace('H', ''), 10);
@@ -57,7 +61,7 @@ export function extractHeadings(html: string): TocHeading[] {
         });
     } else {
         // Fallback: regex for SSR (Next.js server-renders 'use client' components)
-        const regex = /<h([23])[^>]*>(.*?)<\/h[23]>/gi;
+        const regex = /<h([123])[^>]*>(.*?)<\/h[123]>/gi;
         let match;
         while ((match = regex.exec(html)) !== null) {
             const level = parseInt(match[1], 10);
@@ -71,11 +75,11 @@ export function extractHeadings(html: string): TocHeading[] {
 
 /**
  * Inject anchor IDs into heading tags in the HTML content.
- * This modifies <h2> and <h3> to include id="slug" attributes.
+ * This modifies <h1>, <h2> and <h3> to include id="slug" attributes.
  */
 export function injectHeadingIds(html: string, headings: TocHeading[]): string {
     let headingIndex = 0;
-    return html.replace(/<h([23])([^>]*)>(.*?)<\/h[23]>/gi, (fullMatch, level, attrs, content) => {
+    return html.replace(/<h([123])([^>]*)>(.*?)<\/h[123]>/gi, (fullMatch, level, attrs, content) => {
         if (headingIndex >= headings.length) return fullMatch;
 
         const heading = headings[headingIndex];
