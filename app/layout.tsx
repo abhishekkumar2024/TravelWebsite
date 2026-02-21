@@ -132,8 +132,8 @@ export default function RootLayout({
                             logo: 'https://www.camelthar.com/camelthar_logo.webp',
                             description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips.',
                             sameAs: [
-                                'https://twitter.com/CamelThar',
-                                'https://www.instagram.com/camelthar',
+                                'https://x.com/camelthar',
+                                'https://www.instagram.com/cameltharinfo/',
                             ],
                             contactPoint: {
                                 '@type': 'ContactPoint',

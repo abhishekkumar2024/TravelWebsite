@@ -86,8 +86,8 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-semibold text-desert-gold mb-1">Socials</h3>
                                         <div className="flex gap-4 mt-2">
-                                            <a href="#" className="hover:text-desert-gold transition-colors">Instagram</a>
-                                            <a href="#" className="hover:text-desert-gold transition-colors">Twitter</a>
+                                            <a href="https://www.instagram.com/cameltharinfo/" target="_blank" rel="noopener noreferrer" className="hover:text-desert-gold transition-colors">Instagram</a>
+                                            <a href="https://x.com/camelthar" target="_blank" rel="noopener noreferrer" className="hover:text-desert-gold transition-colors">Twitter</a>
                                             <a href="#" className="hover:text-desert-gold transition-colors">Facebook</a>
                                         </div>
                                     </div>
