@@ -112,6 +112,14 @@ export default function RootLayout({
           `}
                 </Script>
 
+                <Script
+                    src="https://emrldco.com/NTAwNjIy.js?t=500622"
+                    strategy="afterInteractive"
+                    data-noptimize="1"
+                    data-cfasync="false"
+                    data-wpfc-render="false"
+                />
+
                 {/* Organization structured data for brand visibility */}
                 <script
                     type="application/ld+json"
