@@ -71,7 +71,10 @@ export default function Footer() {
                         </p>
                         <div className="flex gap-3">
                             <a
-                                href="#"
+                                href="https://x.com/camelthar"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Twitter"
                                 className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-desert-gold hover:-translate-y-1 transition-all"
                             >
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -79,7 +82,10 @@ export default function Footer() {
                                 </svg>
                             </a>
                             <a
-                                href="#"
+                                href="https://www.instagram.com/cameltharinfo/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Instagram"
                                 className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-desert-gold hover:-translate-y-1 transition-all"
                             >
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
