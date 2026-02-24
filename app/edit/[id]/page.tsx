@@ -11,6 +11,7 @@ import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
 import { fetchBlogById, updateBlog } from '@/lib/supabaseBlogs';
+import { SubmitLogger } from '@/lib/submitLogger';
 import { supabase } from '@/lib/supabaseClient';
 import { isAdmin } from '@/lib/admin';
 
@@ -300,11 +301,11 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
-        const perfStart = performance.now();
+        const logger = new SubmitLogger('edit', user?.id || '', user?.email || '');
 
         try {
-            // Safety: strip any base64 images from content before updating
-            // Base64 images can be 5-15 MB each, causing massive payloads and timeouts
+            // Stage 1: Base64 cleanup
+            logger.startStage('base64_cleanup');
             let cleanContentEn = contentEn;
             let cleanContentHi = contentHi || contentEn;
 
@@ -328,14 +329,17 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 cleanContentEn = contentEn.replace(base64Pattern, '<!-- image removed: please use upload button -->');
                 cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
             }
+            logger.endStage('base64_cleanup');
 
-            // Filter uploadedImages to keep only those used in content or cover
+            // Stage 2: Image filtering
+            logger.startStage('image_filtering');
             const allContent = cleanContentEn + (cleanContentHi || '');
             const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
             const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
+            logger.endStage('image_filtering');
 
-            // Build payload with only the fields that actually changed
-            // This avoids sending massive unchanged content_en/content_hi on every save
+            // Stage 3: Build payload (diff-based)
+            logger.startStage('payload_build');
             const payload: Record<string, any> = {};
 
             if (titleEn !== originalData.current.titleEn) payload.title_en = titleEn;
@@ -347,39 +351,32 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             if (destination !== originalData.current.destination) payload.destination = destination;
             if (category !== originalData.current.category) payload.category = category;
             if ((coverImage || '') !== (originalData.current.coverImage || '')) payload.coverImage = coverImage || undefined;
-            // Always send images if they changed (array comparison by JSON)
             if (JSON.stringify(usedImages) !== JSON.stringify(originalData.current.images)) payload.images = usedImages;
-
-            // Status
             if (currentStatus === 'rejected') payload.status = 'pending';
-
-            // SEO — only send if changed
             if (metaTitle !== originalData.current.metaTitle) payload.meta_title = metaTitle;
             if (metaDescription !== originalData.current.metaDescription) payload.meta_description = metaDescription;
-
             if (canonicalUrl !== originalData.current.canonicalUrl) payload.canonical_url = canonicalUrl;
 
-            // If nothing changed, skip the API call
             const changedKeys = Object.keys(payload);
+            logger.endStage('payload_build');
+
             if (changedKeys.length === 0) {
                 setSubmitted(true);
                 clearDraft();
+                logger.save({ status: 'success', blogId: params.id });
                 return;
             }
 
-            // Performance: log payload size to help diagnose slowness
+            // Stage 4: Database update
+            logger.startStage('database_update');
             const payloadSize = new Blob([JSON.stringify(payload)]).size;
             const payloadSizeKB = (payloadSize / 1024).toFixed(1);
             console.log(`[Update] Payload: ${payloadSizeKB}KB, changed fields: [${changedKeys.join(', ')}]`);
 
-            // Guard: warn if payload is dangerously large (>400KB can timeout on Supabase free tier)
             if (payloadSize > 400 * 1024) {
-                console.warn(`[Update] ⚠️ Large payload: ${payloadSizeKB}KB — this may cause slow updates or timeouts`);
+                console.warn(`[Update] ⚠️ Large payload: ${payloadSizeKB}KB`);
             }
 
-            // Timeout guard: abort if update takes more than 30 seconds
-            // This prevents the UI from hanging for an hour
-            console.time('[Update] Database update');
             const updatePromise = updateBlog(params.id, payload);
             const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error(
@@ -388,17 +385,15 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 )), 30000)
             );
             const result = await Promise.race([updatePromise, timeoutPromise]);
-            console.timeEnd('[Update] Database update');
+            logger.endStage('database_update');
 
             if (!result.success) {
                 throw new Error(result.error || 'Update failed');
             }
 
-            console.log(`[Update] ✅ Completed in ${((performance.now() - perfStart) / 1000).toFixed(1)}s`);
-
-            // Non-blocking: cleanup orphaned images from Cloudinary
+            // Stage 5: Orphan cleanup
+            logger.startStage('orphan_cleanup');
             if (orphanedImages.length > 0) {
-                console.log('Cleaning up orphaned images from edit:', orphanedImages.length);
                 orphanedImages.forEach(url => {
                     const publicId = extractPublicIdFromUrl(url);
                     if (publicId) {
@@ -407,23 +402,22 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                     }
                 });
             }
+            logger.endStage('orphan_cleanup');
 
-            // On-demand revalidation: bust ISR cache so changes appear instantly
+            // Stage 6: Cache revalidation
+            logger.startStage('cache_revalidation');
             const slug = result.slug || params.id;
             fetch('/api/revalidate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    paths: [
-                        `/blog/${slug}`,   // the specific blog page
-                        '/blogs',          // blog listing page
-                        '/',               // homepage (may show latest blogs)
-                    ],
-                    tags: ['blogs'],       // bust all unstable_cache entries tagged 'blogs'
+                    paths: [`/blog/${slug}`, '/blogs', '/'],
+                    tags: ['blogs'],
                 }),
             }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
+            logger.endStage('cache_revalidation');
 
-            // Update originalData to reflect new state (for subsequent edits)
+            // Update originalData to reflect new state
             originalData.current = {
                 titleEn, titleHi, excerptEn, excerptHi,
                 contentEn: cleanContentEn, contentHi: cleanContentHi,
@@ -433,13 +427,32 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 metaTitle, metaDescription, canonicalUrl,
             };
 
+            // Calculate word count for logging
+            const logWordCount = cleanContentEn.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').length;
+
+            // Save performance log to Supabase (non-blocking)
+            logger.save({
+                blogId: params.id,
+                blogSlug: slug,
+                payloadSizeKB: parseFloat(payloadSizeKB),
+                contentWordCount: logWordCount,
+                imagesCount: usedImages.length,
+                orphanedImagesCount: orphanedImages.length,
+                status: 'success',
+            });
+
             setSubmitted(true);
-            // Clear draft on successful submission
             clearDraft();
         } catch (error: any) {
             console.error('Submit error:', error);
-            const elapsed = ((performance.now() - perfStart) / 1000).toFixed(1);
-            console.error(`[Update] ❌ Failed after ${elapsed}s`);
+
+            // Save error log to Supabase
+            logger.save({
+                blogId: params.id,
+                status: 'error',
+                errorMessage: error?.message || 'Unknown error',
+            });
+
             alert(
                 error.message?.includes('timed out')
                     ? error.message

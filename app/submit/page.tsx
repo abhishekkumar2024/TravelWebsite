@@ -11,6 +11,7 @@ import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal import as we are using redirect now
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
 import { createBlog } from '@/lib/supabaseBlogs';
+import { SubmitLogger } from '@/lib/submitLogger';
 import { supabase } from '@/lib/supabaseClient';
 import { ensureAuthorExists } from '@/lib/supabaseAuthors';
 import { isAdmin } from '@/lib/admin';
@@ -306,10 +307,11 @@ export default function SubmitPage() {
         }
 
         setSubmitting(true);
+        const logger = new SubmitLogger('submit', user.id, user.email || '');
 
         try {
-            // Safety: strip any base64 images from content before submitting
-            // Base64 images can be 5-15 MB each, causing massive payloads and timeouts
+            // Stage 1: Base64 cleanup
+            logger.startStage('base64_cleanup');
             let cleanContentEn = contentEn;
             let cleanContentHi = contentHi || contentEn;
 
@@ -330,16 +332,20 @@ export default function SubmitPage() {
                     return;
                 }
 
-                // Strip base64 images
                 cleanContentEn = contentEn.replace(base64Pattern, '<!-- image removed: please use upload button -->');
                 cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
             }
+            logger.endStage('base64_cleanup');
 
-            // Filter uploadedImages to keep only those used in content or cover
+            // Stage 2: Image filtering
+            logger.startStage('image_filtering');
             const allContent = cleanContentEn + (cleanContentHi || '');
             const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
             const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
+            logger.endStage('image_filtering');
 
+            // Stage 3: Database insert
+            logger.startStage('database_insert');
             const blogData = {
                 author: {
                     name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler',
@@ -356,18 +362,18 @@ export default function SubmitPage() {
                 coverImage: coverImage || '/images/jaipur-hawa-mahal.webp',
                 images: usedImages,
                 status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
-                // SEO Fields
                 meta_title: metaTitle || titleEn,
                 meta_description: metaDescription || excerptEn,
-
                 canonical_url: canonicalUrl,
-                // Pass verified user ID to skip redundant auth check inside createBlog
                 authorId: user.id,
             };
 
+            const payloadSize = new Blob([JSON.stringify(blogData)]).size;
+
             const { id, slug, error } = await createBlog(blogData);
+            logger.endStage('database_insert');
+
             if (error || !id) {
-                // Check if error is due to authentication
                 if (error?.includes('logged in') || error?.includes('authenticated')) {
                     router.push('/login?redirectTo=/submit');
                     return;
@@ -375,9 +381,9 @@ export default function SubmitPage() {
                 throw new Error(error || 'Unknown error');
             }
 
-            // Non-blocking: cleanup orphans from Cloudinary
+            // Stage 4: Orphan cleanup
+            logger.startStage('orphan_cleanup');
             if (orphanedImages.length > 0) {
-                console.log('Cleaning up orphaned images:', orphanedImages.length);
                 orphanedImages.forEach(url => {
                     const publicId = extractPublicIdFromUrl(url);
                     if (publicId) {
@@ -386,19 +392,33 @@ export default function SubmitPage() {
                     }
                 });
             }
+            logger.endStage('orphan_cleanup');
 
-            // On-demand revalidation: bust ISR cache so new blog appears instantly
+            // Stage 5: Cache revalidation
+            logger.startStage('cache_revalidation');
             fetch('/api/revalidate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    paths: [
-                        '/blogs',   // blog listing page
-                        '/',        // homepage (may show latest blogs)
-                    ],
+                    paths: ['/blogs', '/'],
                     tags: ['blogs'],
                 }),
             }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
+            logger.endStage('cache_revalidation');
+
+            // Calculate word count for logging
+            const logWordCount = cleanContentEn.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').length;
+
+            // Save performance log to Supabase (non-blocking)
+            logger.save({
+                blogId: id,
+                blogSlug: slug || undefined,
+                payloadSizeKB: parseFloat((payloadSize / 1024).toFixed(2)),
+                contentWordCount: logWordCount,
+                imagesCount: usedImages.length,
+                orphanedImagesCount: orphanedImages.length,
+                status: 'success',
+            });
 
             // Clear draft on successful submission
             clearDraft();
@@ -406,7 +426,13 @@ export default function SubmitPage() {
             setSubmitted(true);
         } catch (error: any) {
             console.error('Submit error:', error);
-            // Check if error is due to authentication
+
+            // Save error log to Supabase
+            logger.save({
+                status: 'error',
+                errorMessage: error?.message || 'Unknown error',
+            });
+
             if (error?.message?.includes('logged in') || error?.message?.includes('authenticated')) {
                 router.push('/login?redirectTo=/submit');
             } else {
