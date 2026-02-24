@@ -32,7 +32,6 @@ export interface BlogPost {
     views: number;
     meta_title?: string;
     meta_description?: string;
-    focus_keyword?: string;
     canonical_url?: string;
     slug?: string;
     created_at?: string;

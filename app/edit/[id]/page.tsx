@@ -70,7 +70,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     // SEO Fields
     const [metaTitle, setMetaTitle] = useState('');
     const [metaDescription, setMetaDescription] = useState('');
-    const [focusKeyword, setFocusKeyword] = useState('');
+
     const [canonicalUrl, setCanonicalUrl] = useState('');
     const [showSeoSection, setShowSeoSection] = useState(false);
 
@@ -84,12 +84,12 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
         titleEn: string; titleHi: string; excerptEn: string; excerptHi: string;
         contentEn: string; contentHi: string; destination: string; category: string;
         coverImage: string; images: string[];
-        metaTitle: string; metaDescription: string; focusKeyword: string; canonicalUrl: string;
+        metaTitle: string; metaDescription: string; canonicalUrl: string;
     }>({
         titleEn: '', titleHi: '', excerptEn: '', excerptHi: '',
         contentEn: '', contentHi: '', destination: '', category: '',
         coverImage: '', images: [],
-        metaTitle: '', metaDescription: '', focusKeyword: '', canonicalUrl: '',
+        metaTitle: '', metaDescription: '', canonicalUrl: '',
     });
     const { saveDraft, loadDraft, clearDraft, scheduleAutoSave, lastSaved, isSaving, hasDraft, getLastSavedText } = useDraft('edit', params.id);
 
@@ -137,7 +137,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 // SEO
                 setMetaTitle(blog.meta_title || '');
                 setMetaDescription(blog.meta_description || '');
-                setFocusKeyword(blog.focus_keyword || '');
+
                 setCanonicalUrl(blog.canonical_url || '');
 
                 // Snapshot original data for diff-based updates
@@ -154,7 +154,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                     images: blog.images || [],
                     metaTitle: blog.meta_title || '',
                     metaDescription: blog.meta_description || '',
-                    focusKeyword: blog.focus_keyword || '',
+
                     canonicalUrl: blog.canonical_url || '',
                 };
 
@@ -205,7 +205,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             setUploadedImages(pendingDraft.uploadedImages || []);
             setMetaTitle(pendingDraft.metaTitle || '');
             setMetaDescription(pendingDraft.metaDescription || '');
-            setFocusKeyword(pendingDraft.focusKeyword || '');
+
             setCanonicalUrl(pendingDraft.canonicalUrl || '');
         }
         setShowDraftRestoreModal(false);
@@ -239,14 +239,14 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 uploadedImages,
                 metaTitle,
                 metaDescription,
-                focusKeyword,
+
                 canonicalUrl,
             });
         }
     }, [
         params.id, destination, category, titleEn, titleHi, excerptEn, excerptHi,
         contentEn, contentHi, coverImage, uploadedImages, metaTitle,
-        metaDescription, focusKeyword, canonicalUrl, submitted, scheduleAutoSave
+        metaDescription, canonicalUrl, submitted, scheduleAutoSave
     ]);
 
     // Derived metrics
@@ -356,7 +356,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             // SEO — only send if changed
             if (metaTitle !== originalData.current.metaTitle) payload.meta_title = metaTitle;
             if (metaDescription !== originalData.current.metaDescription) payload.meta_description = metaDescription;
-            if (focusKeyword !== originalData.current.focusKeyword) payload.focus_keyword = focusKeyword;
+
             if (canonicalUrl !== originalData.current.canonicalUrl) payload.canonical_url = canonicalUrl;
 
             // If nothing changed, skip the API call
@@ -430,7 +430,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 destination, category,
                 coverImage: coverImage || '',
                 images: usedImages,
-                metaTitle, metaDescription, focusKeyword, canonicalUrl,
+                metaTitle, metaDescription, canonicalUrl,
             };
 
             setSubmitted(true);
@@ -824,20 +824,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                                                     {t('Ideal: 150-160 characters. This appears below your title in search results.', 'आदर्श: 150-160 अक्षर। यह खोज परिणामों में आपके शीर्षक के नीचे दिखाई देता है।')}
                                                 </p>
                                             </div>
-                                            <div>
-                                                <label className="block mb-2 font-semibold text-gray-700">
-                                                    {t('Focus Keyword', 'फोकस कीवर्ड')}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={focusKeyword}
-                                                    onChange={(e) => setFocusKeyword(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
-                                                />
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    {t('The main keyword you want this post to rank for.', 'मुख्य कीवर्ड जिसके लिए आप चाहते हैं कि यह पोस्ट रैंक करे।')}
-                                                </p>
-                                            </div>
+
                                         </div>
                                     )}
                                 </div>

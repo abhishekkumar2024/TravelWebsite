@@ -82,16 +82,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // distinct demo blogs from real blogs
     const isDemoBlog = demoBlogs.some((demo) => demo.id === blog.id);
 
-    // Parse focus keywords into an array for proper meta tags
-    // Supports comma-separated keywords like "jaipur travel guide, pink city tourism"
-    const keywordsArray = blog.focus_keyword
-        ? blog.focus_keyword.split(',').map((k: string) => k.trim()).filter(Boolean)
-        : [];
-
     return {
         title: blog.meta_title || blog.title_en,
         description: blog.meta_description || blog.excerpt_en,
-        keywords: keywordsArray.length > 0 ? keywordsArray : undefined,
         alternates: {
             canonical: pagePath, // Uses metadataBase from layout
         },
@@ -109,8 +102,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             publishedTime: blog.publishedAt || blog.created_at,
             modifiedTime: blog.updated_at || blog.created_at,
             authors: blog.author?.name ? [blog.author.name] : ['CamelThar Team'],
-            // article:tag — helps Facebook/social crawlers understand the topic
-            tags: keywordsArray.length > 0 ? keywordsArray : undefined,
+
             images: [
                 {
                     url: blog.coverImage,
@@ -152,10 +144,7 @@ export default async function BlogPage({ params }: PageProps) {
     // Fetch related blogs (cached, for SEO)
     const relatedBlogs = await getRelatedBlogs(blog.destination, blog.id);
 
-    // Parse focus keywords for structured data
-    const keywordsForSchema = blog.focus_keyword
-        ? blog.focus_keyword.split(',').map((k: string) => k.trim()).filter(Boolean)
-        : [];
+
 
     // structured data for rich snippets
     const jsonLd = {
@@ -183,15 +172,7 @@ export default async function BlogPage({ params }: PageProps) {
             '@type': 'WebPage',
             '@id': `https://www.camelthar.com/blog/${blog.slug || blog.id}/`
         },
-        // keywords as comma-separated string (Schema.org spec)
-        keywords: keywordsForSchema.length > 0 ? keywordsForSchema.join(', ') : undefined,
-        // about — helps Google understand the blog topic at a deeper level
-        ...(keywordsForSchema.length > 0 ? {
-            about: keywordsForSchema.map(k => ({
-                '@type': 'Thing',
-                name: k,
-            }))
-        } : {}),
+
     };
 
     const breadcrumbJsonLd = {

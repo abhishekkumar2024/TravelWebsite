@@ -74,7 +74,7 @@ export default function SubmitPage() {
     // SEO Fields
     const [metaTitle, setMetaTitle] = useState('');
     const [metaDescription, setMetaDescription] = useState('');
-    const [focusKeyword, setFocusKeyword] = useState('');
+
     const [canonicalUrl, setCanonicalUrl] = useState('');
     const [showSeoSection, setShowSeoSection] = useState(false);
 
@@ -115,7 +115,7 @@ export default function SubmitPage() {
             setUploadedImages(pendingDraft.uploadedImages || []);
             setMetaTitle(pendingDraft.metaTitle || '');
             setMetaDescription(pendingDraft.metaDescription || '');
-            setFocusKeyword(pendingDraft.focusKeyword || '');
+
             setCanonicalUrl(pendingDraft.canonicalUrl || '');
         }
         setShowDraftRestoreModal(false);
@@ -146,14 +146,14 @@ export default function SubmitPage() {
                 uploadedImages,
                 metaTitle,
                 metaDescription,
-                focusKeyword,
+
                 canonicalUrl,
             });
         }
     }, [
         destination, category, titleEn, titleHi, excerptEn, excerptHi,
         contentEn, contentHi, coverImage, uploadedImages, metaTitle,
-        metaDescription, focusKeyword, canonicalUrl, submitted, scheduleAutoSave
+        metaDescription, canonicalUrl, submitted, scheduleAutoSave
     ]);
 
     // Check authentication status
@@ -359,7 +359,7 @@ export default function SubmitPage() {
                 // SEO Fields
                 meta_title: metaTitle || titleEn,
                 meta_description: metaDescription || excerptEn,
-                focus_keyword: focusKeyword,
+
                 canonical_url: canonicalUrl,
                 // Pass verified user ID to skip redundant auth check inside createBlog
                 authorId: user.id,
@@ -962,22 +962,7 @@ export default function SubmitPage() {
                                                     </p>
                                                 </div>
 
-                                                {/* Focus Keyword */}
-                                                <div>
-                                                    <label className="block mb-2 font-semibold text-gray-700">
-                                                        {t('Focus Keyword', 'फोकस कीवर्ड')}
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={focusKeyword}
-                                                        onChange={(e) => setFocusKeyword(e.target.value)}
-                                                        placeholder={t('e.g., "Jaipur travel guide" or "Rajasthan budget trip"', 'जैसे, "जयपुर यात्रा गाइड" या "राजस्थान बजट यात्रा"')}
-                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-royal-blue transition-all"
-                                                    />
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {t('The main keyword you want this post to rank for.', 'मुख्य कीवर्ड जिसके लिए आप चाहते हैं कि यह पोस्ट रैंक करे।')}
-                                                    </p>
-                                                </div>
+
 
                                                 {/* SEO Tips */}
                                                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
@@ -985,7 +970,7 @@ export default function SubmitPage() {
                                                         <span>💡</span> {t('SEO Tips', 'एसईओ सुझाव')}
                                                     </h4>
                                                     <ul className="text-sm text-gray-600 space-y-1">
-                                                        <li>• {t('Include your focus keyword in the title and first paragraph', 'शीर्षक और पहले पैराग्राफ में अपना फोकस कीवर्ड शामिल करें')}</li>
+
                                                         <li>• {t('Use H1, H2, H3 headings to structure your content', 'अपनी सामग्री को संरचित करने के लिए H1, H2, H3 हेडिंग का उपयोग करें')}</li>
                                                         <li>• {t('Add alt text to images (we do this automatically)', 'छवियों में alt टेक्स्ट जोड़ें (हम यह स्वचालित रूप से करते हैं)')}</li>
                                                         <li>• {t('Write at least 300 words for better SEO', 'बेहतर SEO के लिए कम से कम 300 शब्द लिखें')}</li>

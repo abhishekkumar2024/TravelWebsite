@@ -50,7 +50,7 @@ function mapRowToBlog(row: any): BlogPost {
         // SEO Fields
         meta_title: row.meta_title ?? row.title_en,
         meta_description: row.meta_description ?? row.excerpt_en ?? '',
-        focus_keyword: row.focus_keyword,
+
         canonical_url: row.canonical_url,
         slug: row.slug,
     };
@@ -150,7 +150,7 @@ export async function createBlog(payload: {
     // SEO Fields
     meta_title?: string;
     meta_description?: string;
-    focus_keyword?: string;
+
     canonical_url?: string;
     slug?: string;
     // Performance: caller can pass authorId if already verified (avoids redundant ensureAuthorExists)
@@ -202,7 +202,7 @@ export async function createBlog(payload: {
                 // SEO Fields
                 meta_title: payload.meta_title || payload.title_en,
                 meta_description: payload.meta_description || payload.excerpt_en,
-                focus_keyword: payload.focus_keyword || null,
+
                 canonical_url: payload.canonical_url || null,
             })
             .select('id, slug')
@@ -340,7 +340,7 @@ export async function updateBlog(id: string, payload: {
     status?: 'draft' | 'pending' | 'published';
     meta_title?: string;
     meta_description?: string;
-    focus_keyword?: string;
+
     canonical_url?: string;
     slug?: string;
 }): Promise<{ success: boolean; slug: string | null; error: string | null }> {
@@ -366,7 +366,7 @@ export async function updateBlog(id: string, payload: {
         // SEO Fields
         if (payload.meta_title !== undefined) updateData.meta_title = payload.meta_title;
         if (payload.meta_description !== undefined) updateData.meta_description = payload.meta_description;
-        if (payload.focus_keyword !== undefined) updateData.focus_keyword = payload.focus_keyword;
+
         if (payload.canonical_url !== undefined) updateData.canonical_url = payload.canonical_url;
 
         // Ensure slug is updated if title changes or if explicitly provided

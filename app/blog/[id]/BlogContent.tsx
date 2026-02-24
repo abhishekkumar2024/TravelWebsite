@@ -217,36 +217,6 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                         </div>
                     </div>
 
-                    {/* Focus Keywords — SEO-only, visually hidden from users.
-                        Keywords are already in meta tags + structured data for full SEO coverage.
-                        This hidden section provides additional in-page signals for crawlers. */}
-                    {blog.focus_keyword && (() => {
-                        const keywords = blog.focus_keyword.split(',').map((k: string) => k.trim()).filter(Boolean);
-                        if (keywords.length === 0) return null;
-                        return (
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    width: '1px',
-                                    height: '1px',
-                                    padding: 0,
-                                    margin: '-1px',
-                                    overflow: 'hidden',
-                                    clip: 'rect(0, 0, 0, 0)',
-                                    whiteSpace: 'nowrap',
-                                    border: 0,
-                                }}
-                                role="navigation"
-                                aria-label="Blog topics"
-                            >
-                                <span>Topics: </span>
-                                {keywords.map((keyword: string, idx: number) => (
-                                    <span key={idx}>{keyword}{idx < keywords.length - 1 ? ', ' : ''}</span>
-                                ))}
-                            </div>
-                        );
-                    })()}
-
                     {/* Table of Contents — helps Google show jump links in search results */}
                     <TableOfContents headings={headings} className="mb-8" />
 

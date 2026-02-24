@@ -16,7 +16,6 @@ export interface SubmitDraftData {
     uploadedImages: string[];
     metaTitle: string;
     metaDescription: string;
-    focusKeyword: string;
     canonicalUrl: string;
     savedAt: number; // timestamp
 }
