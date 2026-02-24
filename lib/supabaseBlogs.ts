@@ -180,10 +180,12 @@ export async function createBlog(payload: {
         // Default to 'pending' for approval workflow
         const blogStatus = payload.status || 'pending';
 
+        const blogSlug = payload.slug || generateSlug(payload.title_en);
+
         const { data, error } = await supabase
             .from('blogs')
             .insert({
-                slug: payload.slug || generateSlug(payload.title_en),
+                slug: blogSlug,
                 title_en: payload.title_en,
                 title_hi: payload.title_hi ?? payload.title_en,
                 excerpt_en: payload.excerpt_en,
@@ -202,8 +204,8 @@ export async function createBlog(payload: {
                 // SEO Fields
                 meta_title: payload.meta_title || payload.title_en,
                 meta_description: payload.meta_description || payload.excerpt_en,
-
-                canonical_url: payload.canonical_url || null,
+                // Auto-generate canonical_url from slug if not provided
+                canonical_url: payload.canonical_url || `https://www.camelthar.com/blog/${blogSlug}/`,
             })
             .select('id, slug')
             .single();
