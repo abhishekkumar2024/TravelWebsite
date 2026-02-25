@@ -108,6 +108,15 @@ export default function RootLayout({
                     href="/images/rajasthan-desert-hero.webp"
                     media="(min-width: 769px)"
                 />
+
+                {/* RSS Feed autodiscovery — allows browsers, feed readers, and AI engines to find the feed */}
+                <link
+                    rel="alternate"
+                    type="application/rss+xml"
+                    title="CamelThar - Rajasthan Travel Stories"
+                    href="https://www.camelthar.com/feed.xml"
+                />
+
                 <Script
                     src="https://www.googletagmanager.com/gtag/js?id=G-BG1VBT8E8B"
                     strategy="afterInteractive"

@@ -67,9 +67,28 @@ const nextConfig = {
     // Security and caching headers
     async headers() {
         return [
+            // ── Security Headers (all pages) ──
+            // These improve SEO trust scores in Google PageSpeed & Lighthouse
+            {
+                source: '/(.*)',
+                headers: [
+                    // Prevent MIME type sniffing (XSS mitigation)
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                    // Prevent clickjacking — only allow framing from own domain
+                    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+                    // Control referrer info sent with outbound links
+                    // 'strict-origin-when-cross-origin' = sends full URL for same-origin, only origin for cross-origin
+                    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+                    // Restrict browser features the site doesn't need
+                    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+                    // Enable DNS prefetching for faster external resource loading
+                    { key: 'X-DNS-Prefetch-Control', value: 'on' },
+                ],
+            },
+
+            // ── Caching Headers ──
             {
                 // Blog pages: CDN cache must match ISR revalidate (60s)
-                // Previously s-maxage=3600 caused 1-HOUR stale content after updates!
                 // On-demand revalidation (via /api/revalidate) also purges CDN cache
                 source: '/blogs/:path*',
                 headers: [
@@ -90,12 +109,12 @@ const nextConfig = {
                 ],
             },
             {
-                // Blogs listing page: cache for 60s to show new posts quickly
-                source: '/blogs/:path*',
+                // RSS feed: cache for 1 hour (matches revalidate in route)
+                source: '/feed.xml',
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=60, stale-while-revalidate=300',
+                        value: 'public, s-maxage=3600, stale-while-revalidate=600',
                     },
                 ],
             },

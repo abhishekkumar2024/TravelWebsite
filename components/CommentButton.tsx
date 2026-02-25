@@ -55,7 +55,7 @@ function CommentButtonWithContext({
         e.preventDefault();
         e.stopPropagation();
 
-        const blogPath = slug ? `/blog/${slug}` : `/blog/${blogId}`;
+        const blogPath = slug ? `/blogs/${slug}/` : `/blogs/${blogId}/`;
         const targetUrl = `${blogPath}?scroll=comments`;
 
         if (!user) {
@@ -137,7 +137,7 @@ function CommentButtonStandalone({ blogId, slug, variant = 'default' }: CommentB
         e.preventDefault();
         e.stopPropagation();
 
-        const blogPath = slug ? `/blog/${slug}` : `/blog/${blogId}`;
+        const blogPath = slug ? `/blogs/${slug}/` : `/blogs/${blogId}/`;
         const targetUrl = `${blogPath}?scroll=comments`;
 
         if (!user) {

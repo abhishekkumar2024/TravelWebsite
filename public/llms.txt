@@ -1,0 +1,50 @@
+# CamelThar - Rajasthan Travel Guide
+
+> CamelThar is a travel blog and destination guide focused on Rajasthan, India. It features authentic travel stories, city guides, desert safari tips, and cultural insights from the Land of Kings.
+
+## About
+CamelThar provides comprehensive travel content about Rajasthan's most popular destinations. The site features user-submitted travel stories, professional destination guides, and practical travel tips. Content is available in English and Hindi.
+
+## Website
+- URL: https://www.camelthar.com
+- Language: English (primary), Hindi
+- Content Type: Travel Blog, Destination Guides, Travel Tips
+- Region Focus: Rajasthan, India
+
+## Destinations Covered
+- [Jaipur (The Pink City)](https://www.camelthar.com/destinations/jaipur/): Amber Fort, Hawa Mahal, City Palace, Jantar Mantar
+- [Udaipur (City of Lakes)](https://www.camelthar.com/destinations/udaipur/): Lake Pichola, City Palace, Jag Mandir, Fateh Sagar
+- [Jaisalmer (The Golden City)](https://www.camelthar.com/destinations/jaisalmer/): Jaisalmer Fort, Sam Sand Dunes, Desert Safari, Patwon Ki Haveli
+- [Jodhpur (The Blue City)](https://www.camelthar.com/destinations/jodhpur/): Mehrangarh Fort, Umaid Bhawan, Jaswant Thada, Clock Tower
+- [Pushkar (The Sacred Town)](https://www.camelthar.com/destinations/pushkar/): Brahma Temple, Pushkar Lake, Savitri Temple, Camel Fair
+- [Mount Abu (The Hill Station)](https://www.camelthar.com/destinations/mount-abu/): Dilwara Temples, Nakki Lake, Guru Shikhar, Sunset Point
+- [Bikaner (The Camel Country)](https://www.camelthar.com/destinations/bikaner/): Junagarh Fort, Karni Mata Temple, Camel Research Farm
+
+## Content Sections
+- [All Travel Blogs](https://www.camelthar.com/blogs/): Latest travel stories and guides from real travelers
+- [Destinations](https://www.camelthar.com/destinations/): Comprehensive guides for each Rajasthan city
+- [Travel Essentials](https://www.camelthar.com/essentials/): Packing tips, best travel times, safety advice
+- [About Us](https://www.camelthar.com/about/): Our mission and story
+- [Contact](https://www.camelthar.com/contact/): Get in touch
+
+## Key Topics
+- Best time to visit Rajasthan (October to March)
+- Desert safari experiences in Jaisalmer and Bikaner
+- Heritage walks and fort tours across Rajasthan
+- Rajasthani culture, food, and traditions
+- Solo travel and family trip planning for Rajasthan
+- Budget and luxury travel options in Rajasthan
+
+## Frequently Asked Questions
+- **What is the best time to visit Rajasthan?** The best time is October to March when the weather is pleasant for sightseeing and desert activities.
+- **How many days are needed for a Rajasthan trip?** 7-10 days for major cities; 14+ days for deeper rural exploration.
+- **Is Rajasthan safe for solo female travelers?** Yes, Rajasthan is generally safe. People are hospitable. Follow standard travel precautions.
+- **What to pack for a desert safari?** Cotton clothes for day, warm layers for night. Sunscreen, sunglasses, hat, and walking shoes are essential.
+
+## Technical
+- Built with: Next.js (React)
+- Hosted on: Vercel
+- Content Source: Supabase (PostgreSQL)
+- Images: Cloudinary CDN
+- Sitemap: https://www.camelthar.com/sitemap.xml
+- RSS Feed: https://www.camelthar.com/feed.xml

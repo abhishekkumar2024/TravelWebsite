@@ -298,7 +298,7 @@ export default function MyBlogsPage() {
 
                                             {(blog.status === 'published' || blog.status === 'approved') && (
                                                 <Link
-                                                    href={`/blog/${blog.slug || blog.id}`}
+                                                    href={`/blogs/${blog.slug || blog.id}/`}
                                                     target="_blank"
                                                     className="px-4 py-2 border border-gray-200 hover:border-royal-blue hover:text-royal-blue text-gray-600 font-medium rounded-lg text-sm transition-all"
                                                 >

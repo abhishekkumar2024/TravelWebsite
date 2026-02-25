@@ -466,7 +466,7 @@ export default function SubmitPage() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             {isAdminUser && createdSlug && (
                                 <Link
-                                    href={`/blog/${createdSlug}`}
+                                    href={`/blogs/${createdSlug}/`}
                                     className="inline-block px-6 py-3 bg-desert-gold text-white font-semibold rounded-lg hover:bg-opacity-90 transition-all"
                                 >
                                     {t('View Blog', 'ब्लॉग देखें')}

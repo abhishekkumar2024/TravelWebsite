@@ -205,7 +205,7 @@ export async function createBlog(payload: {
                 meta_title: payload.meta_title || payload.title_en,
                 meta_description: payload.meta_description || payload.excerpt_en,
                 // Auto-generate canonical_url from slug if not provided
-                canonical_url: payload.canonical_url || `https://www.camelthar.com/blog/${blogSlug}/`,
+                canonical_url: payload.canonical_url || `https://www.camelthar.com/blogs/${blogSlug}/`,
             })
             .select('id, slug')
             .single();
@@ -277,7 +277,7 @@ export async function approveBlog(blogId: string): Promise<{ success: boolean; e
     // Trigger IndexNow + Google/Bing sitemap pings for the new content
     // isNewContent=true so sitemaps get pinged for faster discovery
     if (data.slug) {
-        submitToIndexNow([`https://www.camelthar.com/blog/${data.slug}/`], true);
+        submitToIndexNow([`https://www.camelthar.com/blogs/${data.slug}/`], true);
     }
 
     return { success: true, error: null };
@@ -392,7 +392,7 @@ export async function updateBlog(id: string, payload: {
 
         // Fire-and-forget: notify indexing services (non-blocking)
         if (updatedRow?.status === 'published' && updatedRow?.slug) {
-            submitToIndexNow([`https://www.camelthar.com/blog/${updatedRow.slug}/`]).catch(() => { });
+            submitToIndexNow([`https://www.camelthar.com/blogs/${updatedRow.slug}/`]).catch(() => { });
         }
 
         return { success: true, slug: updatedRow?.slug || null, error: null };

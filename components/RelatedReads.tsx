@@ -49,7 +49,7 @@ export default function RelatedReads({ blogs }: RelatedReadsProps) {
                     return (
                         <Link
                             key={blog.slug}
-                            href={`/blog/${blog.slug}`}
+                            href={`/blogs/${blog.slug}/`}
                             className="group block"
                         >
                             <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-desert-gold hover:shadow-md transition-all duration-300">
