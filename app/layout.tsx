@@ -203,11 +203,6 @@ export default function RootLayout({
                                 },
                                 'query-input': 'required name=search_term_string',
                             },
-                            // AEO: Speakable — voice assistants can read the site name and tagline
-                            speakable: {
-                                '@type': 'SpeakableSpecification',
-                                cssSelector: ['h1', 'meta[name="description"]']
-                            },
                         }),
                     }}
                 />

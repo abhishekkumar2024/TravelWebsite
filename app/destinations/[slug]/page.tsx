@@ -95,11 +95,6 @@ export default async function DestinationDetailsPage({ params }: Props) {
         publicAccess: true,
         // GEO: Language and content context for AI
         inLanguage: 'en-IN',
-        // AEO: Speakable — voice assistants read destination name and description
-        speakable: {
-            '@type': 'SpeakableSpecification',
-            cssSelector: ['h1', 'h2', '.bg-white p']
-        },
         // GEO: Connect to parent website for topical authority
         isPartOf: {
             '@type': 'WebSite',
