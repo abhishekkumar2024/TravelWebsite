@@ -32,6 +32,11 @@ export const metadata: Metadata = {
         'travel blog',
         'राजस्थान यात्रा',
         'desert safari',
+        'Rajasthan travel guide',
+        'best places to visit in Rajasthan',
+        'Rajasthan tourism',
+        'Jodhpur travel',
+        'Pushkar guide',
     ],
     authors: [{ name: 'CamelThar' }],
     openGraph: {
@@ -71,6 +76,10 @@ export const metadata: Metadata = {
     },
     other: {
         'p:domain_verify': '8babaaa14408702493a829fbe247adda',
+        // GEO: AI content classification hints for generative engines
+        'ai.content.type': 'travel blog',
+        'ai.content.region': 'Rajasthan, India',
+        'ai.content.topics': 'travel, tourism, destinations, culture, heritage, desert safari',
     },
 };
 
@@ -120,7 +129,7 @@ export default function RootLayout({
                     data-wpfc-render="false"
                 />
 
-                {/* Organization structured data for brand visibility */}
+                {/* Organization structured data for brand visibility — Enhanced for GEO */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -130,7 +139,29 @@ export default function RootLayout({
                             name: 'CamelThar',
                             url: 'https://www.camelthar.com',
                             logo: 'https://www.camelthar.com/camelthar_logo.webp',
-                            description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips.',
+                            description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips. Expert coverage of Jaipur, Udaipur, Jaisalmer, Jodhpur, Pushkar, and the Thar Desert.',
+                            foundingDate: '2024',
+                            // GEO: Establish topical authority — tells AI what this org is an expert on
+                            knowsAbout: [
+                                'Rajasthan tourism',
+                                'Thar Desert travel',
+                                'India heritage tourism',
+                                'Jaipur travel guide',
+                                'Udaipur travel guide',
+                                'Jaisalmer travel guide',
+                                'Jodhpur travel guide',
+                                'Desert safari India',
+                                'Rajasthan culture and heritage',
+                            ],
+                            // GEO: Geographic scope for AI engines
+                            areaServed: {
+                                '@type': 'State',
+                                name: 'Rajasthan',
+                                containedInPlace: {
+                                    '@type': 'Country',
+                                    name: 'India',
+                                },
+                            },
                             sameAs: [
                                 'https://x.com/camelthar',
                                 'https://www.instagram.com/cameltharinfo/',
@@ -144,7 +175,7 @@ export default function RootLayout({
                     }}
                 />
 
-                {/* WebSite structured data for sitelinks search box */}
+                {/* WebSite structured data for sitelinks search box + AEO Speakable */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -153,6 +184,8 @@ export default function RootLayout({
                             '@type': 'WebSite',
                             name: 'CamelThar',
                             url: 'https://www.camelthar.com',
+                            description: 'Rajasthan travel stories, destination guides, desert safari tips, and cultural insights.',
+                            inLanguage: 'en-IN',
                             potentialAction: {
                                 '@type': 'SearchAction',
                                 target: {
@@ -160,6 +193,11 @@ export default function RootLayout({
                                     urlTemplate: 'https://www.camelthar.com/blogs/?search={search_term_string}',
                                 },
                                 'query-input': 'required name=search_term_string',
+                            },
+                            // AEO: Speakable — voice assistants can read the site name and tagline
+                            speakable: {
+                                '@type': 'SpeakableSpecification',
+                                cssSelector: ['h1', 'meta[name="description"]']
                             },
                         }),
                     }}

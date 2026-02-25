@@ -68,7 +68,7 @@ export default async function DestinationDetailsPage({ params }: Props) {
     // Fetch blogs dynamically for this destination
     const blogs = await fetchBlogsByDestination(params.slug);
 
-    // Tourist Destination structured data for rich search results
+    // Tourist Destination structured data for rich search results — Enhanced for SEO + AEO + GEO
     const touristDestinationJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'TouristDestination',
@@ -93,6 +93,19 @@ export default async function DestinationDetailsPage({ params }: Props) {
             isAccessibleForFree: false,
         })),
         publicAccess: true,
+        // GEO: Language and content context for AI
+        inLanguage: 'en-IN',
+        // AEO: Speakable — voice assistants read destination name and description
+        speakable: {
+            '@type': 'SpeakableSpecification',
+            cssSelector: ['h1', 'h2', '.bg-white p']
+        },
+        // GEO: Connect to parent website for topical authority
+        isPartOf: {
+            '@type': 'WebSite',
+            name: 'CamelThar',
+            url: 'https://www.camelthar.com'
+        },
     };
 
     // Breadcrumb structured data

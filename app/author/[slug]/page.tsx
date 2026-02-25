@@ -19,6 +19,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
         title: `${author.name} - Author Profile | CamelThar`,
         description: author.bio || `Read travel stories by ${author.name} on CamelThar.`,
+        alternates: {
+            canonical: `/author/${params.slug}/`,
+        },
         openGraph: {
             images: author.avatar_url ? [author.avatar_url] : [],
         }
@@ -136,7 +139,7 @@ export default async function AuthorProfilePage({ params }: PageProps) {
                             {blogs.map((blog) => (
                                 <Link
                                     key={blog.id}
-                                    href={`/blog/${blog.slug || blog.id}`}
+                                    href={`/blogs/${blog.slug || blog.id}/`}
                                     className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-gray-100"
                                 >
                                     <div className="relative h-48 w-full">

@@ -144,9 +144,14 @@ export default async function BlogPage({ params }: PageProps) {
     // Fetch related blogs (cached, for SEO)
     const relatedBlogs = await getRelatedBlogs(blog.destination, blog.id);
 
+    // Calculate word count for GEO richness signal
+    const plainText = (blog.content_en || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const wordCount = plainText.split(/\s+/).filter(Boolean).length;
 
+    // Extract first 2 sentences for Speakable (AEO — voice assistants)
+    const firstSentences = plainText.split(/[.!?]\s/).slice(0, 2).join('. ').trim();
 
-    // structured data for rich snippets
+    // structured data for rich snippets — Enhanced for SEO + AEO + GEO
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
@@ -172,7 +177,37 @@ export default async function BlogPage({ params }: PageProps) {
             '@type': 'WebPage',
             '@id': `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`
         },
-
+        // --- GEO: Helps AI engines understand content depth & topic ---
+        inLanguage: 'en-IN',
+        wordCount: wordCount,
+        articleSection: blog.category || 'Travel',
+        ...(blog.destination ? {
+            about: {
+                '@type': 'TouristDestination',
+                name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1),
+                containedInPlace: {
+                    '@type': 'State',
+                    name: 'Rajasthan',
+                    containedInPlace: { '@type': 'Country', name: 'India' }
+                }
+            },
+            mentions: {
+                '@type': 'Place',
+                name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1) + ', Rajasthan',
+                containedInPlace: { '@type': 'Country', name: 'India' }
+            },
+        } : {}),
+        // --- GEO: Connect article to website for topical authority ---
+        isPartOf: {
+            '@type': 'WebSite',
+            name: 'CamelThar',
+            url: 'https://www.camelthar.com'
+        },
+        // --- AEO: Speakable — tells voice assistants which text to read aloud ---
+        speakable: {
+            '@type': 'SpeakableSpecification',
+            cssSelector: ['article h1', '.prose h2', '.prose p:first-of-type']
+        },
     };
 
     const breadcrumbJsonLd = {

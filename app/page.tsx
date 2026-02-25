@@ -52,11 +52,51 @@ export default async function HomePage() {
         ],
     };
 
+    // GEO + AEO: Homepage schema — tells AI "what this site IS" at the top level
+    const homepageJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'CamelThar - Travel Stories from the Land of Kings',
+        description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips. Discover Jaipur, Udaipur, Jaisalmer, Jodhpur, and more.',
+        url: 'https://www.camelthar.com/',
+        inLanguage: 'en-IN',
+        isPartOf: {
+            '@type': 'WebSite',
+            name: 'CamelThar',
+            url: 'https://www.camelthar.com'
+        },
+        about: {
+            '@type': 'State',
+            name: 'Rajasthan',
+            containedInPlace: { '@type': 'Country', name: 'India' }
+        },
+        // GEO: Offers signal — AI engines understand this site provides travel guides
+        mainEntity: {
+            '@type': 'TravelAction',
+            name: 'Explore Rajasthan',
+            description: 'Discover authentic travel stories, destination guides, desert safari tips, and cultural insights from Rajasthan, India.',
+            location: {
+                '@type': 'State',
+                name: 'Rajasthan',
+                containedInPlace: { '@type': 'Country', name: 'India' },
+            },
+        },
+        // AEO: Speakable — voice assistants read the hero tagline
+        speakable: {
+            '@type': 'SpeakableSpecification',
+            cssSelector: ['h1', '.hero-subtitle', 'meta[name="description"]']
+        },
+    };
+
     return (
         <>
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }}
             />
             <HomePageClient destinations={destinations} blogs={blogs} />
         </>
