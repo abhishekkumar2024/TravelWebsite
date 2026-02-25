@@ -30,7 +30,7 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
         <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 relative flex flex-col h-full border border-gray-100">
             {/* Main Navigation Link (Absolute overlay excluding bottom bar) */}
             <Link
-                href={`/blogs/${blog.slug || blog.id}`}
+                href={`/blogs/${blog.slug || blog.id}/`}
                 className="absolute inset-0 z-0"
                 aria-label={`Read ${title}`}
             />

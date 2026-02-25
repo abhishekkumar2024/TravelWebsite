@@ -4,7 +4,7 @@
 -- Automatically sets canonical_url for all blogs
 -- where it's currently NULL or empty.
 --
--- Format: https://www.camelthar.com/blog/{slug}/
+-- Format: https://www.camelthar.com/blogs/{slug}/
 --
 -- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
 -- ============================================
@@ -17,7 +17,7 @@ ORDER BY created_at DESC;
 
 -- Backfill: Set canonical_url from slug
 UPDATE blogs
-SET canonical_url = 'https://www.camelthar.com/blog/' || slug || '/'
+SET canonical_url = 'https://www.camelthar.com/blogs/' || slug || '/'
 WHERE (canonical_url IS NULL OR canonical_url = '')
   AND slug IS NOT NULL
   AND slug != '';
