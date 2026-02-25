@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 
     const pageSlug = blog.slug || blog.id;
-    const pagePath = `/blog/${pageSlug}/`;
+    const pagePath = `/blogs/${pageSlug}/`;
 
     // distinct demo blogs from real blogs
     const isDemoBlog = demoBlogs.some((demo) => demo.id === blog.id);
@@ -170,7 +170,7 @@ export default async function BlogPage({ params }: PageProps) {
         },
         mainEntityOfPage: {
             '@type': 'WebPage',
-            '@id': `https://www.camelthar.com/blog/${blog.slug || blog.id}/`
+            '@id': `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`
         },
 
     };
@@ -201,7 +201,7 @@ export default async function BlogPage({ params }: PageProps) {
                 '@type': 'ListItem',
                 position: 4,
                 name: blog.title_en,
-                item: `https://www.camelthar.com/blog/${blog.slug || blog.id}/`
+                item: `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`
             }
         ]
     };

@@ -53,9 +53,29 @@ export default async function BlogsPage() {
                 '@type': 'ListItem',
                 position: index + 1,
                 name: blog.title_en,
-                url: `https://www.camelthar.com/blog/${blog.slug || blog.id}/`,
+                url: `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`,
             })),
         },
+    };
+
+    // BreadcrumbList schema — shows breadcrumb trail in Google search results
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com/',
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Travel Blogs',
+                item: 'https://www.camelthar.com/blogs/',
+            },
+        ],
     };
 
     // 2. Pass data to the Client Component
@@ -64,6 +84,10 @@ export default async function BlogsPage() {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
             />
             <BlogsClient initialBlogs={blogs} destinations={destinations} />
         </>

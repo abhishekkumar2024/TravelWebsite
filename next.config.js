@@ -26,7 +26,7 @@ const nextConfig = {
         // Enabled for better performance with Cloudinary and local images
         deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-        formats: ['image/webp'],
+        formats: ['image/avif', 'image/webp'],
         minimumCacheTTL: 31536000,
     },
 
@@ -71,7 +71,7 @@ const nextConfig = {
                 // Blog pages: CDN cache must match ISR revalidate (60s)
                 // Previously s-maxage=3600 caused 1-HOUR stale content after updates!
                 // On-demand revalidation (via /api/revalidate) also purges CDN cache
-                source: '/blog/:path*',
+                source: '/blogs/:path*',
                 headers: [
                     {
                         key: 'Cache-Control',

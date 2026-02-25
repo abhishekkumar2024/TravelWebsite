@@ -111,7 +111,7 @@ export default function Footer() {
                                 {t('Home', 'होम')}
                             </Link>
                             <Link href="/blogs" className="text-gray-400 hover:text-desert-gold transition-colors">
-                                {t('Blogs', 'ब्लॉग')}
+                                {t('Travel Blogs', 'यात्रा ब्लॉग')}
                             </Link>
                             <Link href="/destinations" className="text-gray-400 hover:text-desert-gold transition-colors">
                                 {t('Destinations', 'स्थान')}

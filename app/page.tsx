@@ -38,5 +38,27 @@ export default async function HomePage() {
         blogs = demoBlogs.slice(0, 3);
     }
 
-    return <HomePageClient destinations={destinations} blogs={blogs} />;
+    // BreadcrumbList schema — root breadcrumb
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com/',
+            },
+        ],
+    };
+
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
+            <HomePageClient destinations={destinations} blogs={blogs} />
+        </>
+    );
 }

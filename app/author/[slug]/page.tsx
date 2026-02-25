@@ -31,8 +31,50 @@ export default async function AuthorProfilePage({ params }: PageProps) {
 
     const blogs = await fetchBlogsByAuthorSlug(params.slug);
 
+    // Person schema — E-E-A-T signals for Google
+    const personJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        mainEntity: {
+            '@type': 'Person',
+            name: author.name,
+            description: author.bio || `Travel storyteller on CamelThar.`,
+            url: `https://www.camelthar.com/author/${params.slug}/`,
+            ...(author.avatar_url ? { image: author.avatar_url } : {}),
+            ...(author.website ? { sameAs: [author.website, author.twitter, author.instagram].filter(Boolean) } : {}),
+        },
+    };
+
+    // BreadcrumbList schema
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com/',
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: author.name,
+                item: `https://www.camelthar.com/author/${params.slug}/`,
+            },
+        ],
+    };
+
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
             <div className="max-w-4xl mx-auto">
                 {/* Profile Header */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-12 text-center md:text-left">

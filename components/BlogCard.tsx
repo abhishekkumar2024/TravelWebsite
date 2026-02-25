@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useLanguage } from './LanguageProvider';
 import type { BlogPost } from '@/lib/data';
 import { useState, useEffect } from 'react';
@@ -31,7 +30,7 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
         <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 relative flex flex-col h-full border border-gray-100">
             {/* Main Navigation Link (Absolute overlay excluding bottom bar) */}
             <Link
-                href={`/blog/${blog.slug || blog.id}`}
+                href={`/blogs/${blog.slug || blog.id}`}
                 className="absolute inset-0 z-0"
                 aria-label={`Read ${title}`}
             />
@@ -39,13 +38,14 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
             {/* Content Container */}
             <div className="flex-1 flex flex-col z-10 pointer-events-none">
                 <div className="h-56 relative overflow-hidden">
-                    <Image
+                    {/* Direct img tag for SEO — Google indexes Cloudinary URLs directly */}
+                    <img
                         src={blog.coverImage}
                         alt={title}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 410px"
-                        priority={priority}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        loading={priority ? 'eager' : 'lazy'}
+                        {...(priority ? { fetchPriority: 'high' as any } : {})}
+                        decoding="async"
                     />
                     <div className="absolute top-4 left-4">
                         <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-royal-blue text-[10px] font-bold uppercase rounded-full shadow-sm">
@@ -79,12 +79,13 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
                         {blog.author.avatar ? (
-                            <Image
+                            <img
                                 src={blog.author.avatar}
                                 alt={blog.author.name}
                                 width={32}
                                 height={32}
                                 className="object-cover"
+                                loading="lazy"
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-400">
@@ -101,7 +102,7 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
                     <ShareButton
                         title={title}
                         text={excerpt || title}
-                        url={mounted ? `${window.location.origin}/blog/${blog.slug || blog.id}` : `https://camelthar.com/blog/${blog.slug || blog.id}`}
+                        url={mounted ? `${window.location.origin}/blogs/${blog.slug || blog.id}` : `https://camelthar.com/blogs/${blog.slug || blog.id}`}
                         compact={true}
                     />
                 </div>

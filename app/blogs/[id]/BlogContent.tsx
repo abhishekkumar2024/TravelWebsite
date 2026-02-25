@@ -121,7 +121,7 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                         Home
                     </Link>
                     <span className="text-gray-300">/</span>
-                    <Link href="/destinations/" className="hover:text-royal-blue transition-colors">Destinations</Link>
+                    <Link href="/blogs/" className="hover:text-royal-blue transition-colors">{t('Blogs', 'ब्लॉग')}</Link>
                     <span className="text-gray-300">/</span>
                     <Link href={`/destinations/${blog.destination}/`} className="hover:text-royal-blue transition-colors capitalize">
                         {blog.destination}
@@ -262,7 +262,7 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
                         <nav className="flex items-center gap-2 text-xs text-gray-400 font-medium italic">
                             <Link href="/" className="hover:text-royal-blue">Home</Link>
                             <span>/</span>
-                            <Link href="/destinations/" className="hover:text-royal-blue">Destinations</Link>
+                            <Link href="/blogs/" className="hover:text-royal-blue">{t('Blogs', 'ब्लॉग')}</Link>
                             <span>/</span>
                             <span className="capitalize">{blog.destination}</span>
                         </nav>

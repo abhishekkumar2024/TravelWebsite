@@ -33,8 +33,51 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+    // Breadcrumb schema for Google search results
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com/',
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'About Us',
+                item: 'https://www.camelthar.com/about/',
+            },
+        ],
+    };
+
+    // AboutPage schema
+    const aboutPageJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'AboutPage',
+        name: 'About CamelThar',
+        description: 'Learn about CamelThar, our mission to showcase the beauty of Rajasthan, and the team behind the stories.',
+        url: 'https://www.camelthar.com/about/',
+        mainEntity: {
+            '@type': 'Organization',
+            name: 'CamelThar',
+            url: 'https://www.camelthar.com',
+            logo: 'https://www.camelthar.com/camelthar_logo.webp',
+        },
+    };
+
     return (
         <div className="pt-24 pb-20">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageJsonLd) }}
+            />
             {/* Hero Section */}
             <div className="relative h-[400px] mb-16">
                 <Image

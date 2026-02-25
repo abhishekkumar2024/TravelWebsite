@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from './LanguageProvider';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthorProfile } from '@/lib/supabaseAuthors';
 
 export default function Navbar() {
     const { lang, setLang, t, mounted } = useLanguage();
+    const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -179,7 +181,7 @@ export default function Navbar() {
                         </Link>
                         <Link
                             href="/blogs"
-                            className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100"
+                            className={`text-lg py-2 px-4 rounded-lg hover:bg-gray-100 ${pathname.startsWith('/blogs') ? 'text-royal-blue font-bold' : ''}`}
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             {t('Blogs', 'ब्लॉग')}

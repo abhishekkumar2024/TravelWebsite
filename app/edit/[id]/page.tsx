@@ -411,7 +411,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    paths: [`/blog/${slug}`, '/blogs', '/'],
+                    paths: [`/blogs/${slug}`, '/blogs', '/'],
                     tags: ['blogs'],
                 }),
             }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
