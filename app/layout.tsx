@@ -21,23 +21,7 @@ export const metadata: Metadata = {
     },
     description:
         'CamelThar - Your gateway to Rajasthan travel stories, destination guides, and insider tips. Discover Jaipur, Udaipur, Jaisalmer, Jodhpur, and more.',
-    keywords: [
-        'CamelThar',
-        'Rajasthan travel',
-        'Thar Desert',
-        'India tourism',
-        'Jaipur',
-        'Udaipur',
-        'Jaisalmer',
-        'travel blog',
-        'राजस्थान यात्रा',
-        'desert safari',
-        'Rajasthan travel guide',
-        'best places to visit in Rajasthan',
-        'Rajasthan tourism',
-        'Jodhpur travel',
-        'Pushkar guide',
-    ],
+
     authors: [{ name: 'CamelThar' }],
     openGraph: {
         type: 'website',

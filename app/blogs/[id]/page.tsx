@@ -97,7 +97,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             description: blog.meta_description || blog.excerpt_en,
             url: pagePath,
             siteName: 'CamelThar',
-            locale: 'en_US',
+            locale: 'en_IN',
             type: 'article',
             publishedTime: blog.publishedAt || blog.created_at,
             modifiedTime: blog.updated_at || blog.created_at,
@@ -206,7 +206,7 @@ export default async function BlogPage({ params }: PageProps) {
         // --- AEO: Speakable — tells voice assistants which text to read aloud ---
         speakable: {
             '@type': 'SpeakableSpecification',
-            cssSelector: ['article h1', '.prose h2', '.prose p:first-of-type']
+            cssSelector: ['article h1', 'article p:nth-of-type(1)']
         },
     };
 
@@ -223,13 +223,13 @@ export default async function BlogPage({ params }: PageProps) {
             {
                 '@type': 'ListItem',
                 position: 2,
-                name: 'Destinations',
-                item: 'https://www.camelthar.com/destinations/'
+                name: 'Blogs',
+                item: 'https://www.camelthar.com/blogs/'
             },
             {
                 '@type': 'ListItem',
                 position: 3,
-                name: blog.destination,
+                name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1),
                 item: `https://www.camelthar.com/destinations/${blog.destination}/`
             },
             {
@@ -241,6 +241,34 @@ export default async function BlogPage({ params }: PageProps) {
         ]
     };
 
+    // --- FAQ Schema: Extract FAQ content from blog for rich results ---
+    // Looks for patterns like <h2>FAQ</h2> or <h3>Question?</h3><p>Answer</p>
+    const faqItems: { question: string; answer: string }[] = [];
+    const contentHtml = blog.content_en || '';
+    // Match Q&A patterns: headings (h2/h3/h4) ending with ? followed by paragraph(s)
+    const faqRegex = /<h[2-4][^>]*>([^<]*\?[^<]*)<\/h[2-4]>\s*<p[^>]*>(.*?)<\/p>/gi;
+    let faqMatch;
+    while ((faqMatch = faqRegex.exec(contentHtml)) !== null) {
+        const question = faqMatch[1].replace(/&amp;/g, '&').replace(/&#\d+;/g, '').trim();
+        const answer = faqMatch[2].replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim();
+        if (question && answer) {
+            faqItems.push({ question, answer });
+        }
+    }
+
+    const faqJsonLd = faqItems.length > 0 ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map(faq => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: faq.answer,
+            },
+        })),
+    } : null;
+
     return (
         <Suspense fallback={<div className="pt-32 pb-20 text-center text-gray-500">Loading blog...</div>}>
             <script
@@ -251,6 +279,12 @@ export default async function BlogPage({ params }: PageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
             />
+            {faqJsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                />
+            )}
             <BlogContent blog={blog} relatedBlogs={relatedBlogs} />
         </Suspense>
     );
