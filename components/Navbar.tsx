@@ -84,13 +84,13 @@ export default function Navbar() {
                     <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Home', 'होम')}
                     </Link>
-                    <Link href="/blogs" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
+                    <Link href="/blogs/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Blogs', 'ब्लॉग')}
                     </Link>
-                    <Link href="/destinations" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
+                    <Link href="/destinations/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
                         {t('Destinations', 'स्थान')}
                     </Link>
-                    <Link href="/essentials" className="font-medium text-gray-600 hover:text-royal-blue transition-colors flex items-center gap-1">
+                    <Link href="/essentials/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors flex items-center gap-1">
                         <span className="text-sm">🎒</span>
                         {t('Travel Essentials', 'यात्रा आवश्यकताएं')}
                     </Link>
@@ -150,7 +150,7 @@ export default function Navbar() {
                     )}
 
                     <Link
-                        href="/submit"
+                        href="/submit/"
                         className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
                     >
                         {t('Submit Blog', 'ब्लॉग जमा करें')}
@@ -160,6 +160,7 @@ export default function Navbar() {
                     <button
                         className="md:hidden flex flex-col gap-1.5 p-2"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-label="Toggle navigation menu"
                     >
                         <span className="w-6 h-0.5 bg-gray-700 transition-all"></span>
                         <span className="w-6 h-0.5 bg-gray-700 transition-all"></span>
@@ -180,21 +181,21 @@ export default function Navbar() {
                             {t('Home', 'होम')}
                         </Link>
                         <Link
-                            href="/blogs"
+                            href="/blogs/"
                             className={`text-lg py-2 px-4 rounded-lg hover:bg-gray-100 ${pathname.startsWith('/blogs') ? 'text-royal-blue font-bold' : ''}`}
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             {t('Blogs', 'ब्लॉग')}
                         </Link>
                         <Link
-                            href="/destinations"
+                            href="/destinations/"
                             className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100"
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             {t('Destinations', 'स्थान')}
                         </Link>
                         <Link
-                            href="/essentials"
+                            href="/essentials/"
                             className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 flex items-center gap-2"
                             onClick={() => setMobileMenuOpen(false)}
                         >
@@ -226,7 +227,7 @@ export default function Navbar() {
                         )}
 
                         <Link
-                            href="/submit"
+                            href="/submit/"
                             className="text-lg py-2 px-4 rounded-lg bg-desert-gold text-white text-center"
                             onClick={() => setMobileMenuOpen(false)}
                         >

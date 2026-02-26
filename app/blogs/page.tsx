@@ -13,6 +13,7 @@ export const metadata: Metadata = {
         description: 'Discover Rajasthan through authentic travel stories and guides. From Jaipur to Jaisalmer, explore the land of kings.',
         url: '/blogs/',
         siteName: 'CamelThar',
+        locale: 'en_IN',
         type: 'website',
         images: [
             {

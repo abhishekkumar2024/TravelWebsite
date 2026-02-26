@@ -1,4 +1,36 @@
-# CamelThar - Rajasthan Travel Guide
+import { supabase } from '@/lib/supabaseClient';
+import { demoDestinations } from '@/lib/data';
+
+/**
+ * Dynamic llms.txt — GEO optimization
+ * 
+ * Serves a machine-readable summary of the site for LLM crawlers.
+ * Unlike the static version, this automatically includes the latest blog posts.
+ * 
+ * Spec: https://llmstxt.org/
+ * Available at: https://www.camelthar.com/llms.txt
+ */
+
+export const revalidate = 3600; // Revalidate every hour
+
+export async function GET() {
+    // Fetch latest published blogs
+    const { data: blogs } = await supabase
+        .from('blogs')
+        .select('slug, id, title_en, destination, category')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+    const blogLinks = (blogs || [])
+        .map(b => `- [${b.title_en}](https://www.camelthar.com/blogs/${b.slug || b.id}/): ${b.category || 'Travel'} — ${b.destination || 'Rajasthan'}`)
+        .join('\n');
+
+    const destinationLinks = demoDestinations
+        .map(d => `- [${d.name_en} (${d.tagline_en})](https://www.camelthar.com/destinations/${d.id}/): ${d.attractions.join(', ')}`)
+        .join('\n');
+
+    const content = `# CamelThar - Rajasthan Travel Guide
 
 > CamelThar is a travel blog and destination guide focused on Rajasthan, India. It features authentic travel stories, city guides, desert safari tips, and cultural insights from the Land of Kings.
 
@@ -12,13 +44,10 @@ CamelThar provides comprehensive travel content about Rajasthan's most popular d
 - Region Focus: Rajasthan, India
 
 ## Destinations Covered
-- [Jaipur (The Pink City)](https://www.camelthar.com/destinations/jaipur/): Amber Fort, Hawa Mahal, City Palace, Jantar Mantar
-- [Udaipur (City of Lakes)](https://www.camelthar.com/destinations/udaipur/): Lake Pichola, City Palace, Jag Mandir, Fateh Sagar
-- [Jaisalmer (The Golden City)](https://www.camelthar.com/destinations/jaisalmer/): Jaisalmer Fort, Sam Sand Dunes, Desert Safari, Patwon Ki Haveli
-- [Jodhpur (The Blue City)](https://www.camelthar.com/destinations/jodhpur/): Mehrangarh Fort, Umaid Bhawan, Jaswant Thada, Clock Tower
-- [Pushkar (The Sacred Town)](https://www.camelthar.com/destinations/pushkar/): Brahma Temple, Pushkar Lake, Savitri Temple, Camel Fair
-- [Mount Abu (The Hill Station)](https://www.camelthar.com/destinations/mount-abu/): Dilwara Temples, Nakki Lake, Guru Shikhar, Sunset Point
-- [Bikaner (The Camel Country)](https://www.camelthar.com/destinations/bikaner/): Junagarh Fort, Karni Mata Temple, Camel Research Farm
+${destinationLinks}
+
+## Latest Blog Posts
+${blogLinks}
 
 ## Content Sections
 - [All Travel Blogs](https://www.camelthar.com/blogs/): Latest travel stories and guides from real travelers
@@ -48,3 +77,12 @@ CamelThar provides comprehensive travel content about Rajasthan's most popular d
 - Images: Cloudinary CDN
 - Sitemap: https://www.camelthar.com/sitemap.xml
 - RSS Feed: https://www.camelthar.com/feed.xml
+`;
+
+    return new Response(content, {
+        headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
+        },
+    });
+}

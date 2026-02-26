@@ -57,6 +57,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         };
     })
 
+    // 3. Fetch published author slugs
+    const { data: authors } = await supabase
+        .from('authors')
+        .select('slug, updated_at')
+
+    const authorEntries = (authors || [])
+        .filter(a => a.slug)
+        .map((author) => ({
+            url: `${baseUrl}/author/${author.slug}/`,
+            lastModified: author.updated_at ? new Date(author.updated_at) : siteLaunchDate,
+            changeFrequency: 'monthly' as const,
+            priority: 0.4,
+        }))
+
     return [
         // Core pages
         // Homepage freshness = latest content on the site
@@ -75,5 +89,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // Dynamic pages
         ...destinationEntries,
         ...blogEntries,
+        ...authorEntries,
     ]
 }

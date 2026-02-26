@@ -37,6 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             description: destination.description_en,
             url: pagePath,
             siteName: 'CamelThar',
+            locale: 'en_IN',
             type: 'website',
             images: [
                 {
@@ -100,6 +101,11 @@ export default async function DestinationDetailsPage({ params }: Props) {
             '@type': 'WebSite',
             name: 'CamelThar',
             url: 'https://www.camelthar.com'
+        },
+        // AEO: Speakable — tells voice assistants which text to read aloud
+        speakable: {
+            '@type': 'SpeakableSpecification',
+            cssSelector: ['h1', 'meta[name="description"]']
         },
     };
 

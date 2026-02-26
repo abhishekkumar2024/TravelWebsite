@@ -29,5 +29,62 @@ export const revalidate = 3600; // Revalidate every hour
 
 export default async function TripEssentialsPage() {
     const products = await fetchProducts();
-    return <EssentialsContent products={products} />;
+
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://www.camelthar.com/'
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Essentials',
+                item: 'https://www.camelthar.com/essentials/'
+            }
+        ]
+    };
+
+    const itemListJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'Rajasthan Trip Essentials',
+        description: 'Curated gear and packing list for travelers visiting Rajasthan, India.',
+        itemListElement: products.map((product, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+                '@type': 'Product',
+                name: product.name,
+                description: product.description,
+                image: product.imageUrl,
+                url: product.affiliateLink || 'https://www.camelthar.com/essentials/',
+                offers: {
+                    '@type': 'Offer',
+                    price: product.price ? product.price.replace(/[^0-9.]/g, '') : '0',
+                    priceCurrency: 'INR',
+                    availability: 'https://schema.org/InStock'
+                }
+            }
+        }))
+    };
+
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+            />
+            <EssentialsContent products={products} />
+        </>
+    );
 }
+

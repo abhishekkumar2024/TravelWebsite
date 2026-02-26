@@ -1,4 +1,10 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Page Not Found | CamelThar',
+    robots: { index: false, follow: false },
+};
 
 export default function NotFound() {
     return (
@@ -18,7 +24,7 @@ export default function NotFound() {
                         Return Home
                     </Link>
                     <Link
-                        href="/destinations"
+                        href="/destinations/"
                         className="px-6 py-3 bg-desert-gold/10 text-desert-gold font-medium rounded-full hover:bg-desert-gold/20 transition-colors border border-desert-gold/20"
                     >
                         Explore Destinations

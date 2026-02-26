@@ -18,7 +18,7 @@ export default function DestinationCard({ destination }: DestinationCardProps) {
 
     return (
         <Link
-            href={`/destinations#${destination.id}`}
+            href={`/destinations/${destination.id}/`}
             className="group relative rounded-2xl overflow-hidden h-80 cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
         >
             <Image

@@ -63,13 +63,13 @@ export default function HomePageClient({ destinations, blogs }: HomePageClientPr
 
                     <div className="flex gap-4 justify-center flex-wrap animate-slide-up stagger-2">
                         <Link
-                            href="/blogs"
+                            href="/blogs/"
                             className="px-8 py-4 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
                         >
                             {t('Explore Blogs', 'ब्लॉग देखें')}
                         </Link>
                         <Link
-                            href="/destinations"
+                            href="/destinations/"
                             className="px-8 py-4 border-2 border-desert-gold text-desert-gold font-semibold rounded-lg text-lg hover:bg-desert-gold hover:text-white transition-all"
                         >
                             {t('View Destinations', 'स्थान देखें')}
@@ -122,7 +122,7 @@ export default function HomePageClient({ destinations, blogs }: HomePageClientPr
 
                     <div className="text-center mt-10">
                         <Link
-                            href="/destinations"
+                            href="/destinations/"
                             className="inline-flex items-center gap-2 px-6 py-3 border-2 border-royal-blue text-royal-blue font-semibold rounded-lg hover:bg-royal-blue hover:text-white transition-all"
                         >
                             {t('View All Destinations', 'सभी स्थान देखें')} →
@@ -157,7 +157,7 @@ export default function HomePageClient({ destinations, blogs }: HomePageClientPr
 
                     <div className="text-center mt-10">
                         <Link
-                            href="/blogs"
+                            href="/blogs/"
                             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
                         >
                             {t('View All Blogs', 'सभी ब्लॉग देखें')} →
@@ -183,12 +183,12 @@ export default function HomePageClient({ destinations, blogs }: HomePageClientPr
                                 )}
                             </p>
                         </div>
-                        <a
-                            href="#"
+                        <Link
+                            href="/essentials/"
                             className="px-8 py-4 bg-white text-royal-blue font-bold rounded-lg text-lg hover:bg-gray-100 transition-all whitespace-nowrap"
                         >
-                            {t('Book Now →', 'अभी बुक करें →')}
-                        </a>
+                            {t('Explore Essentials →', 'आवश्यकताएं देखें →')}
+                        </Link>
                     </div>
                 </div>
             </section>
@@ -209,7 +209,7 @@ export default function HomePageClient({ destinations, blogs }: HomePageClientPr
                         )}
                     </p>
                     <Link
-                        href="/submit"
+                        href="/submit/"
                         className="inline-flex items-center gap-2 px-8 py-4 bg-royal-blue text-white font-semibold rounded-lg text-lg hover:bg-[#2a4a73] transition-all"
                     >
                         {t('Submit Your Blog →', 'अपना ब्लॉग जमा करें →')}

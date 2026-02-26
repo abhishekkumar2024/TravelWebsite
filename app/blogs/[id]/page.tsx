@@ -103,6 +103,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             modifiedTime: blog.updated_at || blog.created_at,
             authors: blog.author?.name ? [blog.author.name] : ['CamelThar Team'],
 
+            tags: [blog.category, blog.destination].filter(Boolean),
             images: [
                 {
                     url: blog.coverImage,

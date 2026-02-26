@@ -129,7 +129,7 @@ export default async function AuthorProfilePage({ params }: PageProps) {
                 {/* Blog Grid */}
                 <div className="space-y-8">
                     <h2 className="text-2xl font-bold text-gray-900 border-b pb-4">
-                        Latests Posts by {author.name}
+                        Latest Posts by {author.name}
                     </h2>
 
                     {blogs.length === 0 ? (

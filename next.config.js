@@ -83,6 +83,10 @@ const nextConfig = {
                     { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
                     // Enable DNS prefetching for faster external resource loading
                     { key: 'X-DNS-Prefetch-Control', value: 'on' },
+                    // HSTS — enforce HTTPS for 2 years (required for preload list)
+                    { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+                    // CSP frame-ancestors — modern replacement for X-Frame-Options
+                    { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
                 ],
             },
 

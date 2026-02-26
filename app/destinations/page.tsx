@@ -16,6 +16,7 @@ export const metadata: Metadata = {
             'Discover the majestic cities of Rajasthan. Travel guides, blogs, and tips for Jaipur, Udaipur, Jaisalmer, and more.',
         url: '/destinations/',
         siteName: 'CamelThar',
+        locale: 'en_IN',
         type: 'website',
         images: [
             {
