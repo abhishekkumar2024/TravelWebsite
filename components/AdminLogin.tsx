@@ -39,7 +39,7 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
                 console.log('Admin login attempt:', { email: user.email, role });
 
                 if (role !== 'admin') {
-                    await supabase.auth.signOut();
+                    await supabase.auth.signOut({ scope: 'local' });
                     setError(`${t('Access denied. Admin privileges required.', 'अस्वीकृत पहुंच। व्यवस्थापक विशेषाधिकार आवश्यक हैं।')} (Detected: ${role || 'none'})`);
                     setLoading(false);
                     return;

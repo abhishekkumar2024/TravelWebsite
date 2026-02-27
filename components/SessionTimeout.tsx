@@ -5,9 +5,11 @@ import { supabase } from '@/lib/supabaseClient';
 import { useLanguage } from '@/components/LanguageProvider';
 
 // Configuration: 5 minutes of total inactivity before logout
-const TIMEOUT_DURATION = 10 * 60 * 1000;
-// Show warning 2 minutes before the actual timeout
-const WARNING_DURATION = 2 * 60 * 1000;
+const TIMEOUT_DURATION = 5 * 60 * 1000;
+// Show warning 1 minute before the actual timeout
+const WARNING_DURATION = 1 * 60 * 1000;
+// localStorage key for last activity timestamp (cross-tab sync)
+const LAST_ACTIVITY_KEY = 'camelthar-last-activity';
 
 /**
  * SessionTimeout Component
@@ -27,15 +29,12 @@ export default function SessionTimeout() {
 
     const logout = useCallback(async () => {
         try {
-            await supabase.auth.signOut();
+            // scope: 'local' — only log out THIS device/browser.
+            // Other devices keep their independent sessions.
+            await supabase.auth.signOut({ scope: 'local' });
             setShowWarning(false);
             setIsLoggedIn(false);
-
-            // Clear any pending draft indicators if needed, 
-            // though useDraft takes care of itself.
-
-            // We don't necessarily need a hard reload here as 
-            // our components listen to onAuthStateChange
+            localStorage.removeItem(LAST_ACTIVITY_KEY);
         } catch (error) {
             console.error('Logout error:', error);
         }
@@ -51,28 +50,56 @@ export default function SessionTimeout() {
 
         if (!isLoggedIn) return;
 
-        // Set the warning timer
-        // This will fire 2 minutes before the total 15 minutes is up
+        // Record last activity timestamp in localStorage (cross-tab sync)
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+
+        // Set the warning timer (fires 1 minute before timeout)
         warningRef.current = setTimeout(() => {
+            // Before showing warning, check if another tab was recently active
+            const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+            const elapsed = Date.now() - lastActivity;
+            if (elapsed < TIMEOUT_DURATION - WARNING_DURATION) {
+                // Another tab was active recently — recalculate remaining time
+                const remaining = (TIMEOUT_DURATION - WARNING_DURATION) - elapsed;
+                warningRef.current = setTimeout(() => {
+                    setShowWarning(true);
+                    setTimeLeft(WARNING_DURATION / 1000);
+                    startCountdown();
+                }, remaining);
+                return;
+            }
+
             setShowWarning(true);
             setTimeLeft(WARNING_DURATION / 1000);
-
-            // Start the visual countdown for the user
-            countdownRef.current = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        if (countdownRef.current) clearInterval(countdownRef.current);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-
+            startCountdown();
         }, TIMEOUT_DURATION - WARNING_DURATION);
 
         // Set the absolute logout timer
-        timeoutRef.current = setTimeout(logout, TIMEOUT_DURATION);
+        timeoutRef.current = setTimeout(() => {
+            // Final check — was another tab active?
+            const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+            const elapsed = Date.now() - lastActivity;
+            if (elapsed < TIMEOUT_DURATION) {
+                // Reschedule
+                timeoutRef.current = setTimeout(logout, TIMEOUT_DURATION - elapsed);
+                return;
+            }
+            logout();
+        }, TIMEOUT_DURATION);
     }, [isLoggedIn, logout]);
+
+    const startCountdown = useCallback(() => {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        countdownRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    if (countdownRef.current) clearInterval(countdownRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    }, []);
 
     // Track authentication state
     useEffect(() => {

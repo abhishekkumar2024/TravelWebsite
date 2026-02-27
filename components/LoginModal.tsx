@@ -62,11 +62,27 @@ export default function LoginModal({
                 await handleLogin();
             }
         } catch (err: any) {
-            let errorMsg = err.message;
-            if (errorMsg.includes('Email not confirmed')) {
+            let errorMsg = err.message || '';
+            // Network / fetch failures — hide raw Supabase URL from users
+            if (
+                errorMsg.includes('Failed to fetch') ||
+                errorMsg.includes('NetworkError') ||
+                errorMsg.includes('ERR_NETWORK') ||
+                errorMsg.includes('fetch')
+            ) {
+                errorMsg = t(
+                    'Unable to connect to the server. Please check your internet connection and try again.',
+                    'सर्वर से कनेक्ट करने में असमर्थ। कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।'
+                );
+            } else if (errorMsg.includes('Email not confirmed')) {
                 errorMsg = t(
                     'Email not confirmed. Please check your inbox for the verification link.',
                     'ईमेल की पुष्टि नहीं हुई है। कृपया सत्यापन लिंक के लिए अपना इनबॉक्स जांचें।'
+                );
+            } else if (errorMsg.includes('Invalid login credentials')) {
+                errorMsg = t(
+                    'Invalid email or password. Please try again.',
+                    'गलत ईमेल या पासवर्ड। कृपया पुनः प्रयास करें।'
                 );
             }
             setError(errorMsg || t('Something went wrong', 'कुछ गलत हो गया'));
@@ -128,25 +144,68 @@ export default function LoginModal({
     // LOGIN (EMAIL/PASSWORD)
     // -------------------------
     const handleLogin = async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        // Retry up to 2 times for transient network errors
+        let lastError: any = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
 
-        if (error) throw error;
+                if (error) throw error;
 
-        const user = data.user;
-        if (!user) return;
+                const user = data.user;
+                if (!user) throw new Error('Login succeeded but no user returned');
 
-        // Ensure author exists (prevents FK error on first login)
-        await ensureAuthorExists();
+                // Wait for session to be fully established before proceeding
+                // This prevents race conditions with ensureAuthorExists
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    // Small delay and retry session check
+                    await new Promise(r => setTimeout(r, 500));
+                    const { data: { session: retrySession } } = await supabase.auth.getSession();
+                    if (!retrySession) {
+                        console.warn('[LoginModal] Session not ready after login, proceeding anyway');
+                    }
+                }
 
-        setMessage(t('Login successful!', 'लॉगिन सफल!'));
+                // Ensure author exists (prevents FK error on first login)
+                try {
+                    await ensureAuthorExists();
+                } catch (authorErr) {
+                    // Non-blocking — don't fail login if author creation has a hiccup
+                    console.warn('[LoginModal] ensureAuthorExists warning:', authorErr);
+                }
 
-        setTimeout(() => {
-            onLoginSuccess();
-            onClose();
-        }, 500);
+                setMessage(t('Login successful!', 'लॉगिन सफल!'));
+
+                setTimeout(() => {
+                    onLoginSuccess();
+                    onClose();
+                }, 500);
+
+                return; // Success — exit retry loop
+            } catch (err: any) {
+                lastError = err;
+                const msg = err.message || '';
+                const isNetworkError =
+                    msg.includes('Failed to fetch') ||
+                    msg.includes('NetworkError') ||
+                    msg.includes('ERR_NETWORK');
+
+                // Only retry on network errors, not auth errors
+                if (!isNetworkError || attempt >= 2) {
+                    throw err;
+                }
+
+                // Wait before retrying
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+
+        // If we exhausted retries
+        if (lastError) throw lastError;
     };
 
     // -------------------------

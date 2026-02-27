@@ -223,7 +223,7 @@ export default function SubmitPage() {
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         setUser(null);
     };
 

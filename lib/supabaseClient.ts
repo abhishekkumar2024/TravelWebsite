@@ -15,6 +15,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
     supabaseUrl || '',
-    supabaseAnonKey || ''
+    supabaseAnonKey || '',
+    {
+        auth: {
+            // Persist session to localStorage so it survives page refreshes
+            persistSession: true,
+            // Automatically refresh the access token before it expires
+            autoRefreshToken: true,
+            // Detect OAuth callback tokens in the URL hash (for Google login etc.)
+            detectSessionInUrl: true,
+            // Unique storage key per browser — ensures each device maintains its own
+            // independent session. Logging out on device A won't affect device B.
+            storageKey: 'camelthar-auth',
+            // Use localStorage (default) for session storage
+            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        },
+    }
 );
 
