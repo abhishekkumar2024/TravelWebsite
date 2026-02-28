@@ -500,7 +500,7 @@ export default function AdminPage() {
                                                             {t('View', 'देखें')}
                                                         </Link>
                                                         <Link
-                                                            href={`/edit/${blog.id}`}
+                                                            href={`/edit/${blog.slug || blog.id}`}
                                                             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all"
                                                         >
                                                             {t('Edit', 'संपादित करें')}

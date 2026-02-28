@@ -289,7 +289,7 @@ export default function MyBlogsPage() {
 
                                         <div className="flex items-center gap-3 mt-auto">
                                             <Link
-                                                href={`/edit/${blog.id}`}
+                                                href={`/edit/${blog.slug || blog.id}`}
                                                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm transition-all"
                                             >
                                                 {t('Edit', 'संपादित करें')}
