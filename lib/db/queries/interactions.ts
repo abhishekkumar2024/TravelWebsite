@@ -169,7 +169,7 @@ export async function addComment(
     content: string,
     parentId: string | null = null
 ): Promise<{ success: boolean; data?: BlogComment; error?: string }> {
-    if (!isUuid(blogId)) return { success: false, error: 'Cannot comment on demo blogs' };
+    if (!isUuid(blogId)) return { success: false, error: 'Invalid blog ID' };
 
     try {
         const result = await db.executeOne<any>(

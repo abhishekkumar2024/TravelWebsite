@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { demoBlogs, demoDestinations } from '@/lib/data';
+import { destinations } from '@/lib/data';
 import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/db/queries';
 import HomePageClient from './HomePageClient';
 
@@ -23,20 +23,13 @@ export default async function HomePage() {
     ]);
 
     // Merge blog counts into destinations
-    const destinations = demoDestinations.map(dest => ({
+    const destinationsWithCounts = destinations.map(dest => ({
         ...dest,
         blogCount: counts[dest.id.toLowerCase()] || 0,
     }));
 
-    // Determine blogs to show
-    let blogs;
-    if (dbBlogs.length >= 3) {
-        blogs = dbBlogs;
-    } else if (dbBlogs.length > 0) {
-        blogs = [...dbBlogs, ...demoBlogs].slice(0, 3);
-    } else {
-        blogs = demoBlogs.slice(0, 3);
-    }
+    // Use only real database blogs
+    const blogs = dbBlogs;
 
     // BreadcrumbList schema — root breadcrumb
     const breadcrumbJsonLd = {
@@ -98,7 +91,7 @@ export default async function HomePage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }}
             />
-            <HomePageClient destinations={destinations} blogs={blogs} />
+            <HomePageClient destinations={destinationsWithCounts} blogs={blogs} />
         </>
     );
 }

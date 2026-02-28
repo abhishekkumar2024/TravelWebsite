@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { demoDestinations } from '@/lib/data';
+import { destinations } from '@/lib/data';
 
 /**
  * Dynamic llms.txt — GEO optimization
@@ -33,7 +33,7 @@ export async function GET() {
         .map(b => `- [${b.title_en}](https://www.camelthar.com/blogs/${b.slug || b.id}/): ${b.category || 'Travel'} — ${b.destination || 'Rajasthan'}`)
         .join('\n');
 
-    const destinationLinks = demoDestinations
+    const destinationLinks = destinations
         .map(d => `- [${d.name_en} (${d.tagline_en})](https://www.camelthar.com/destinations/${d.id}/): ${d.attractions.join(', ')}`)
         .join('\n');
 

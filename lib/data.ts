@@ -1,4 +1,4 @@
-// Demo data for when Database is not reachable or as fallback
+// Static data and type definitions
 export interface Author {
     id: string;
     name: string;
@@ -56,133 +56,7 @@ export interface Destination {
     };
 }
 
-export const demoBlogs: BlogPost[] = [
-    {
-        id: '1',
-        title_en: '3 Days in Jaipur: The Complete Pink City Guide',
-        title_hi: 'जयपुर में 3 दिन: गुलाबी शहर की पूरी गाइड',
-        excerpt_en: 'Discover the majestic forts, vibrant markets, and royal heritage of Jaipur.',
-        excerpt_hi: 'जयपुर के भव्य किलों, जीवंत बाजारों और शाही विरासत की खोज करें।',
-        content_en: `<h2>Day 1: Exploring the Pink City</h2>
-<p>Start your Jaipur journey at the iconic <strong>Hawa Mahal</strong>, the Palace of Winds. This stunning pink sandstone structure with its 953 small windows was designed to allow royal women to observe street life without being seen.</p>
-<p>Next, head to the magnificent <strong>City Palace</strong>, still partially occupied by the royal family. The blend of Rajasthani and Mughal architecture is breathtaking.</p>
-<img src="/images/jaipur-hawa-mahal.webp" alt="Hawa Mahal" />
-<h2>Day 2: Fort Adventures</h2>
-<p>Today is all about the legendary <strong>Amber Fort</strong>. Take an elephant ride up to the fort (or walk if you prefer) and explore the stunning Sheesh Mahal (Mirror Palace).</p>
-<p>In the afternoon, visit <strong>Nahargarh Fort</strong> for spectacular sunset views over the city.</p>
-<h2>Day 3: Markets and Culture</h2>
-<p>Spend your last day exploring the colorful bazaars of Jaipur. Don't miss Johari Bazaar for jewelry and Bapu Bazaar for textiles and handicrafts.</p>`,
-        content_hi: `<h2>दिन 1: गुलाबी शहर की खोज</h2>
-<p>अपनी जयपुर यात्रा की शुरुआत प्रतिष्ठित <strong>हवा महल</strong> से करें। इस शानदार गुलाबी बलुआ पत्थर की संरचना में 953 छोटी खिड़कियां हैं।</p>`,
-        destination: 'jaipur',
-        category: 'City Guide',
-        coverImage: '/images/jaipur-hawa-mahal.webp',
-        author: { id: 'demo-1', name: 'Rahul Sharma', avatar: 'https://i.pravatar.cc/150?img=11' },
-        readTime: '8 min',
-        publishedAt: new Date('2024-01-15').toISOString(),
-        status: 'approved',
-        views: 1250,
-    },
-    {
-        id: '2',
-        title_en: 'Udaipur: City of Lakes and Romance',
-        title_hi: 'उदयपुर: झीलों और रोमांस का शहर',
-        excerpt_en: 'Experience the romantic charm of Udaipur with stunning lakes and palaces.',
-        excerpt_hi: 'उदयपुर के सुंदर झीलों और महलों के रोमांटिक आकर्षण का अनुभव करें।',
-        content_en: `<h2>The Venice of the East</h2>
-<p>Udaipur is often called the most romantic city in India, and it's easy to see why. The shimmering <strong>Lake Pichola</strong> reflects the white marble palaces that line its shores.</p>
-<p>Take a boat ride to the <strong>Jag Mandir</strong> palace, floating serenely in the middle of the lake. The sunset views from here are absolutely magical.</p>`,
-        content_hi: `<h2>पूर्व का वेनिस</h2>
-<p>उदयपुर को अक्सर भारत का सबसे रोमांटिक शहर कहा जाता है।</p>`,
-        destination: 'udaipur',
-        category: 'Travel Story',
-        coverImage: '/images/udaipur-lake-palace.webp',
-        author: { id: 'demo-2', name: 'Priya Patel', avatar: 'https://i.pravatar.cc/150?img=5' },
-        readTime: '6 min',
-        publishedAt: new Date('2024-01-10').toISOString(),
-        status: 'approved',
-        views: 890,
-    },
-    {
-        id: '3',
-        title_en: 'Desert Safari in Jaisalmer: A Golden Adventure',
-        title_hi: 'जैसलमेर में रेगिस्तान सफारी: एक सुनहरा रोमांच',
-        excerpt_en: 'Ride camels through golden sands and camp under the stars.',
-        excerpt_hi: 'सुनहरी रेत में ऊंट की सवारी करें और तारों के नीचे कैंप करें।',
-        content_en: `<h2>Into the Golden Desert</h2>
-<p>Jaisalmer rises from the Thar Desert like a golden mirage. The <strong>Jaisalmer Fort</strong> is unique - it's a living fort with shops, hotels, and homes still inside its walls.</p>
-<p>But the real magic happens when you venture into the <strong>Sam Sand Dunes</strong>. As the sun sets, the desert turns every shade of gold and orange.</p>`,
-        content_hi: `<h2>सुनहरे रेगिस्तान में</h2>
-<p>जैसलमेर थार रेगिस्तान से एक सुनहरे मृगतृष्णा की तरह उभरता है।</p>`,
-        destination: 'jaisalmer',
-        category: 'Adventure',
-        coverImage: '/images/jaisalmer-desert-safari.webp',
-        author: { id: 'demo-3', name: 'Amit Kumar', avatar: 'https://i.pravatar.cc/150?img=12' },
-        readTime: '10 min',
-        publishedAt: new Date('2024-01-05').toISOString(),
-        status: 'approved',
-        views: 2100,
-    },
-    {
-        id: '4',
-        title_en: 'Exploring the Blue City Jodhpur',
-        title_hi: 'नीले शहर जोधपुर की खोज',
-        excerpt_en: 'Wander through blue-painted streets and visit Mehrangarh Fort.',
-        excerpt_hi: 'नीले रंग की सड़कों पर घूमें और मेहरानगढ़ किला देखें।',
-        content_en: `<h2>The Blue City</h2>
-<p>Jodhpur's old city is a maze of blue-painted houses, a sight best appreciated from the towering <strong>Mehrangarh Fort</strong>.</p>`,
-        content_hi: `<h2>नीला शहर</h2>
-<p>जोधपुर का पुराना शहर नीले रंग के घरों की एक भूलभुलैया है।</p>`,
-        destination: 'jodhpur',
-        category: 'City Guide',
-        coverImage: '/images/jodhpur.webp',
-        author: { id: 'demo-4', name: 'Sneha Agarwal', avatar: 'https://i.pravatar.cc/150?img=9' },
-        readTime: '7 min',
-        publishedAt: new Date('2024-01-01').toISOString(),
-        status: 'approved',
-        views: 750,
-    },
-    {
-        id: '5',
-        title_en: 'Pushkar: Beyond the Camel Fair',
-        title_hi: 'पुष्कर: ऊंट मेले से परे',
-        excerpt_en: 'Discover the sacred Pushkar Lake and ancient Brahma Temple.',
-        excerpt_hi: 'पवित्र पुष्कर झील और प्राचीन ब्रह्मा मंदिर की खोज करें।',
-        content_en: `<h2>The Sacred Town</h2>
-<p>Pushkar is one of the oldest cities in India, famous for the only <strong>Brahma Temple</strong> in the world and the sacred <strong>Pushkar Lake</strong>.</p>`,
-        content_hi: `<h2>पवित्र नगरी</h2>
-<p>पुष्कर भारत के सबसे पुराने शहरों में से एक है।</p>`,
-        destination: 'pushkar',
-        category: 'Spiritual',
-        coverImage: '/images/pushkar.webp',
-        author: { id: 'demo-5', name: 'Vikram Singh', avatar: 'https://i.pravatar.cc/150?img=15' },
-        readTime: '5 min',
-        publishedAt: new Date('2023-12-28').toISOString(),
-        status: 'approved',
-        views: 420,
-    },
-    {
-        id: '6',
-        title_en: 'Heritage Walk in Jaipur Old City',
-        title_hi: 'जयपुर पुराने शहर में विरासत वॉक',
-        excerpt_en: 'A walking tour through the historic lanes of the Pink City.',
-        excerpt_hi: 'गुलाबी शहर की ऐतिहासिक गलियों में पैदल यात्रा।',
-        content_en: `<h2>Walking Through History</h2>
-<p>The best way to experience Jaipur's old city is on foot. Start early morning to avoid the heat and crowds.</p>`,
-        content_hi: `<h2>इतिहास से गुजरते हुए</h2>
-<p>जयपुर के पुराने शहर को अनुभव करने का सबसे अच्छा तरीका पैदल है।</p>`,
-        destination: 'jaipur',
-        category: 'Walking Tour',
-        coverImage: '/images/jaipur-hawa-mahal.webp',
-        author: { id: 'demo-6', name: 'Anita Mehra', avatar: 'https://i.pravatar.cc/150?img=20' },
-        readTime: '6 min',
-        publishedAt: new Date('2023-12-20').toISOString(),
-        status: 'approved',
-        views: 380,
-    },
-];
-
-export const demoDestinations: Destination[] = [
+export const destinations: Destination[] = [
     {
         id: 'jaipur',
         name_en: 'Jaipur',
@@ -281,14 +155,6 @@ export const demoDestinations: Destination[] = [
 ];
 
 // Helper functions
-export function getBlogById(id: string): BlogPost | undefined {
-    return demoBlogs.find(blog => blog.id === id);
-}
-
 export function getDestinationById(id: string): Destination | undefined {
-    return demoDestinations.find(dest => dest.id === id);
-}
-
-export function getBlogsByDestination(destinationId: string): BlogPost[] {
-    return demoBlogs.filter(blog => blog.destination === destinationId);
+    return destinations.find(dest => dest.id === id);
 }

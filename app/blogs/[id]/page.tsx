@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
-import { demoBlogs, BlogPost } from '@/lib/data';
+import { BlogPost } from '@/lib/data';
 import { fetchBlogById, fetchRelatedBlogs } from '@/lib/db/queries';
 import { db } from '@/lib/db';
 import BlogContent from './BlogContent';
@@ -18,12 +18,7 @@ export async function generateStaticParams() {
         id: blog.slug || blog.id,
     }));
 
-    // Also include demo blog IDs
-    const demoParams = demoBlogs.map((blog) => ({
-        id: blog.id,
-    }));
-
-    return [...params, ...demoParams];
+    return params;
 }
 
 // Enable ISR - cache pages for 60 seconds, then revalidate in background
@@ -72,9 +67,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const pageSlug = blog.slug || blog.id;
     const pagePath = `/blogs/${pageSlug}/`;
 
-    // distinct demo blogs from real blogs
-    const isDemoBlog = demoBlogs.some((demo) => demo.id === blog.id);
-
     return {
         title: blog.meta_title || blog.title_en,
         description: blog.meta_description || blog.excerpt_en,
@@ -82,8 +74,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             canonical: pagePath, // Uses metadataBase from layout
         },
         robots: {
-            index: !isDemoBlog,
-            follow: !isDemoBlog,
+            index: true,
+            follow: true,
         },
         openGraph: {
             title: blog.meta_title || blog.title_en,

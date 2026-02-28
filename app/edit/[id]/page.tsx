@@ -113,11 +113,8 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 setIsAdminUser(isUserAdmin);
 
                 // Load Blog Data
-                console.log('[EditPage] Calling fetchBlogById with params.id:', params.id, 'type:', typeof params.id);
                 const blog = await fetchBlogById(params.id);
-                console.log('[EditPage] fetchBlogById returned:', blog ? 'blog found' : 'NULL', blog);
                 if (!blog) {
-                    console.error('[EditPage] Blog is null for id:', params.id);
                     alert('Blog not found!');
                     router.push('/my-blogs');
                     return;

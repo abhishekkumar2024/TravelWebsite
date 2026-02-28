@@ -3,14 +3,14 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Metadata } from 'next';
-import { demoDestinations } from '@/lib/data';
+import { destinations } from '@/lib/data';
 import { fetchBlogsByDestination } from '@/lib/db/queries';
 import BackToTop from '@/components/BackToTop';
 import { DestinationBlogGrid } from '@/components/DestinationBlogGrid';
 
 // 1. Generate Static Paths for SEO (SSG)
 export async function generateStaticParams() {
-    return demoDestinations.map((dest) => ({
+    return destinations.map((dest) => ({
         slug: dest.id,
     }));
 }
@@ -21,7 +21,7 @@ type Props = {
 
 // 2. Dynamic SEO Metadata
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const destination = demoDestinations.find((d) => d.id === params.slug);
+    const destination = destinations.find((d) => d.id === params.slug);
     if (!destination) return { title: 'Destination Not Found' };
 
     const pagePath = `/destinations/${params.slug}/`;
@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 // 3. The Details Page
 export default async function DestinationDetailsPage({ params }: Props) {
-    const destination = demoDestinations.find((d) => d.id === params.slug);
+    const destination = destinations.find((d) => d.id === params.slug);
 
     if (!destination) {
         notFound();

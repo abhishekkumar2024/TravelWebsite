@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { demoDestinations } from '@/lib/data';
+import { destinations } from '@/lib/data';
 import { fetchBlogCountsByDestination } from '@/lib/db/queries';
 import DestinationsClient from './DestinationsClient';
 
@@ -41,7 +41,7 @@ export const revalidate = 3600;
 export default async function DestinationsPage() {
     // Fetch on the server so all destination data is in the initial HTML
     const counts = await fetchBlogCountsByDestination();
-    const destinations = demoDestinations.map(dest => ({
+    const destinationsData = destinations.map(dest => ({
         ...dest,
         blogCount: counts[dest.id.toLowerCase()] || 0,
     }));
@@ -95,7 +95,7 @@ export default async function DestinationsPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
             />
-            <DestinationsClient destinations={destinations} />
+            <DestinationsClient destinations={destinationsData} />
         </>
     );
 }

@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 import { db } from '@/lib/db'
-import { demoDestinations } from '@/lib/data'
+import { destinations } from '@/lib/data'
 
 export const revalidate = 3600 // Revalidate every hour
 
@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     // 2. Add individual destination guides
-    const destinationEntries = demoDestinations.map((dest) => {
+    const destinationEntries = destinations.map((dest) => {
         const lastMod = destinationLastModified[dest.id.toLowerCase()] || siteLaunchDate;
 
         return {
