@@ -98,7 +98,7 @@ export async function fetchPublishedBlogs(limit = 50): Promise<BlogPost[]> {
         const result = await db.query(
             `SELECT ${BLOG_SELECT_WITH_AUTHOR}
              ${FROM_BLOGS_WITH_AUTHOR}
-             WHERE b.status = 'published'
+             WHERE b.status = 'published' AND b.deleted_at IS NULL
              ORDER BY b.created_at DESC
              LIMIT $1`,
             [limit]
@@ -120,7 +120,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             result = await db.query(
                 `SELECT ${BLOG_SELECT_WITH_AUTHOR}
                  ${FROM_BLOGS_WITH_AUTHOR}
-                 WHERE b.id = $1::uuid OR b.slug = $1::text
+                 WHERE (b.id = $1::uuid OR b.slug = $1::text) AND b.deleted_at IS NULL
                  LIMIT 1`,
                 [id]
             );
@@ -129,7 +129,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             result = await db.query(
                 `SELECT ${BLOG_SELECT_WITH_AUTHOR}
                  ${FROM_BLOGS_WITH_AUTHOR}
-                 WHERE b.slug = $1
+                 WHERE b.slug = $1 AND b.deleted_at IS NULL
                  LIMIT 1`,
                 [id]
             );
@@ -148,7 +148,7 @@ export async function fetchBlogsByAuthorSlug(slug: string): Promise<BlogPost[]> 
         const result = await db.query(
             `SELECT ${BLOG_SELECT_WITH_AUTHOR}
              ${FROM_BLOGS_WITH_AUTHOR}
-             WHERE a.slug = $1 AND b.status = 'published'
+             WHERE a.slug = $1 AND b.status = 'published' AND b.deleted_at IS NULL
              ORDER BY b.created_at DESC`,
             [slug]
         );
@@ -164,7 +164,7 @@ export async function fetchBlogsByDestination(destinationSlug: string): Promise<
         const result = await db.query(
             `SELECT ${BLOG_SELECT_WITH_AUTHOR}
              ${FROM_BLOGS_WITH_AUTHOR}
-             WHERE b.status = 'published'
+             WHERE b.status = 'published' AND b.deleted_at IS NULL
                AND b.destination ILIKE $1
              ORDER BY b.created_at DESC`,
             [`%${destinationSlug}%`]
@@ -191,7 +191,7 @@ export async function fetchRelatedBlogs(destination: string, currentId: string):
         const result = await db.query(
             `SELECT b.slug, b.title_en, b.title_hi, b.cover_image, b.created_at, b.destination
              FROM blogs b
-             WHERE b.status = 'published'
+             WHERE b.status = 'published' AND b.deleted_at IS NULL
                AND b.id != $1::uuid
                AND (${orClause})
              ORDER BY b.created_at DESC
@@ -224,7 +224,7 @@ export async function fetchRelatedBlogs(destination: string, currentId: string):
 export async function fetchBlogCountsByDestination(): Promise<Record<string, number>> {
     try {
         const result = await db.query(
-            `SELECT destination FROM blogs WHERE status = 'published'`
+            `SELECT destination FROM blogs WHERE status = 'published' AND deleted_at IS NULL`
         );
 
         const counts: Record<string, number> = {};
@@ -429,7 +429,7 @@ export async function fetchPendingBlogs(): Promise<BlogPost[]> {
         const result = await db.query(
             `SELECT ${BLOG_SELECT_WITH_AUTHOR}
              ${FROM_BLOGS_WITH_AUTHOR}
-             WHERE b.status = 'pending'
+             WHERE b.status = 'pending' AND b.deleted_at IS NULL
              ORDER BY b.created_at DESC`
         );
         return result.rows.map(mapRowToBlog);
@@ -444,7 +444,7 @@ export async function fetchUserBlogs(userId: string): Promise<BlogPost[]> {
         const result = await db.query(
             `SELECT ${BLOG_SELECT_WITH_AUTHOR}
              ${FROM_BLOGS_WITH_AUTHOR}
-             WHERE b.author_id = $1::uuid
+             WHERE b.author_id = $1::uuid AND b.deleted_at IS NULL
              ORDER BY b.created_at DESC`,
             [userId]
         );
@@ -496,7 +496,7 @@ export async function rejectBlog(blogId: string): Promise<{ success: boolean; er
 
 export async function deleteBlog(blogId: string): Promise<{ success: boolean; error: string | null }> {
     try {
-        await db.execute('DELETE FROM blogs WHERE id = $1::uuid', [blogId]);
+        await db.execute("UPDATE blogs SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1::uuid", [blogId]);
         return { success: true, error: null };
     } catch (error: any) {
         console.error('[dbBlogs] deleteBlog error:', error.message);

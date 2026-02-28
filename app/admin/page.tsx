@@ -10,7 +10,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
 
 type BlogStatus = 'pending' | 'published' | 'rejected' | 'draft';
-type MainTab = 'blogs' | 'products' | 'messages';
+type MainTab = 'blogs' | 'products' | 'messages' | 'database';
 
 import {
     fetchAllProductsForAdmin,
@@ -23,6 +23,8 @@ import {
     updateMessageStatus
 } from '@/lib/db/queries/contact';
 import { AffiliateProduct } from '@/app/essentials/EssentialsContent';
+import { triggerReconciliationAction } from '@/lib/actions/db-sync';
+import { SyncResult } from '@/lib/db/reconciliation';
 
 export default function AdminPage() {
     const { t } = useLanguage();
@@ -54,6 +56,11 @@ export default function AdminPage() {
         destinations: [],
         isActive: true,
     });
+
+    // Database Sync State
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncResults, setSyncResults] = useState<SyncResult[]>([]);
+    const [syncError, setSyncError] = useState<string | null>(null);
 
     // Check admin access via NextAuth session
     useEffect(() => {
@@ -348,6 +355,13 @@ export default function AdminPage() {
                             }`}
                     >
                         {t('Messages', 'संदेश')}
+                    </button>
+                    <button
+                        onClick={() => setMainTab('database')}
+                        className={`px-6 py-2 rounded-lg font-bold transition-all ${mainTab === 'database' ? 'bg-white text-gray-900 shadow-lg' : 'text-white hover:bg-white/10'
+                            }`}
+                    >
+                        {t('Database', 'डेटाबेस')}
                     </button>
                 </div>
             </div>
@@ -802,6 +816,119 @@ export default function AdminPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {mainTab === 'database' && (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 shadow-2xl">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-2">
+                                    {t('Database Synchronization', 'डेटाबेस सिंक्रनाइज़ेशन')}
+                                </h2>
+                                <p className="text-gray-300">
+                                    {t(
+                                        'Reconcile data between Neon (Master) and Supabase (Slave) databases.',
+                                        'नियॉन (मास्टर) और सुपाबेस (स्लेव) डेटाबेस के बीच डेटा का मिलान करें।'
+                                    )}
+                                </p>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    setIsSyncing(true);
+                                    setSyncError(null);
+                                    try {
+                                        const res = await triggerReconciliationAction();
+                                        if (res.success) {
+                                            setSyncResults(res.results);
+                                        } else {
+                                            setSyncError(res.error);
+                                        }
+                                    } catch (err: any) {
+                                        setSyncError(err.message);
+                                    } finally {
+                                        setIsSyncing(false);
+                                    }
+                                }}
+                                disabled={isSyncing}
+                                className={`px-8 py-4 bg-gradient-to-r from-desert-gold to-deep-maroon text-white font-bold rounded-2xl shadow-lg transition-all flex items-center gap-3 ${isSyncing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
+                                    }`}
+                            >
+                                {isSyncing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {t('Syncing...', 'सिंक किया जा रहा है...')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        {t('Run Manual Reconciliation', 'मैनुअल मिलान चलाएँ')}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {syncError && (
+                            <div className="bg-red-500/20 border border-red-500/30 text-red-200 p-4 rounded-xl mb-6">
+                                <p className="font-bold mb-1">{t('Error', 'त्रुटि')}</p>
+                                <p>{syncError}</p>
+                            </div>
+                        )}
+
+                        {syncResults.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {syncResults.map((result) => (
+                                    <div
+                                        key={result.table}
+                                        className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all"
+                                    >
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-bold text-white capitalize">
+                                                {result.table}
+                                            </h3>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${result.status === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
+                                                }`}>
+                                                {result.status.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between text-gray-300">
+                                                <span>{t('Rows Synced', 'सिंक की गई पंक्तियाँ')}</span>
+                                                <span className="font-mono text-white">{result.synced}</span>
+                                            </div>
+                                            <div className="flex justify-between text-gray-300">
+                                                <span>{t('Failed', 'विफल')}</span>
+                                                <span className={`font-mono ${result.failed > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                                    {result.failed}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <p className="mt-4 text-xs text-gray-400 italic">
+                                            {result.message}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {!isSyncing && syncResults.length === 0 && !syncError && (
+                            <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-3xl">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-white font-bold mb-1">
+                                    {t('No history available', 'कोई इतिहास उपलब्ध नहीं है')}
+                                </h3>
+                                <p className="text-gray-400 text-sm">
+                                    {t('Click the button above to start a manual sync.', 'मैनुअल सिंक शुरू करने के लिए ऊपर दिए गए बटन पर क्लिक करें।')}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
