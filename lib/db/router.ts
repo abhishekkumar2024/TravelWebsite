@@ -286,31 +286,31 @@ class DBRouter {
     }
 }
 
-// ─── Singleton Instance ──────────────────────────────────────────
+// ─── Singleton Instance (Global for Next.js HMR) ──────────────────────────
+
+// This prevents re-initializing the router on every code change in dev mode
+const globalForDB = global as unknown as {
+    dbRouter: DBRouter | undefined
+};
 
 /**
  * Global database router instance.
- * 
- * Usage:
- *   import { db } from '@/lib/db/router';
- *   const result = await db.query('SELECT * FROM blogs');
  */
-let _db: DBRouter | null = null;
+export const dbInstance = globalForDB.dbRouter ?? new DBRouter();
 
-function getDB(): DBRouter {
-    if (!_db) {
-        _db = new DBRouter();
-    }
-    return _db;
+if (process.env.NODE_ENV !== 'production') {
+    globalForDB.dbRouter = dbInstance;
 }
 
-// Use a getter so it auto-initializes on first use
-export const db = new Proxy({} as DBRouter, {
-    get(_, prop: string) {
-        const instance = getDB();
-        const value = (instance as any)[prop];
+// Auto-initialize
+dbInstance.init();
+
+// Use a proxy to export as 'db' for cleaner usage
+export const db = new Proxy(dbInstance, {
+    get(target, prop) {
+        const value = (target as any)[prop];
         if (typeof value === 'function') {
-            return value.bind(instance);
+            return value.bind(target);
         }
         return value;
     },
