@@ -4,148 +4,133 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useLanguage } from '@/components/LanguageProvider';
 
-// Configuration: 5 minutes of total inactivity before logout
-const TIMEOUT_DURATION = 5 * 60 * 1000;
-// Show warning 1 minute before the actual timeout
-const WARNING_DURATION = 1 * 60 * 1000;
-// localStorage key for last activity timestamp (cross-tab sync)
+// Configuration
+const TIMEOUT_DURATION = 1 * 60 * 1000;   // 5 minutes of inactivity before logout
+const WARNING_BEFORE = 60 * 1000;          // Show warning 60 seconds before logout
+const ACTIVITY_THROTTLE = 30 * 1000;       // Only update activity timestamp every 30s
 const LAST_ACTIVITY_KEY = 'camelthar-last-activity';
 
 /**
  * SessionTimeout Component
  * 
- * Automatically logs out the user after a period of inactivity.
- * Shows a warning modal before the session actually expires.
+ * Automatically logs out the user after 5 minutes of inactivity.
+ * Shows a 60-second countdown warning before logging out.
+ * 
+ * How it works:
+ * - Stores last activity timestamp in localStorage (cross-tab sync)
+ * - A single interval checks every second whether the timeout has elapsed
+ * - User activity (mouse, keyboard, scroll, touch) updates the timestamp
+ * - Activity updates are throttled to avoid performance issues
  */
 export default function SessionTimeout() {
     const { t } = useLanguage();
+    const { status } = useSession();
     const [showWarning, setShowWarning] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(WARNING_DURATION / 1000);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(60);
 
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const warningRef = useRef<NodeJS.Timeout | null>(null);
-    const countdownRef = useRef<NodeJS.Timeout | null>(null);
+    const isLoggedIn = status === 'authenticated';
+    const showWarningRef = useRef(false);
+    const lastActivityWriteRef = useRef(0);
 
-    const logout = useCallback(async () => {
+    // Keep ref in sync with state (for use in event handlers without re-registering)
+    showWarningRef.current = showWarning;
+
+    // Record activity in localStorage (throttled)
+    const recordActivity = useCallback(() => {
+        // Don't reset if warning is showing — user must click "Stay Logged In"
+        if (showWarningRef.current) return;
+
+        const now = Date.now();
+        // Throttle: only write to localStorage every ACTIVITY_THROTTLE ms
+        if (now - lastActivityWriteRef.current < ACTIVITY_THROTTLE) return;
+
+        lastActivityWriteRef.current = now;
+        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+    }, []);
+
+    // Handle "Stay Logged In" click
+    const handleStayLoggedIn = useCallback(() => {
+        const now = Date.now();
+        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+        lastActivityWriteRef.current = now;
+        setShowWarning(false);
+        showWarningRef.current = false;
+    }, []);
+
+    // Handle logout
+    const handleLogout = useCallback(async () => {
         try {
-            // scope: 'local' — only log out THIS device/browser.
-            // Other devices keep their independent sessions.
             await signOut({ redirect: false });
             setShowWarning(false);
-            setIsLoggedIn(false);
+            showWarningRef.current = false;
             localStorage.removeItem(LAST_ACTIVITY_KEY);
         } catch (error) {
             console.error('Logout error:', error);
         }
     }, []);
 
-    const resetTimer = useCallback(() => {
-        // Clear all existing timers
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        if (warningRef.current) clearTimeout(warningRef.current);
-        if (countdownRef.current) clearInterval(countdownRef.current);
-
-        setShowWarning(false);
-
-        if (!isLoggedIn) return;
-
-        // Record last activity timestamp in localStorage (cross-tab sync)
-        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-
-        // Set the warning timer (fires 1 minute before timeout)
-        warningRef.current = setTimeout(() => {
-            // Before showing warning, check if another tab was recently active
-            const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
-            const elapsed = Date.now() - lastActivity;
-            if (elapsed < TIMEOUT_DURATION - WARNING_DURATION) {
-                // Another tab was active recently — recalculate remaining time
-                const remaining = (TIMEOUT_DURATION - WARNING_DURATION) - elapsed;
-                warningRef.current = setTimeout(() => {
-                    setShowWarning(true);
-                    setTimeLeft(WARNING_DURATION / 1000);
-                    startCountdown();
-                }, remaining);
-                return;
-            }
-
-            setShowWarning(true);
-            setTimeLeft(WARNING_DURATION / 1000);
-            startCountdown();
-        }, TIMEOUT_DURATION - WARNING_DURATION);
-
-        // Set the absolute logout timer
-        timeoutRef.current = setTimeout(() => {
-            // Final check — was another tab active?
-            const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
-            const elapsed = Date.now() - lastActivity;
-            if (elapsed < TIMEOUT_DURATION) {
-                // Reschedule
-                timeoutRef.current = setTimeout(logout, TIMEOUT_DURATION - elapsed);
-                return;
-            }
-            logout();
-        }, TIMEOUT_DURATION);
-    }, [isLoggedIn, logout]);
-
-    const startCountdown = useCallback(() => {
-        if (countdownRef.current) clearInterval(countdownRef.current);
-        countdownRef.current = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    if (countdownRef.current) clearInterval(countdownRef.current);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    }, []);
-
-    // Track authentication state via NextAuth session
-    const { data: nextAuthSession, status } = useSession();
-
+    // Main timer: single interval that checks inactivity every second
     useEffect(() => {
-        const isNowLoggedIn = status === 'authenticated';
-        setIsLoggedIn(isNowLoggedIn);
-        if (isNowLoggedIn) {
-            resetTimer();
+        if (!isLoggedIn) {
+            setShowWarning(false);
+            return;
         }
-    }, [status, resetTimer]);
 
-    // Handle user activity listeners
+        // Initialize last activity on login
+        if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+            localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+        }
+        lastActivityWriteRef.current = Date.now();
+
+        const checkInterval = setInterval(() => {
+            const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+            const elapsed = Date.now() - lastActivity;
+            const remaining = TIMEOUT_DURATION - elapsed;
+
+            if (remaining <= 0) {
+                // Time's up — log out
+                clearInterval(checkInterval);
+                signOut({ redirect: false }).then(() => {
+                    setShowWarning(false);
+                    showWarningRef.current = false;
+                    localStorage.removeItem(LAST_ACTIVITY_KEY);
+                });
+            } else if (remaining <= WARNING_BEFORE) {
+                // Show warning with countdown
+                setShowWarning(true);
+                showWarningRef.current = true;
+                setTimeLeft(Math.ceil(remaining / 1000));
+            } else {
+                // Still active — no warning
+                if (showWarningRef.current) {
+                    setShowWarning(false);
+                    showWarningRef.current = false;
+                }
+            }
+        }, 1000);
+
+        return () => clearInterval(checkInterval);
+    }, [isLoggedIn]);
+
+    // Register activity listeners
     useEffect(() => {
         if (!isLoggedIn) return;
 
-        // Common events that indicate user activity
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
-
-        const handleActivity = () => {
-            // Only reset if we're not currently showing the warning
-            // This prevents a user from "fixing" the timeout just by moving the mouse 
-            // after the warning appeared - they must click "Stay Logged In"
-            if (!showWarning) {
-                resetTimer();
-            }
-        };
+        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+        // Note: 'mousemove' intentionally excluded — too frequent, hurts performance
 
         events.forEach((event) => {
-            window.addEventListener(event, handleActivity);
+            window.addEventListener(event, recordActivity, { passive: true });
         });
-
-        // Initialize timer
-        resetTimer();
 
         return () => {
             events.forEach((event) => {
-                window.removeEventListener(event, handleActivity);
+                window.removeEventListener(event, recordActivity);
             });
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            if (warningRef.current) clearTimeout(warningRef.current);
-            if (countdownRef.current) clearInterval(countdownRef.current);
         };
-    }, [isLoggedIn, resetTimer, showWarning]);
+    }, [isLoggedIn, recordActivity]);
 
-    // If not logged in or no warning to show, don't render anything
+    // Don't render unless we need to show the warning
     if (!showWarning || !isLoggedIn) return null;
 
     return (
@@ -170,14 +155,14 @@ export default function SessionTimeout() {
 
                 <div className="flex flex-col gap-4">
                     <button
-                        onClick={resetTimer}
+                        onClick={handleStayLoggedIn}
                         className="w-full px-6 py-4 bg-gradient-to-r from-royal-blue to-deep-maroon text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all"
                     >
                         {t('Yes, Keep Me Logged In', 'हाँ, मुझे लॉग इन रखें')}
                     </button>
 
                     <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         className="w-full px-6 py-3 border-2 border-gray-100 text-gray-400 font-semibold rounded-2xl hover:bg-gray-50 hover:text-gray-600 transition-all"
                     >
                         {t('Logout Now', 'अभी लॉग आउट करें')}
