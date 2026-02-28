@@ -111,8 +111,10 @@ export async function fetchPublishedBlogs(limit = 50): Promise<BlogPost[]> {
 }
 
 export async function fetchBlogById(id: string): Promise<BlogPost | null> {
+    console.log('[dbBlogs] fetchBlogById called with id:', id, 'type:', typeof id);
     try {
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        console.log('[dbBlogs] isUuid:', isUuid);
 
         let result;
         if (isUuid) {
@@ -120,7 +122,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             result = await db.query(
                 `SELECT ${BLOG_SELECT_WITH_AUTHOR}
                  ${FROM_BLOGS_WITH_AUTHOR}
-                 WHERE b.id = $1::uuid OR b.slug = $1
+                 WHERE b.id = $1::uuid OR b.slug = $1::text
                  LIMIT 1`,
                 [id]
             );
@@ -135,10 +137,11 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             );
         }
 
+        console.log('[dbBlogs] fetchBlogById result rows:', result.rows.length);
         if (result.rows.length === 0) return null;
         return mapRowToBlog(result.rows[0]);
     } catch (error: any) {
-        console.error('[dbBlogs] fetchBlogById error:', error.message);
+        console.error('[dbBlogs] fetchBlogById ERROR:', error.message, error.stack);
         return null;
     }
 }
