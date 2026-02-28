@@ -31,6 +31,7 @@ export async function triggerReconciliationAction(): Promise<{ success: boolean;
  * Returns the exact database error for the first missing blog.
  */
 export async function debugFailingBlogAction() {
+    let targetId: string | null = null;
     try {
         const session = await getServerSession(authOptions);
         if (!session || (session.user as any).role !== 'admin') {
@@ -56,13 +57,21 @@ export async function debugFailingBlogAction() {
 
             const failingBlog = masterBlogs.find((b: any) => !slaveIds.has(b.id)) || masterBlogs[0];
 
-            const targetId = failingBlog?.id;
+            targetId = failingBlog?.id || null;
             if (!targetId) return { message: "No blogs found to sync." };
 
             const fullRowResult = await master.query('SELECT * FROM blogs WHERE id = $1', [targetId]);
             const fullRow = fullRowResult.rows[0];
             const cols = Object.keys(fullRow);
-            const vals = Object.values(fullRow);
+
+            // Explicitly stringify objects for JSONB columns
+            const vals = Object.values(fullRow).map(val => {
+                if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+                    return JSON.stringify(val);
+                }
+                return val;
+            });
+
             const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
             const updateSet = cols.filter(c => c !== 'id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
 
@@ -74,6 +83,11 @@ export async function debugFailingBlogAction() {
 
             return { message: `✅ Successfully synced "${fullRow.title_en}"` };
         } catch (err: any) {
+            console.error('[DEBUG-SYNC] Row failure details:', {
+                id: targetId,
+                error: err.message,
+                detail: err.detail
+            });
             return {
                 error: err.message,
                 detail: err.detail,

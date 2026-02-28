@@ -77,7 +77,13 @@ async function reconcileTable(master: Client, slave: Client, tableName: string):
                 if (!fullRow) continue;
 
                 const columns = Object.keys(fullRow);
-                const values = Object.values(fullRow);
+                const values = Object.values(fullRow).map(val => {
+                    // Important: Explicitly stringify objects for JSONB columns
+                    if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+                        return JSON.stringify(val);
+                    }
+                    return val;
+                });
 
                 const colNames = columns.map(c => `"${c}"`).join(', ');
                 const valPlaceholders = columns.map((_, i) => `$${i + 1}`).join(', ');
