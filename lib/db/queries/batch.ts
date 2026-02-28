@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Batch Queries — Database Abstraction Layer
  * 

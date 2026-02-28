@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Interactions Queries (Likes + Comments) — Database Abstraction Layer
  * 

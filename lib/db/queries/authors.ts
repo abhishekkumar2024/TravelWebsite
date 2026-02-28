@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Author Queries — Database Abstraction Layer
  * 

@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Admin Queries — Database Abstraction Layer
  * 

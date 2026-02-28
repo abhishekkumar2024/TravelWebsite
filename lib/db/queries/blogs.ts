@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Blog Queries — Database Abstraction Layer
  * 
