@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { isAdmin, getAdminStatus, getAdminStats, fetchBlogsByStatus } from '@/lib/admin';
-import { approveBlog, rejectBlog, deleteBlog } from '@/lib/supabaseBlogs';
+import { signOut, useSession } from 'next-auth/react';
+import { isAdmin as checkIsAdmin, getAdminStats, fetchBlogsByStatus } from '@/lib/db/queries/admin';
+import { approveBlog, rejectBlog, deleteBlog } from '@/lib/db/queries';
 import AdminLogin from '@/components/AdminLogin';
 import ProfileHeader from '@/components/ProfileHeader';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -17,15 +17,16 @@ import {
     createProduct,
     updateProduct,
     deleteProduct
-} from '@/lib/supabaseProducts';
+} from '@/lib/db/queries';
 import {
     fetchContactMessages,
     updateMessageStatus
-} from '@/lib/supabaseContact';
+} from '@/lib/db/queries';
 import { AffiliateProduct } from '@/app/essentials/EssentialsContent';
 
 export default function AdminPage() {
     const { t } = useLanguage();
+    const { data: session, status: sessionStatus } = useSession();
     const [authenticated, setAuthenticated] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -54,9 +55,18 @@ export default function AdminPage() {
         isActive: true,
     });
 
+    // Check admin access via NextAuth session
     useEffect(() => {
-        checkAdminAccess();
-    }, []);
+        if (sessionStatus === 'loading') return;
+        const sessionUser = session?.user as any;
+        if (sessionUser && checkIsAdmin(sessionUser.role)) {
+            setAuthenticated(true);
+            setUser(sessionUser);
+        } else {
+            setAuthenticated(false);
+        }
+        setLoading(false);
+    }, [sessionStatus, session]);
 
     useEffect(() => {
         if (authenticated) {
@@ -70,21 +80,6 @@ export default function AdminPage() {
             }
         }
     }, [authenticated, mainTab, activeTab]);
-
-    const checkAdminAccess = async () => {
-        try {
-            const { isAdmin, user } = await getAdminStatus();
-            setAuthenticated(isAdmin);
-            if (isAdmin && user) {
-                setUser(user);
-            }
-        } catch (error) {
-            console.error('Error checking admin access:', error);
-            setAuthenticated(false);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const loadStats = async () => {
         const adminStats = await getAdminStats();
@@ -246,7 +241,7 @@ export default function AdminPage() {
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut({ scope: 'local' });
+        await signOut({ redirect: false });
         setAuthenticated(false);
         setBlogs([]);
         setStats({

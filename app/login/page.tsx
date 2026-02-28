@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/components/LanguageProvider';
 import LoginModal from '@/components/LoginModal';
 
@@ -10,21 +10,19 @@ function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { t } = useLanguage();
+    const { data: session, status } = useSession();
     const [loading, setLoading] = useState(true);
 
     const redirectTo = searchParams.get('redirectTo') || '/';
 
     useEffect(() => {
-        const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                router.push(redirectTo);
-            } else {
-                setLoading(false);
-            }
-        };
-        checkUser();
-    }, [router, redirectTo]);
+        if (status === 'loading') return;
+        if (session?.user) {
+            router.push(redirectTo);
+        } else {
+            setLoading(false);
+        }
+    }, [status, session, router, redirectTo]);
 
     if (loading) {
         return (

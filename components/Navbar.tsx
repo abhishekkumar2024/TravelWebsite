@@ -5,43 +5,16 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from './LanguageProvider';
-import { supabase } from '@/lib/supabaseClient';
-import { getAuthorProfile } from '@/lib/supabaseAuthors';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Navbar() {
     const { lang, setLang, t, mounted } = useLanguage();
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [user, setUser] = useState<any>(null);
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const { data: session } = useSession();
+    const user = session?.user;
+    const avatarUrl = user?.image || null;
     const navRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        // Check initial user
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            setUser(user);
-            if (user) loadAvatar(user.id);
-        });
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                loadAvatar(session.user.id);
-            } else {
-                setAvatarUrl(null);
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    const loadAvatar = async (userId: string) => {
-        const profile = await getAuthorProfile(userId);
-        if (profile?.avatar_url) {
-            setAvatarUrl(profile.avatar_url);
-        }
-    };
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -126,7 +99,7 @@ export default function Navbar() {
                                     <div className="relative w-6 h-6 rounded-full overflow-hidden border border-white shadow-sm">
                                         <Image
                                             src={avatarUrl}
-                                            alt={user?.user_metadata?.name || 'Profile photo'}
+                                            alt={user?.name || 'Profile photo'}
                                             fill
                                             className="object-cover"
                                         />
@@ -136,7 +109,7 @@ export default function Navbar() {
                             </Link>
                             <button
                                 onClick={async () => {
-                                    await supabase.auth.signOut({ scope: 'local' });
+                                    await signOut({ redirect: false });
                                     window.location.reload();
                                 }}
                                 className="hidden sm:inline-flex items-center justify-center w-9 h-9 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-all"
@@ -215,7 +188,7 @@ export default function Navbar() {
                                 <button
                                     className="text-lg py-2 px-4 rounded-lg hover:bg-red-50 font-medium text-red-600 text-left flex items-center gap-2"
                                     onClick={async () => {
-                                        await supabase.auth.signOut({ scope: 'local' });
+                                        await signOut({ redirect: false });
                                         setMobileMenuOpen(false);
                                         window.location.reload();
                                     }}

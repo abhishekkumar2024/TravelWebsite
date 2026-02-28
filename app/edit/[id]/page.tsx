@@ -10,10 +10,10 @@ import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
-import { fetchBlogById, updateBlog } from '@/lib/supabaseBlogs';
+import { fetchBlogById, updateBlog } from '@/lib/db/queries';
 import { SubmitLogger } from '@/lib/submitLogger';
-import { supabase } from '@/lib/supabaseClient';
-import { isAdmin } from '@/lib/admin';
+import { useSession } from 'next-auth/react';
+import { isAdmin } from '@/lib/db/queries/admin';
 
 const destinations = [
     { value: '', label: 'Select destination' },
@@ -94,19 +94,21 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     });
     const { saveDraft, loadDraft, clearDraft, scheduleAutoSave, lastSaved, isSaving, hasDraft, getLastSavedText } = useDraft('edit', params.id);
 
-    useEffect(() => {
-        const init = async () => {
-            // 1. Check User
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push(`/login?redirectTo=/edit/${params.id}`);
-                return;
-            }
-            setUser(user);
-            const isAdm = await isAdmin();
-            setIsAdminUser(isAdm);
+    const { data: session, status: sessionStatus } = useSession();
 
-            // 2. Load Blog Data
+    useEffect(() => {
+        if (sessionStatus === 'loading') return;
+        const sessionUser = session?.user as any;
+
+        if (!sessionUser) {
+            router.push(`/login?redirectTo=/edit/${params.id}`);
+            return;
+        }
+        setUser(sessionUser);
+        setIsAdminUser(isAdmin((session?.user as any)?.role));
+
+        // Load Blog Data
+        const loadBlog = async () => {
             try {
                 const blog = await fetchBlogById(params.id);
                 if (!blog) {
@@ -114,13 +116,6 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                     router.push('/my-blogs');
                     return;
                 }
-
-                // Verify ownership
-                // Note: blog object doesn't strictly have author_id in the interface, 
-                // but supabase fetch returns it. We might need to check logic carefully.
-                // Assuming RLS allows reading own blogs.
-                // Ideally passing author_id in FetchBlogById response would be better, 
-                // but for now relying on user context or admin.
 
                 // Pre-fill form
                 setTitleEn(blog.title_en);
@@ -138,7 +133,6 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 // SEO
                 setMetaTitle(blog.meta_title || '');
                 setMetaDescription(blog.meta_description || '');
-
                 setCanonicalUrl(blog.canonical_url || '');
 
                 // Snapshot original data for diff-based updates
@@ -155,13 +149,11 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                     images: blog.images || [],
                     metaTitle: blog.meta_title || '',
                     metaDescription: blog.meta_description || '',
-
                     canonicalUrl: blog.canonical_url || '',
                 };
 
                 // Mark blog data as loaded for draft comparison
                 blogDataLoaded.current = true;
-
             } catch (error) {
                 console.error('Error fetching blog:', error);
                 alert('Error loading blog data');
@@ -170,8 +162,8 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             }
         };
 
-        init();
-    }, [params.id, router]);
+        loadBlog();
+    }, [params.id, router, sessionStatus]);
 
     // Check for draft after blog data loads
     useEffect(() => {
@@ -371,8 +363,6 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             logger.startStage('database_update');
             const payloadSize = new Blob([JSON.stringify(payload)]).size;
             const payloadSizeKB = (payloadSize / 1024).toFixed(1);
-            console.log(`[Update] Payload: ${payloadSizeKB}KB, changed fields: [${changedKeys.join(', ')}]`);
-
             if (payloadSize > 400 * 1024) {
                 console.warn(`[Update] ⚠️ Large payload: ${payloadSizeKB}KB`);
             }

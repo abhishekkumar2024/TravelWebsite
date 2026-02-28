@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { signIn } from 'next-auth/react';
 import { useLanguage } from './LanguageProvider';
-import { ensureAuthorExists } from '@/lib/supabaseAuthors';
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -63,7 +62,7 @@ export default function LoginModal({
             }
         } catch (err: any) {
             let errorMsg = err.message || '';
-            // Network / fetch failures — hide raw Supabase URL from users
+            // Network / fetch failures
             if (
                 errorMsg.includes('Failed to fetch') ||
                 errorMsg.includes('NetworkError') ||
@@ -79,7 +78,7 @@ export default function LoginModal({
                     'Email not confirmed. Please check your inbox for the verification link.',
                     'ईमेल की पुष्टि नहीं हुई है। कृपया सत्यापन लिंक के लिए अपना इनबॉक्स जांचें।'
                 );
-            } else if (errorMsg.includes('Invalid login credentials')) {
+            } else if (errorMsg.includes('Invalid login credentials') || errorMsg.includes('CredentialsSignin')) {
                 errorMsg = t(
                     'Invalid email or password. Please try again.',
                     'गलत ईमेल या पासवर्ड। कृपया पुनः प्रयास करें।'
@@ -91,26 +90,28 @@ export default function LoginModal({
     };
 
     // -------------------------
-    // SIGN UP
+    // SIGN UP — calls our /api/auth/signup endpoint
     // -------------------------
     const handleSignup = async () => {
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    name: name || email.split('@')[0],
-                    full_name: name || email.split('@')[0]
-                },
-            },
+        const res = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name || email.split('@')[0],
+                email,
+                password,
+            }),
         });
 
-        if (error) throw error;
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.error || 'Signup failed');
+        }
 
         setMessage(
             t(
-                'Verification email sent! Please check your inbox and confirm your email, then login here.',
-                'सत्यापन ईमेल भेज दिया गया है! कृपया अपना इनबॉक्स जांचें और ईमेल की पुष्टि करें, फिर यहां लॉगिन करें।'
+                'Account created! You can now log in.',
+                'खाता बनाया गया! अब आप लॉगिन कर सकते हैं।'
             )
         );
 
@@ -125,122 +126,76 @@ export default function LoginModal({
     // FORGOT PASSWORD
     // -------------------------
     const handleForgotPassword = async () => {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-        });
+        try {
+            const res = await fetch('/api/auth/forgot-password/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
 
-        if (error) throw error;
+            const data = await res.json();
 
-        setMessage(
-            t(
-                'Password reset link sent! Please check your email.',
-                'पासवर्ड रीसेट लिंक भेज दिया गया है! कृपया अपना ईमेल जांचें।'
-            )
-        );
-        setLoading(false);
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to send reset email');
+            }
+
+            setMessage(data.message || t('Check your email for a reset link!', 'रीसेट लिंक के लिए अपना ईमेल जांचें!'));
+        } catch (err: any) {
+            setError(err.message || t('Something went wrong. Please try again.', 'कुछ गलत हो गया। कृपया पुन: प्रयास करें।'));
+        } finally {
+            setLoading(false);
+        }
     };
 
     // -------------------------
-    // LOGIN (EMAIL/PASSWORD)
+    // LOGIN (EMAIL/PASSWORD) — uses NextAuth credentials provider
     // -------------------------
     const handleLogin = async () => {
-        // Retry up to 2 times for transient network errors
-        let lastError: any = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
+        const result = await signIn('credentials', {
+            redirect: false,
+            email,
+            password,
+        });
 
-                if (error) throw error;
-
-                const user = data.user;
-                if (!user) throw new Error('Login succeeded but no user returned');
-
-                // Wait for session to be fully established before proceeding
-                // This prevents race conditions with ensureAuthorExists
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    // Small delay and retry session check
-                    await new Promise(r => setTimeout(r, 500));
-                    const { data: { session: retrySession } } = await supabase.auth.getSession();
-                    if (!retrySession) {
-                        console.warn('[LoginModal] Session not ready after login, proceeding anyway');
-                    }
-                }
-
-                // Ensure author exists (prevents FK error on first login)
-                try {
-                    await ensureAuthorExists();
-                } catch (authorErr) {
-                    // Non-blocking — don't fail login if author creation has a hiccup
-                    console.warn('[LoginModal] ensureAuthorExists warning:', authorErr);
-                }
-
-                setMessage(t('Login successful!', 'लॉगिन सफल!'));
-
-                setTimeout(() => {
-                    onLoginSuccess();
-                    onClose();
-                }, 500);
-
-                return; // Success — exit retry loop
-            } catch (err: any) {
-                lastError = err;
-                const msg = err.message || '';
-                const isNetworkError =
-                    msg.includes('Failed to fetch') ||
-                    msg.includes('NetworkError') ||
-                    msg.includes('ERR_NETWORK');
-
-                // Only retry on network errors, not auth errors
-                if (!isNetworkError || attempt >= 2) {
-                    throw err;
-                }
-
-                // Wait before retrying
-                await new Promise(r => setTimeout(r, 1000));
-            }
+        if (result?.error) {
+            throw new Error(result.error);
         }
 
-        // If we exhausted retries
-        if (lastError) throw lastError;
+        if (result?.ok) {
+            setMessage(t('Login successful!', 'लॉगिन सफल!'));
+
+            setTimeout(() => {
+                onLoginSuccess();
+                onClose();
+            }, 500);
+        } else {
+            throw new Error('Login failed');
+        }
     };
 
     // -------------------------
-    // GOOGLE LOGIN
+    // GOOGLE LOGIN — uses NextAuth Google provider
     // -------------------------
     const handleGoogleLogin = async () => {
         setLoading(true);
         setError(null);
 
-        // Build redirect URL: use pending action's returnUrl if available
-        // This ensures Google OAuth redirects back to the correct page (e.g., blog post with ?scroll=comments)
-        let redirectUrl = window.location.href;
+        // Build callback URL: use pending action's returnUrl if available
+        let callbackUrl = window.location.href;
         try {
             const stored = localStorage.getItem('post_action_after_login');
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (parsed?.returnUrl) {
-                    redirectUrl = `${window.location.origin}${parsed.returnUrl}`;
+                    callbackUrl = `${window.location.origin}${parsed.returnUrl}`;
                 }
             }
         } catch {
             // Ignore parse errors, use default
         }
 
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: redirectUrl,
-            },
-        });
-
-        if (error) {
-            setError(error.message);
-            setLoading(false);
-        }
+        // signIn with Google redirects the page (no redirect: false)
+        await signIn('google', { callbackUrl });
     };
 
     if (!isOpen) return null;

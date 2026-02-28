@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { demoDestinations } from '@/lib/data';
-import { fetchBlogsByDestination } from '@/lib/supabaseBlogs';
+import { fetchBlogsByDestination } from '@/lib/db/queries';
 import BackToTop from '@/components/BackToTop';
 import { DestinationBlogGrid } from '@/components/DestinationBlogGrid';
 

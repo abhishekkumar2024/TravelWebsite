@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useSession, signOut } from 'next-auth/react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 // Configuration: 5 minutes of total inactivity before logout
@@ -31,7 +31,7 @@ export default function SessionTimeout() {
         try {
             // scope: 'local' — only log out THIS device/browser.
             // Other devices keep their independent sessions.
-            await supabase.auth.signOut({ scope: 'local' });
+            await signOut({ redirect: false });
             setShowWarning(false);
             setIsLoggedIn(false);
             localStorage.removeItem(LAST_ACTIVITY_KEY);
@@ -101,27 +101,16 @@ export default function SessionTimeout() {
         }, 1000);
     }, []);
 
-    // Track authentication state
+    // Track authentication state via NextAuth session
+    const { data: nextAuthSession, status } = useSession();
+
     useEffect(() => {
-        const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setIsLoggedIn(!!session);
-        };
-
-        checkUser();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            const isNowLoggedIn = !!session;
-            setIsLoggedIn(isNowLoggedIn);
-
-            // If user just logged in, start the timer
-            if (isNowLoggedIn) {
-                resetTimer();
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [resetTimer]);
+        const isNowLoggedIn = status === 'authenticated';
+        setIsLoggedIn(isNowLoggedIn);
+        if (isNowLoggedIn) {
+            resetTimer();
+        }
+    }, [status, resetTimer]);
 
     // Handle user activity listeners
     useEffect(() => {

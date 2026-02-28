@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getAuthorProfile, updateAuthorProfile } from '@/lib/supabaseAuthors';
 import { uploadAvatar } from '@/lib/upload';
 import { useLanguage } from './LanguageProvider';
 import Image from 'next/image';
@@ -26,10 +25,15 @@ export default function ProfileHeader({ userId, email, onProfileUpdate }: Profil
     }, [userId]);
 
     const loadProfile = async () => {
-        const data = await getAuthorProfile(userId);
-        if (data) {
-            setProfile(data);
-            setNewName(data.name || '');
+        try {
+            const res = await fetch(`/api/profile/?userId=${encodeURIComponent(userId)}`);
+            const data = await res.json();
+            if (data.profile) {
+                setProfile(data.profile);
+                setNewName(data.profile.name || '');
+            }
+        } catch (e) {
+            console.error('Failed to load profile:', e);
         }
     };
 
@@ -44,7 +48,11 @@ export default function ProfileHeader({ userId, email, onProfileUpdate }: Profil
         setUploading(true);
         try {
             const url = await uploadAvatar(file);
-            await updateAuthorProfile(userId, { avatar_url: url });
+            await fetch('/api/profile/', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, updates: { avatar_url: url } }),
+            });
             await loadProfile();
             if (onProfileUpdate) onProfileUpdate();
         } catch (error) {
@@ -58,7 +66,11 @@ export default function ProfileHeader({ userId, email, onProfileUpdate }: Profil
     const handleNameSave = async () => {
         if (!newName.trim()) return;
         try {
-            await updateAuthorProfile(userId, { name: newName });
+            await fetch('/api/profile/', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, updates: { name: newName } }),
+            });
             await loadProfile();
             setIsEditing(false);
             if (onProfileUpdate) onProfileUpdate();

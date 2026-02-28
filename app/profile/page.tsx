@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { getAuthorProfile, updateAuthorProfile, ensureAuthorExists, Author } from '@/lib/supabaseAuthors';
+import { useSession } from 'next-auth/react';
+import { getAuthorProfile, updateAuthorProfile, ensureAuthorExists, Author } from '@/lib/db/queries';
 import Link from 'next/link';
 
 export default function ProfilePage() {
     const router = useRouter();
+    const { data: session, status: sessionStatus } = useSession();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -26,17 +27,25 @@ export default function ProfilePage() {
     });
 
     useEffect(() => {
+        if (sessionStatus === 'loading') return;
+
+        const sessionUser = session?.user as any;
+        if (!sessionUser) {
+            router.push('/admin'); // Redirect to login
+            return;
+        }
+
         async function loadProfile() {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    router.push('/admin'); // Redirect to login
-                    return;
-                }
-
+                const userId = sessionUser.id;
                 // Ensure author row exists
-                const authorId = await ensureAuthorExists();
-                const profile = await getAuthorProfile(authorId);
+                await ensureAuthorExists(
+                    userId,
+                    sessionUser.name || sessionUser.email?.split('@')[0] || 'Traveler',
+                    sessionUser.email || '',
+                    sessionUser.image
+                );
+                const profile = await getAuthorProfile(userId);
 
                 if (profile) {
                     setAuthor(profile);
@@ -58,7 +67,7 @@ export default function ProfilePage() {
             }
         }
         loadProfile();
-    }, [router]);
+    }, [sessionStatus, session, router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

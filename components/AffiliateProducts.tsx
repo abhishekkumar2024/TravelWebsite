@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from './LanguageProvider';
-import { dataCache, CACHE_KEYS, CACHE_DURATION } from '@/lib/cache';
-
-import { fetchProducts } from '@/lib/supabaseProducts';
 
 interface AffiliateProductsProps {
     destination?: string;
@@ -19,18 +16,21 @@ export default function AffiliateProducts({ destination, limit = 4 }: AffiliateP
     useEffect(() => {
         async function loadProducts() {
             setLoading(true);
-            const allProducts = await fetchProducts();
+            try {
+                const params = new URLSearchParams();
+                if (destination) params.set('destination', destination);
+                params.set('limit', String(limit));
 
-            let filtered = allProducts;
-            if (destination) {
-                const searchDest = destination.toLowerCase();
-                filtered = allProducts.filter(p =>
-                    p.destinations.some(d => d.toLowerCase() === searchDest) || p.destinations.length === 0
-                );
+                const res = await fetch(`/api/products/?${params.toString()}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                setProducts(data.products || []);
+            } catch (err) {
+                console.error('Error loading products:', err);
+                setProducts([]);
+            } finally {
+                setLoading(false);
             }
-
-            setProducts(filtered.slice(0, limit));
-            setLoading(false);
         }
 
         loadProducts();

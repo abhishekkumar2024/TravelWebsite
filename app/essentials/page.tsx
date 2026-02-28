@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import EssentialsContent from './EssentialsContent';
-import { fetchProducts } from '@/lib/supabaseProducts';
+import { fetchProducts } from '@/lib/db/queries';
 
 export const metadata: Metadata = {
     title: 'Trip Essentials | CamelThar',

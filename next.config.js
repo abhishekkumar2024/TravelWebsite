@@ -12,10 +12,6 @@ const nextConfig = {
             },
             {
                 protocol: 'https',
-                hostname: 'firebasestorage.googleapis.com',
-            },
-            {
-                protocol: 'https',
                 hostname: 'res.cloudinary.com',
             },
             {
@@ -46,7 +42,6 @@ const nextConfig = {
             '@tiptap/extension-text-style',
             '@tiptap/extension-underline',
             '@tiptap/extension-placeholder',
-            '@supabase/supabase-js',
             'react-dropzone',
         ],
     },

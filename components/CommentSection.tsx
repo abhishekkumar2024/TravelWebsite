@@ -2,20 +2,32 @@
 
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import {
-    fetchComments,
-    addComment,
-    deleteComment,
-    updateComment,
-    toggleCommentLike,
-    fetchUserCommentLikes,
-    BlogComment,
-    isUuid
-} from '@/lib/supabaseInteractions';
+import { useSession } from 'next-auth/react';
 import { useLanguage } from './LanguageProvider';
 import { useLoginModal } from './LoginModalContext';
 import { useState, useEffect, FormEvent } from 'react';
+
+// Local type matching the DB BlogComment shape
+interface BlogComment {
+    id: string;
+    blog_id: string;
+    user_id: string;
+    content: string;
+    created_at: string;
+    updated_at?: string;
+    is_edited?: boolean;
+    parent_id?: string | null;
+    author_name?: string;
+    author_avatar_url?: string;
+    like_count?: number;
+    reply_count?: number;
+    author?: { name: string; avatar_url?: string };
+    name: string;
+    avatar_url?: string;
+    likes?: { count: number }[];
+    count: number;
+    children?: BlogComment[];
+}
 
 interface CommentSectionProps {
     blogId: string;
@@ -32,7 +44,8 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
-    const [user, setUser] = useState<any>(null);
+    const { data: session } = useSession();
+    const user = session?.user as any;
     const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
 
     // Tree Builder to organizing nested comments
@@ -63,8 +76,12 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
     useEffect(() => {
         const loadComments = async () => {
             try {
-                const data = await fetchComments(blogId);
-                setComments(data);
+                const res = await fetch(`/api/comments/?blogId=${encodeURIComponent(blogId)}${user?.id ? `&userId=${encodeURIComponent(user.id)}` : ''}`);
+                const data = await res.json();
+                setComments(data.comments || []);
+                if (data.userLikes) {
+                    setLikedComments(new Set(data.userLikes));
+                }
             } catch (err) {
                 console.error('Error loading comments:', err);
             } finally {
@@ -72,52 +89,21 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
             }
         };
 
-        const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-        };
-
         loadComments();
-        checkUser();
+    }, [blogId, user?.id]);
 
-        // Realtime Subscription
-        let channel: any;
-        if (isUuid(blogId)) {
-            channel = supabase
-                .channel(`blog-comments-${blogId}`)
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'blog_comments', filter: `blog_id=eq.${blogId}` },
-                    async () => {
-                        const updated = await fetchComments(blogId);
-                        setComments(updated);
-                        // Re-fetch likes if needed, or rely on client state
-                    }
-                )
-                .subscribe();
-        }
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user || null);
-        });
-
-        return () => {
-            subscription.unsubscribe();
-            if (channel) supabase.removeChannel(channel);
-        };
-    }, [blogId]);
-
-    // Fetch user liked comments when comments or user changes
+    // Fetch user liked comments when comments change
     useEffect(() => {
         if (user && comments.length > 0) {
             const ids = comments.map(c => c.id);
-            // Optimization: Only fetch if ids changed or user newly logged in?
-            // Simple approach: fetch always
-            fetchUserCommentLikes(ids, user.id).then(setLikedComments);
+            fetch(`/api/comments/?blogId=${encodeURIComponent(blogId)}&userId=${encodeURIComponent(user.id)}`)
+                .then(r => r.json())
+                .then(data => setLikedComments(new Set(data.userLikes || [])))
+                .catch(() => setLikedComments(new Set()));
         } else {
             setLikedComments(new Set());
         }
-    }, [user, comments.length]); // depend on length change or user
+    }, [user, comments.length, blogId]);
 
     // Handle Pending Actions (Comment / Like Comment)
     useEffect(() => {
@@ -131,7 +117,12 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
             // Auto-submit
             const submitPending = async () => {
                 setSubmitting(true);
-                const { success, data, error } = await addComment(blogId, user.id, content, parentId);
+                const res = await fetch('/api/comments/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blogId, userId: user.id, content, parentId }),
+                });
+                const { success, data, error } = await res.json();
                 if (success && data) {
                     setComments(prev => [data, ...prev]); // Optimistic-ish, or wait for realtime
                     setNewComment('');
@@ -179,7 +170,12 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
         if (!content.trim()) return;
 
         setSubmitting(true);
-        const { success, data, error } = await addComment(blogId, user.id, content.trim(), parentId);
+        const res = await fetch('/api/comments/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blogId, userId: user.id, content: content.trim(), parentId }),
+        });
+        const { success, data, error } = await res.json();
 
         if (success && data) {
             setComments([data, ...comments]);
@@ -193,14 +189,24 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
 
     const handleDelete = async (commentId: string) => {
         if (!confirm(t('Are you sure?', 'क्या आप वाकई हटाना चाहते हैं?'))) return;
-        const { success } = await deleteComment(commentId);
+        const res = await fetch('/api/comments/', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commentId }),
+        });
+        const { success } = await res.json();
         if (success) {
             setComments(comments.filter(c => c.id !== commentId && c.parent_id !== commentId));
         }
     };
 
     const handleEdit = async (commentId: string, newContent: string) => {
-        const { success } = await updateComment(commentId, newContent);
+        const res = await fetch('/api/comments/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commentId, content: newContent }),
+        });
+        const { success } = await res.json();
         if (success) {
             setComments(comments.map(c => c.id === commentId ? { ...c, content: newContent, is_edited: true, updated_at: new Date().toISOString() } : c));
         }
@@ -225,10 +231,18 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
             return c;
         }));
 
-        const { error } = await toggleCommentLike(commentId, userId);
-        if (error) {
-            // Revert on error (optional)
-            console.error(error);
+        try {
+            const res = await fetch('/api/comments/like/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ commentId, userId }),
+            });
+            const { error } = await res.json();
+            if (error) {
+                console.error(error);
+            }
+        } catch (err) {
+            console.error('Error toggling comment like:', err);
         }
     }
 
@@ -298,7 +312,7 @@ export default function CommentSection({ blogId }: CommentSectionProps) {
                 ) : (
                     <form onSubmit={(e) => handlePostComment(e, newComment)} className="flex gap-4">
                         <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                            {user.user_metadata?.avatar_url && <Image src={user.user_metadata.avatar_url} alt={user.user_metadata?.name || user.email?.split('@')[0] || 'User avatar'} width={40} height={40} />}
+                            {user?.image && <Image src={user.image} alt={user?.name || user?.email?.split('@')[0] || 'User avatar'} width={40} height={40} />}
                         </div>
                         <div className="flex-1">
                             <textarea

@@ -5,9 +5,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
-import { fetchUserBlogs } from '@/lib/supabaseBlogs';
+import { fetchUserBlogs } from '@/lib/db/queries';
 import { BlogPost } from '@/lib/data';
-import { supabase } from '@/lib/supabaseClient';
+import { useSession } from 'next-auth/react';
 import { SubmitDraftData } from '@/hooks/useDraft';
 import ProfileHeader from '@/components/ProfileHeader';
 
@@ -44,32 +44,31 @@ export default function MyBlogsPage() {
     const router = useRouter();
     const [blogs, setBlogs] = useState<BlogPost[]>([]);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const { data: session, status: sessionStatus } = useSession();
+    const user = session?.user as any;
     const [draft, setDraft] = useState<SubmitDraftData | null>(null);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
 
     useEffect(() => {
-        checkUser();
         // Load draft from localStorage
         const localDraft = getLocalDraft();
         if (localDraft) {
             setDraft(localDraft);
         }
-    }, []);
 
-    const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (sessionStatus === 'loading') return;
+        if (!session?.user) {
             router.push('/submit?login=true');
             return;
         }
-        setUser(user);
         loadBlogs();
-    };
+        setLoading(false);
+    }, [sessionStatus]);
 
     const loadBlogs = async () => {
         try {
-            const userBlogs = await fetchUserBlogs();
+            if (!user?.id) return;
+            const userBlogs = await fetchUserBlogs(user.id);
             setBlogs(userBlogs);
         } catch (error) {
             console.error('Error loading blogs:', error);

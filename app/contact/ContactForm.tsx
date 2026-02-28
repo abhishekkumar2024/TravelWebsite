@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-import { submitContactForm } from '@/lib/supabaseContact';
+import { submitContactForm } from '@/lib/db/queries';
 
 export default function ContactForm() {
     const [formData, setFormData] = useState({

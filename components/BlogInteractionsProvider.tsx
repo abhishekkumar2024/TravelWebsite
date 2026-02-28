@@ -1,9 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { batchFetchLikeCounts, batchFetchCommentCounts, batchFetchLikeStatuses } from '@/lib/supabaseBatch';
-import { toggleLike } from '@/lib/supabaseInteractions';
+import { useSession } from 'next-auth/react';
 
 interface BlogInteractionsContextType {
     // Auth state (shared across all buttons)
@@ -34,7 +32,6 @@ interface BlogInteractionsProviderProps {
 }
 
 export function BlogInteractionsProvider({ children, blogIds: initialBlogIds = [] }: BlogInteractionsProviderProps) {
-    const [user, setUser] = useState<any>(null);
     const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
     const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
     const [likedByUser, setLikedByUser] = useState<Set<string>>(new Set());
@@ -58,22 +55,11 @@ export function BlogInteractionsProvider({ children, blogIds: initialBlogIds = [
         }, 50); // 50ms debounce to collect all card registrations
     }, []);
 
-    // Single auth check + listener
-    useEffect(() => {
-        const initAuth = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-        };
-        initAuth();
+    // Single auth check via NextAuth session
+    const { data: session } = useSession();
+    const user = session?.user as any;
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user || null);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-    // Batch fetch all interaction data when blog IDs or user changes
+    // Batch fetch all interaction data via API route
     useEffect(() => {
         if (registeredIds.length === 0) {
             setIsLoading(false);
@@ -84,12 +70,27 @@ export function BlogInteractionsProvider({ children, blogIds: initialBlogIds = [
             setIsLoading(true);
 
             try {
-                // Fire all batch queries in parallel
-                const [likes, comments, userLikes] = await Promise.all([
-                    batchFetchLikeCounts(registeredIds),
-                    batchFetchCommentCounts(registeredIds),
-                    user ? batchFetchLikeStatuses(registeredIds, user.id) : Promise.resolve(new Set<string>()),
-                ]);
+                const res = await fetch('/api/interactions/batch/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        blogIds: registeredIds,
+                        userId: user?.id,
+                    }),
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+
+                // Convert back from plain objects to Maps/Sets
+                const likes = new Map<string, number>();
+                Object.entries(data.likes || {}).forEach(([k, v]) => likes.set(k, v as number));
+
+                const comments = new Map<string, number>();
+                Object.entries(data.comments || {}).forEach(([k, v]) => comments.set(k, v as number));
+
+                const userLikes = new Set<string>(data.userLikes || []);
 
                 setLikeCounts(likes);
                 setCommentCounts(comments);
@@ -105,7 +106,7 @@ export function BlogInteractionsProvider({ children, blogIds: initialBlogIds = [
         fetchAllData();
     }, [registeredIds, user]);
 
-    // Handle like toggle with optimistic update
+    // Handle like toggle via API route with optimistic update
     const handleToggleLike = useCallback(async (blogId: string) => {
         if (!user) return; // Should be handled by caller with login modal
 
@@ -125,11 +126,44 @@ export function BlogInteractionsProvider({ children, blogIds: initialBlogIds = [
             return next;
         });
 
-        // Server call
-        const { liked: finalLiked, error } = await toggleLike(blogId, user.id);
+        // Server call via API route
+        try {
+            const res = await fetch('/api/interactions/like/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ blogId, userId: user.id }),
+            });
 
-        if (error) {
-            // Revert on error
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const { liked: finalLiked, error } = await res.json();
+
+            if (error) {
+                // Revert on error
+                setLikedByUser(prev => {
+                    const next = new Set(prev);
+                    if (isCurrentlyLiked) next.add(blogId);
+                    else next.delete(blogId);
+                    return next;
+                });
+                setLikeCounts(prev => {
+                    const next = new Map(prev);
+                    next.set(blogId, currentCount);
+                    return next;
+                });
+                alert('Failed to update like status');
+                return;
+            }
+
+            // Sync with server response
+            setLikedByUser(prev => {
+                const next = new Set(prev);
+                if (finalLiked) next.add(blogId);
+                else next.delete(blogId);
+                return next;
+            });
+        } catch (err) {
+            // Revert on network error
             setLikedByUser(prev => {
                 const next = new Set(prev);
                 if (isCurrentlyLiked) next.add(blogId);
@@ -141,17 +175,8 @@ export function BlogInteractionsProvider({ children, blogIds: initialBlogIds = [
                 next.set(blogId, currentCount);
                 return next;
             });
-            alert('Failed to update like status');
-            return;
+            console.error('Error toggling like:', err);
         }
-
-        // Sync with server response
-        setLikedByUser(prev => {
-            const next = new Set(prev);
-            if (finalLiked) next.add(blogId);
-            else next.delete(blogId);
-            return next;
-        });
     }, [user, likedByUser, likeCounts]);
 
     return (

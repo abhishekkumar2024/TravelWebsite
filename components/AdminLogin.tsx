@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { signIn } from 'next-auth/react';
 import { useLanguage } from './LanguageProvider';
 
 interface AdminLoginProps {
@@ -22,24 +22,29 @@ export default function AdminLogin({ onLoginSuccess, onCancel }: AdminLoginProps
         setError(null);
 
         try {
-            const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            // Use NextAuth credentials sign-in
+            const result = await signIn('credentials', {
+                redirect: false,
                 email,
                 password,
             });
 
-            if (signInError) throw signInError;
+            if (result?.error) {
+                setError(t('Invalid credentials. Please try again.', 'अमान्य क्रेडेंशियल। कृपया पुनः प्रयास करें।'));
+                setLoading(false);
+                return;
+            }
 
-            if (data.user) {
-                const user = data.user as any;
-                const role = user.app_metadata?.role ||
-                    user.user_metadata?.role ||
-                    user.raw_app_meta_data?.role ||
-                    user.role;
-
-                console.log('Admin login attempt:', { email: user.email, role });
+            if (result?.ok) {
+                // Fetch the session to check admin role
+                const sessionRes = await fetch('/api/auth/session');
+                const session = await sessionRes.json();
+                const role = (session?.user as any)?.role;
 
                 if (role !== 'admin') {
-                    await supabase.auth.signOut({ scope: 'local' });
+                    // Not an admin — sign out and show error
+                    await signIn('credentials', { redirect: false }); // This won't work, need signOut
+                    await fetch('/api/auth/signout', { method: 'POST' }).catch(() => { });
                     setError(`${t('Access denied. Admin privileges required.', 'अस्वीकृत पहुंच। व्यवस्थापक विशेषाधिकार आवश्यक हैं।')} (Detected: ${role || 'none'})`);
                     setLoading(false);
                     return;

@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { demoBlogs, demoDestinations } from '@/lib/data';
-import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/supabaseBlogs';
+import { fetchBlogCountsByDestination, fetchPublishedBlogs } from '@/lib/db/queries';
 import HomePageClient from './HomePageClient';
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const revalidate = 60;
 
 export default async function HomePage() {
     // Fetch data on the server — this HTML is what Google sees
-    const [counts, supabaseBlogs] = await Promise.all([
+    const [counts, dbBlogs] = await Promise.all([
         fetchBlogCountsByDestination(),
         fetchPublishedBlogs(3),
     ]);
@@ -30,10 +30,10 @@ export default async function HomePage() {
 
     // Determine blogs to show
     let blogs;
-    if (supabaseBlogs.length >= 3) {
-        blogs = supabaseBlogs;
-    } else if (supabaseBlogs.length > 0) {
-        blogs = [...supabaseBlogs, ...demoBlogs].slice(0, 3);
+    if (dbBlogs.length >= 3) {
+        blogs = dbBlogs;
+    } else if (dbBlogs.length > 0) {
+        blogs = [...dbBlogs, ...demoBlogs].slice(0, 3);
     } else {
         blogs = demoBlogs.slice(0, 3);
     }

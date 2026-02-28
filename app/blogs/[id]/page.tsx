@@ -4,18 +4,17 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
 import { demoBlogs, BlogPost } from '@/lib/data';
-import { fetchBlogById, fetchRelatedBlogs } from '@/lib/supabaseBlogs';
-import { supabase } from '@/lib/supabaseClient';
+import { fetchBlogById, fetchRelatedBlogs } from '@/lib/db/queries';
+import { db } from '@/lib/db';
 import BlogContent from './BlogContent';
 
 // Pre-generate all published blog pages at build time for faster indexing
 export async function generateStaticParams() {
-    const { data: blogs } = await supabase
-        .from('blogs')
-        .select('slug, id')
-        .eq('status', 'published');
+    const result = await db.query<{ slug: string; id: string }>(
+        `SELECT slug, id FROM blogs WHERE status = 'published'`
+    );
 
-    const params = (blogs || []).map((blog) => ({
+    const params = result.rows.map((blog) => ({
         id: blog.slug || blog.id,
     }));
 
@@ -40,14 +39,14 @@ const getBlogData = unstable_cache(
             return demoBlog;
         }
 
-        // 2. Check Supabase
+        // 2. Check Database
         try {
-            const supabaseBlog = await fetchBlogById(id);
-            if (supabaseBlog) {
-                return supabaseBlog;
+            const blog = await fetchBlogById(id);
+            if (blog) {
+                return blog;
             }
         } catch (error) {
-            console.error('[BlogPage] Error fetching blog from Supabase:', error);
+            console.error('[BlogPage] Error fetching blog from database:', error);
         }
 
         return null;

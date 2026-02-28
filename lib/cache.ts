@@ -1,6 +1,6 @@
 /**
  * Simple in-memory cache with expiration
- * Caches data to improve performance and reduce Firebase reads
+ * Caches data to improve performance and reduce database reads
  */
 
 interface CacheItem<T> {

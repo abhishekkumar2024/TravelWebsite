@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getAuthorBySlug } from '@/lib/supabaseAuthors';
-import { fetchBlogsByAuthorSlug } from '@/lib/supabaseBlogs';
+import { getAuthorBySlug } from '@/lib/db/queries';
+import { fetchBlogsByAuthorSlug } from '@/lib/db/queries';
 import { Metadata } from 'next';
-import { Author } from '@/lib/supabaseAuthors';
+import { Author } from '@/lib/db/queries';
 
 export const revalidate = 60; // ISR every 60 seconds
 

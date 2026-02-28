@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
 import { useLanguage } from './LanguageProvider';
 
 export default function Footer() {
@@ -24,23 +23,25 @@ export default function Footer() {
         setStatus('loading');
 
         try {
-            const { error } = await supabase
-                .from('newsletter_subscribers')
-                .insert([{ email }]);
+            const res = await fetch('/api/newsletter/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
 
-            if (error) {
-                if (error.code === '23505') { // Unique violation
-                    setStatus('success');
-                    setMessage(t('You are already subscribed!', 'आप पहले से ही सब्सक्राइब हैं!'));
-                } else {
-                    throw error;
-                }
+            if (data.error) {
+                setStatus('error');
+                setMessage(t('Something went wrong. Please try again.', 'कुछ गलत हो गया। कृपया पुन: प्रयास करें।'));
+            } else if (data.alreadySubscribed) {
+                setStatus('success');
+                setMessage(t('You are already subscribed!', 'आप पहले से ही सब्सक्राइब हैं!'));
             } else {
                 setStatus('success');
                 setMessage(t('Thank you for subscribing!', 'सब्सक्राइब करने के लिए धन्यवाद!'));
                 setEmail('');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Newsletter error:', err);
             setStatus('error');
             setMessage(t('Something went wrong. Please try again.', 'कुछ गलत हो गया। कृपया पुन: प्रयास करें।'));

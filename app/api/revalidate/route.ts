@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        console.log('[Revalidate] ✅ Revalidated:', revalidated);
+        // Revalidated items are returned in JSON response.
 
         return NextResponse.json({
             revalidated: true,

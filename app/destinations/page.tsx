@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { demoDestinations } from '@/lib/data';
-import { fetchBlogCountsByDestination } from '@/lib/supabaseBlogs';
+import { fetchBlogCountsByDestination } from '@/lib/db/queries';
 import DestinationsClient from './DestinationsClient';
 
 export const metadata: Metadata = {

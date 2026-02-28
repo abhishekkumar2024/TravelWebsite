@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { fetchCommentCount } from '@/lib/supabaseInteractions';
+import { useSession } from 'next-auth/react';
 import { useBlogInteractions } from './BlogInteractionsProvider';
 
 interface CommentButtonProps {
@@ -110,27 +109,28 @@ function CommentButtonStandalone({ blogId, slug, variant = 'default' }: CommentB
     const router = useRouter();
     const [count, setCount] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const { data: session } = useSession();
+    const user = session?.user as any;
 
     const isCompact = variant === 'compact';
 
     useEffect(() => {
         const init = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-
-            const commentCount = await fetchCommentCount(blogId);
-            setCount(commentCount);
+            try {
+                const res = await fetch('/api/interactions/batch/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blogIds: [blogId] }),
+                });
+                const data = await res.json();
+                setCount(data.comments?.[blogId] || 0);
+            } catch {
+                setCount(0);
+            }
             setLoading(false);
         };
 
         init();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user || null);
-        });
-
-        return () => subscription.unsubscribe();
     }, [blogId]);
 
     const handleClick = (e: React.MouseEvent) => {

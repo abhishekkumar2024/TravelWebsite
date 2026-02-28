@@ -7,10 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "migrate": "ts-node --esm lib/run-migration.ts"
+    "migrate": "node database_scripts/setup-neon.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
+    "@neondatabase/serverless": "^1.0.2",
     "@tiptap/extension-color": "^2.27.2",
     "@tiptap/extension-highlight": "^2.27.2",
     "@tiptap/extension-image": "^2.1.0",
@@ -23,14 +23,18 @@
     "@tiptap/extension-underline": "^2.27.2",
     "@tiptap/react": "^2.1.0",
     "@tiptap/starter-kit": "^2.1.0",
+    "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
     "cloudinary": "^2.9.0",
     "next": "^14.2.0",
+    "next-auth": "^4.24.13",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-dropzone": "^14.2.3"
+    "react-dropzone": "^14.2.3",
+    "resend": "^3.2.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

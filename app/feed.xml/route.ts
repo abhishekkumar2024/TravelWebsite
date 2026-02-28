@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db';
 
 /**
  * RSS/Atom Feed for CamelThar
@@ -17,19 +17,28 @@ export const revalidate = 3600; // Revalidate every hour
 export async function GET() {
   const baseUrl = 'https://www.camelthar.com';
 
-  // Fetch latest published blogs
-  const { data: blogs } = await supabase
-    .from('blogs')
-    .select('slug, id, title_en, excerpt_en, content_en, cover_image, created_at, updated_at, destination, category, authors(name)')
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(50);
+  // Fetch latest published blogs with author info
+  let blogs: any[] = [];
+  try {
+    const result = await db.query(
+      `SELECT b.slug, b.id, b.title_en, b.excerpt_en, b.content_en,
+              b.cover_image, b.created_at, b.updated_at, b.destination, b.category,
+              a.name AS author_name
+       FROM blogs b
+       LEFT JOIN authors a ON b.author_id = a.id
+       WHERE b.status = 'published'
+       ORDER BY b.created_at DESC
+       LIMIT 50`
+    );
+    blogs = result.rows;
+  } catch (error) {
+    console.error('[feed.xml] Error fetching blogs:', error);
+  }
 
   const feedItems = (blogs || []).map((blog) => {
     const slug = blog.slug || blog.id;
     const pubDate = new Date(blog.created_at || Date.now()).toUTCString();
-    const updateDate = new Date(blog.updated_at || blog.created_at || Date.now()).toISOString();
-    const authorName = (blog.authors as any)?.name || 'CamelThar Team';
+    const authorName = blog.author_name || 'CamelThar Team';
     const coverImage = blog.cover_image?.startsWith('http')
       ? blog.cover_image
       : `${baseUrl}${blog.cover_image || '/camelthar_logo.webp'}`;

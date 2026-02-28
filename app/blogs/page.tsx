@@ -1,4 +1,4 @@
-import { fetchPublishedBlogs, fetchAvailableDestinations } from '@/lib/supabaseBlogs';
+import { fetchPublishedBlogs, fetchAvailableDestinations } from '@/lib/db/queries';
 import BlogsClient from './BlogsClient';
 import { Metadata } from 'next';
 

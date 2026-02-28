@@ -1,4 +1,4 @@
-// Demo data for when Firebase is not configured
+// Demo data for when Database is not reachable or as fallback
 export interface Author {
     id: string;
     name: string;

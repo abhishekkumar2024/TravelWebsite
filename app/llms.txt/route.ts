@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/db';
 import { demoDestinations } from '@/lib/data';
 
 /**
@@ -15,12 +15,19 @@ export const revalidate = 3600; // Revalidate every hour
 
 export async function GET() {
     // Fetch latest published blogs
-    const { data: blogs } = await supabase
-        .from('blogs')
-        .select('slug, id, title_en, destination, category')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(30);
+    let blogs: any[] = [];
+    try {
+        const result = await db.query(
+            `SELECT slug, id, title_en, destination, category
+             FROM blogs
+             WHERE status = 'published'
+             ORDER BY created_at DESC
+             LIMIT 30`
+        );
+        blogs = result.rows;
+    } catch (error) {
+        console.error('[llms.txt] Error fetching blogs:', error);
+    }
 
     const blogLinks = (blogs || [])
         .map(b => `- [${b.title_en}](https://www.camelthar.com/blogs/${b.slug || b.id}/): ${b.category || 'Travel'} — ${b.destination || 'Rajasthan'}`)
@@ -73,7 +80,7 @@ ${blogLinks}
 ## Technical
 - Built with: Next.js (React)
 - Hosted on: Vercel
-- Content Source: Supabase (PostgreSQL)
+- Content Source: Neon PostgreSQL
 - Images: Cloudinary CDN
 - Sitemap: https://www.camelthar.com/sitemap.xml
 - RSS Feed: https://www.camelthar.com/feed.xml

@@ -10,11 +10,11 @@ import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal import as we are using redirect now
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
-import { createBlog } from '@/lib/supabaseBlogs';
+import { createBlog } from '@/lib/db/queries';
 import { SubmitLogger } from '@/lib/submitLogger';
-import { supabase } from '@/lib/supabaseClient';
-import { ensureAuthorExists } from '@/lib/supabaseAuthors';
-import { isAdmin } from '@/lib/admin';
+import { useSession, signOut } from 'next-auth/react';
+import { ensureAuthorExists } from '@/lib/db/queries';
+import { isAdmin } from '@/lib/db/queries/admin';
 
 const destinations = [
     { value: '', label: 'Select destination' },
@@ -157,73 +157,38 @@ export default function SubmitPage() {
         metaDescription, canonicalUrl, submitted, scheduleAutoSave
     ]);
 
-    // Check authentication status
+    // Use NextAuth session instead of supabase auth
+    const { data: session, status: sessionStatus } = useSession();
+    const sessionUser = session?.user as any;
+
     useEffect(() => {
-        checkUser();
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-                const user = session.user;
-                setUser(user);
-
-                // Check if admin
-                const isAdm = await isAdmin();
-                setIsAdminUser(isAdm);
-
-                // Ensure author exists
-                await ensureAuthorExists();
-                setSessionReady(true);
-            } else {
-                setUser(null);
-                setSessionReady(false);
-                setIsAdminUser(false);
-            }
-            setLoading(false);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
-
-
-
-    const checkUser = async () => {
-        try {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            if (currentUser) {
-                setUser(currentUser);
-
-                // Check if admin
-                const isAdm = await isAdmin();
-                setIsAdminUser(isAdm);
-
-                // Ensure author exists (wrapped in try to not block the UI if it fails)
-                try {
-                    await ensureAuthorExists();
-                } catch (e) {
-                    console.error('Error ensuring author exists:', e);
-                }
-
-                setSessionReady(true);
-            } else {
-                setSessionReady(false);
-                setIsAdminUser(false);
-            }
-        } catch (error) {
-            console.error('Error checking user:', error);
-            setSessionReady(false); // Ensure sessionReady is set to false on error
-        } finally {
-            setLoading(false);
+        if (sessionStatus === 'loading') return;
+        if (sessionUser) {
+            setUser(sessionUser);
+            // Check if admin
+            setIsAdminUser(isAdmin(sessionUser.role));
+            // Ensure author exists
+            ensureAuthorExists(
+                sessionUser.id,
+                sessionUser.name || sessionUser.email?.split('@')[0] || 'Traveler',
+                sessionUser.email || '',
+                sessionUser.image
+            ).catch(e => console.error('Error ensuring author exists:', e));
+            setSessionReady(true);
+        } else {
+            setUser(null);
+            setSessionReady(false);
+            setIsAdminUser(false);
         }
-    };
+        setLoading(false);
+    }, [sessionStatus, sessionUser]);
 
     const handleLoginSuccess = () => {
-        checkUser();
         setShowLoginPrompt(false);
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut({ scope: 'local' });
+        await signOut({ redirect: false });
         setUser(null);
     };
 

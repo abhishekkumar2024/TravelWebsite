@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { supabase } from '@/lib/supabaseClient'
+import { db } from '@/lib/db'
 import { demoDestinations } from '@/lib/data'
 
 export const revalidate = 3600 // Revalidate every hour
@@ -9,13 +9,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const siteLaunchDate = new Date('2024-01-01')
 
     // 1. Fetch only published blog slugs with timestamps and destinations
-    const { data: blogs } = await supabase
-        .from('blogs')
-        .select('slug, id, updated_at, created_at, destination')
-        .eq('status', 'published')
+    let blogs: any[] = [];
+    try {
+        const result = await db.query(
+            `SELECT slug, id, updated_at, created_at, destination FROM blogs WHERE status = 'published'`
+        );
+        blogs = result.rows;
+    } catch (error) {
+        console.error('[sitemap] Error fetching blogs:', error);
+    }
 
     // Calculate global latest update time (for homepage/index pages)
-    // This ensures these pages only look "fresh" when actual content is added or updated
     const latestBlogDate = (blogs && blogs.length > 0)
         ? new Date(Math.max(...blogs.map(b => new Date(b.updated_at || b.created_at).getTime())))
         : siteLaunchDate;
@@ -46,7 +50,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // 2. Add individual destination guides
     const destinationEntries = demoDestinations.map((dest) => {
-        // Fallback to siteLaunchDate instead of new Date() to avoid false freshness
         const lastMod = destinationLastModified[dest.id.toLowerCase()] || siteLaunchDate;
 
         return {
@@ -58,9 +61,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
 
     // 3. Fetch published author slugs
-    const { data: authors } = await supabase
-        .from('authors')
-        .select('slug, updated_at')
+    let authors: any[] = [];
+    try {
+        const result = await db.query(
+            `SELECT slug, updated_at FROM authors WHERE slug IS NOT NULL`
+        );
+        authors = result.rows;
+    } catch (error) {
+        console.error('[sitemap] Error fetching authors:', error);
+    }
 
     const authorEntries = (authors || [])
         .filter(a => a.slug)
@@ -73,14 +82,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [
         // Core pages
-        // Homepage freshness = latest content on the site
         { url: `${baseUrl}/`, lastModified: latestBlogDate, changeFrequency: 'daily', priority: 1.0 },
-        // Blog listing freshness = latest blog post
         { url: `${baseUrl}/blogs/`, lastModified: latestBlogDate, changeFrequency: 'daily', priority: 0.9 },
-        // Destinations listing freshness = latest content (since it aggregates counts/images)
         { url: `${baseUrl}/destinations/`, lastModified: latestBlogDate, changeFrequency: 'weekly', priority: 0.9 },
 
-        // Static pages - use stable dates unless manually updated
+        // Static pages
         { url: `${baseUrl}/about/`, lastModified: siteLaunchDate, changeFrequency: 'monthly', priority: 0.5 },
         { url: `${baseUrl}/contact/`, lastModified: siteLaunchDate, changeFrequency: 'monthly', priority: 0.5 },
         { url: `${baseUrl}/essentials/`, lastModified: siteLaunchDate, changeFrequency: 'weekly', priority: 0.6 },

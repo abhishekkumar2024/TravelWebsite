@@ -8,6 +8,7 @@ import { LoginModalProvider } from '@/components/LoginModalContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SessionTimeout from '@/components/SessionTimeout';
+import AuthProvider from '@/components/AuthProvider';
 
 
 export const metadata: Metadata = {
@@ -192,14 +193,16 @@ export default function RootLayout({
                 />
             </head>
             <body className="bg-gray-50 font-sans">
-                <LanguageProvider>
-                    <LoginModalProvider>
-                        <SessionTimeout />
-                        <Navbar />
-                        <main>{children}</main>
-                        <Footer />
-                    </LoginModalProvider>
-                </LanguageProvider>
+                <AuthProvider>
+                    <LanguageProvider>
+                        <LoginModalProvider>
+                            <SessionTimeout />
+                            <Navbar />
+                            <main>{children}</main>
+                            <Footer />
+                        </LoginModalProvider>
+                    </LanguageProvider>
+                </AuthProvider>
             </body>
         </html>
     );

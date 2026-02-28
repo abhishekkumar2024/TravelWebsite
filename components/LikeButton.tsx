@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { toggleLike, fetchLikeStatus, fetchLikeCount } from '@/lib/supabaseInteractions';
+import { useSession } from 'next-auth/react';
 import { useLoginModal } from './LoginModalContext';
 import { useBlogInteractions } from './BlogInteractionsProvider';
 
@@ -15,7 +14,14 @@ export function LikeCount({ blogId }: { blogId: string }) {
     const [count, setCount] = useState<number | null>(null);
 
     useEffect(() => {
-        fetchLikeCount(blogId).then(setCount);
+        fetch('/api/interactions/batch/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blogIds: [blogId] }),
+        })
+            .then(r => r.json())
+            .then(data => setCount(data.likes?.[blogId] || 0))
+            .catch(() => setCount(0));
     }, [blogId]);
 
     if (count === null) return <span className="animate-pulse opacity-50">...</span>;
@@ -124,50 +130,49 @@ function LikeButtonStandalone({ blogId, variant }: { blogId: string; variant: 'd
     const [liked, setLiked] = useState(false);
     const [count, setCount] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const { data: session } = useSession();
+    const user = session?.user as any;
 
     const { openLoginModal, pendingAction, clearPendingAction } = useLoginModal();
     const isCompact = variant === 'compact';
 
     useEffect(() => {
         const init = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-
-            const countVal = await fetchLikeCount(blogId);
-            setCount(countVal);
-
-            if (user) {
-                const status = await fetchLikeStatus(blogId, user.id);
-                setLiked(status);
+            try {
+                const res = await fetch('/api/interactions/batch/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blogIds: [blogId], userId: user?.id }),
+                });
+                const data = await res.json();
+                setCount(data.likes?.[blogId] || 0);
+                if (user?.id) {
+                    setLiked((data.userLikes || []).includes(blogId));
+                }
+            } catch {
+                setCount(0);
             }
             setLoading(false);
         };
 
         init();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            const newUser = session?.user || null;
-            setUser(newUser);
-
-            if (newUser) {
-                const status = await fetchLikeStatus(blogId, newUser.id);
-                setLiked(status);
-            } else {
-                setLiked(false);
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [blogId]);
+    }, [blogId, user?.id]);
 
     useEffect(() => {
         if (user && pendingAction?.type === 'like' && pendingAction.id === blogId) {
             const processPendingLike = async () => {
-                const isAlreadyLiked = await fetchLikeStatus(blogId, user.id);
-                if (!isAlreadyLiked) {
-                    await handleLikeInternal(user.id, false, count);
-                }
+                try {
+                    const res = await fetch('/api/interactions/batch/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ blogIds: [blogId], userId: user.id }),
+                    });
+                    const data = await res.json();
+                    const isAlreadyLiked = (data.userLikes || []).includes(blogId);
+                    if (!isAlreadyLiked) {
+                        await handleLikeInternal(user.id, false, count);
+                    }
+                } catch { /* ignore */ }
                 clearPendingAction();
             };
             processPendingLike();
@@ -181,15 +186,25 @@ function LikeButtonStandalone({ blogId, variant }: { blogId: string; variant: 'd
         setLiked(newLiked);
         setCount(newCount);
 
-        const { liked: finalLiked, error } = await toggleLike(blogId, userId);
+        try {
+            const res = await fetch('/api/interactions/like/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ blogId, userId }),
+            });
+            const { liked: finalLiked, error } = await res.json();
 
-        if (error) {
+            if (error) {
+                setLiked(!newLiked);
+                setCount(currentCount);
+                alert('Failed to update like status');
+                return;
+            }
+            setLiked(finalLiked);
+        } catch {
             setLiked(!newLiked);
             setCount(currentCount);
-            alert('Failed to update like status');
-            return;
         }
-        setLiked(finalLiked);
     };
 
     const handleClick = () => {
