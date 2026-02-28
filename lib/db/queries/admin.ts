@@ -13,7 +13,7 @@ import { db } from '@/lib/db';
  * Check if a user has admin role.
  * Called with the user's role from the NextAuth session.
  */
-export function isAdmin(role?: string): boolean {
+export async function isAdmin(role?: string): Promise<boolean> {
     return role === 'admin';
 }
 

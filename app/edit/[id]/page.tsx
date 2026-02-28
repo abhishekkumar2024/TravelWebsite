@@ -104,12 +104,15 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             router.push(`/login?redirectTo=/edit/${params.id}`);
             return;
         }
-        setUser(sessionUser);
-        setIsAdminUser(isAdmin((session?.user as any)?.role));
 
-        // Load Blog Data
-        const loadBlog = async () => {
+        const initializePage = async () => {
+            setLoading(true);
             try {
+                setUser(sessionUser);
+                const isUserAdmin = await isAdmin(sessionUser.role);
+                setIsAdminUser(isUserAdmin);
+
+                // Load Blog Data
                 const blog = await fetchBlogById(params.id);
                 if (!blog) {
                     alert('Blog not found!');
@@ -124,8 +127,8 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 setExcerptHi(blog.excerpt_hi);
                 setContentEn(blog.content_en);
                 setContentHi(blog.content_hi);
-                setDestination(blog.destination);
-                setCategory(blog.category);
+                setDestination(blog.destination || '');
+                setCategory(blog.category || '');
                 setCoverImage(blog.coverImage);
                 setUploadedImages(blog.images || []);
                 setCurrentStatus(blog.status);
@@ -143,8 +146,8 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                     excerptHi: blog.excerpt_hi,
                     contentEn: blog.content_en,
                     contentHi: blog.content_hi,
-                    destination: blog.destination,
-                    category: blog.category,
+                    destination: blog.destination || '',
+                    category: blog.category || '',
                     coverImage: blog.coverImage || '',
                     images: blog.images || [],
                     metaTitle: blog.meta_title || '',
@@ -155,15 +158,15 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 // Mark blog data as loaded for draft comparison
                 blogDataLoaded.current = true;
             } catch (error) {
-                console.error('Error fetching blog:', error);
+                console.error('Error loading blog:', error);
                 alert('Error loading blog data');
             } finally {
                 setLoading(false);
             }
         };
 
-        loadBlog();
-    }, [params.id, router, sessionStatus]);
+        initializePage();
+    }, [params.id, router, sessionStatus, session]);
 
     // Check for draft after blog data loads
     useEffect(() => {

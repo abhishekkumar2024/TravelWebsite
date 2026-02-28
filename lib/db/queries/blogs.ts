@@ -19,7 +19,7 @@ import { submitToIndexNow } from '@/lib/indexnow';
 /**
  * Generate a URL-friendly slug from a title
  */
-export function generateSlug(title: string): string {
+export async function generateSlug(title: string): Promise<string> {
     return title
         .toLowerCase()
         .trim()
@@ -295,7 +295,7 @@ export async function createBlog(payload: {
         }
 
         const blogStatus = payload.status || 'pending';
-        const blogSlug = payload.slug || generateSlug(payload.title_en);
+        const blogSlug = payload.slug || await generateSlug(payload.title_en);
 
         const result = await db.executeOne<{ id: string; slug: string }>(
             `INSERT INTO blogs (
@@ -391,7 +391,7 @@ export async function updateBlog(id: string, payload: {
         }
 
         // Handle slug
-        const newSlug = payload.slug || (payload.title_en ? generateSlug(payload.title_en) : undefined);
+        const newSlug = payload.slug || (payload.title_en ? await generateSlug(payload.title_en) : undefined);
         if (newSlug) {
             setClauses.push(`slug = $${paramIndex}`);
             params.push(newSlug);

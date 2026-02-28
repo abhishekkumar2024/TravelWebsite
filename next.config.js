@@ -44,6 +44,26 @@ const nextConfig = {
             '@tiptap/extension-placeholder',
             'react-dropzone',
         ],
+        // Treat pg as a server-only external package (prevents client bundling)
+        serverComponentsExternalPackages: ['pg'],
+    },
+
+    // Webpack config: prevent Node.js built-in modules from breaking client bundle
+    // The pg driver (used by SupabaseProvider) depends on fs, net, tls, dns
+    // These are server-only but Webpack tries to resolve them during bundling
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                fs: false,
+                net: false,
+                tls: false,
+                dns: false,
+                child_process: false,
+                'pg-native': false,
+            };
+        }
+        return config;
     },
 
     // Enable React Strict Mode for better debugging

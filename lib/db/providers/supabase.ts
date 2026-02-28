@@ -1,12 +1,14 @@
 /**
  * Supabase PostgreSQL Provider (Slave / Failover)
  * 
- * Connects to Supabase's PostgreSQL endpoint using the same @neondatabase/serverless
- * driver as the primary provider. This works because:
- * - Supabase exposes a standard PostgreSQL connection string
- * - @neondatabase/serverless can connect to ANY PostgreSQL (not just Neon)
- * - This keeps the same serverless-compatible, edge-friendly driver
- * - No Node.js-only dependencies (net, tls, dns) that break with Webpack
+ * Connects to Supabase's PostgreSQL endpoint using the standard 'pg' driver.
+ * Supabase exposes a TCP connection pooler on port 6543 which requires
+ * a standard PostgreSQL driver — the Neon serverless driver (WebSocket/HTTP)
+ * is incompatible with Supabase's pooler protocol.
+ * 
+ * The 'pg' module is marked as server-only in next.config.js via:
+ * - experimental.serverComponentsExternalPackages: ['pg']
+ * - webpack fallbacks for fs, net, tls, dns (client-side)
  * 
  * SOLID Principles:
  * - Liskov Substitution: Fully interchangeable with NeonProvider
@@ -14,12 +16,12 @@
  * - Dependency Inversion: Router depends on DBProvider interface, not this class
  */
 
-import { neon } from '@neondatabase/serverless';
+import { Pool } from 'pg';
 import { BaseProvider } from './base';
 import { ProviderRole, QueryResult } from '../types';
 
 export class SupabaseProvider extends BaseProvider {
-    private sql: ReturnType<typeof neon>;
+    private pool: Pool;
 
     constructor(connectionUrl: string, role: ProviderRole = 'slave', priority: number = 10) {
         super('supabase', role, priority);
@@ -28,37 +30,64 @@ export class SupabaseProvider extends BaseProvider {
             throw new Error('[SupabaseProvider] Connection URL is required. Set SUPABASE_DATABASE_URL.');
         }
 
-        // The neon() driver connects to any PostgreSQL over WebSockets
-        // Supabase supports this via their connection pooler (port 6543)
-        this.sql = neon(connectionUrl);
+        // Use standard pg.Pool for TCP connection to Supabase (port 6543)
+        this.pool = new Pool({
+            connectionString: connectionUrl,
+            ssl: {
+                rejectUnauthorized: false // Required for Supabase in many environments
+            },
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 5000,
+        });
+
+        this.pool.on('error', (err) => {
+            this.error(`Unexpected pool error: ${err.message}`);
+        });
     }
 
     /**
-     * Execute a query using the serverless driver.
-     * Identical implementation to NeonProvider — same driver, different endpoint.
+     * Execute a query using the standard PostgreSQL driver.
      */
     protected async _executeQuery<T = any>(
         sql: string,
         params?: any[]
     ): Promise<QueryResult<T>> {
+        const client = await this.pool.connect();
         try {
-            const result = await this.sql.query(sql, params || []);
-            const rows = Array.isArray(result) ? result : (result as any).rows || [];
+            const start = Date.now();
+            const result = await client.query(sql, params || []);
+            this.latency = Date.now() - start;
 
             return {
-                rows: rows as T[],
-                rowCount: rows.length,
+                rows: result.rows as T[],
+                rowCount: result.rowCount || result.rows.length,
             };
         } catch (error: any) {
             this.error(`Query failed: ${error.message}`);
             throw error;
+        } finally {
+            client.release();
         }
     }
 
     /**
-     * Serverless driver — no persistent connections to close.
+     * Test connectivity with a simple query.
+     */
+    async ping(): Promise<boolean> {
+        try {
+            await this._executeQuery('SELECT 1');
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Close the pool on disconnect.
      */
     async disconnect(): Promise<void> {
-        this.log('Disconnected (serverless — no persistent connection)');
+        await this.pool.end();
+        this.log('Disconnected (Pool closed)');
     }
 }

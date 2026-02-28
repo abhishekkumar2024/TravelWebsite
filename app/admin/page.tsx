@@ -59,12 +59,20 @@ export default function AdminPage() {
     useEffect(() => {
         if (sessionStatus === 'loading') return;
         const sessionUser = session?.user as any;
-        if (sessionUser && checkIsAdmin(sessionUser.role)) {
-            setAuthenticated(true);
-            setUser(sessionUser);
-        } else {
+
+        const verifyAdmin = async () => {
+            if (sessionUser) {
+                const isUserAdmin = await checkIsAdmin(sessionUser.role);
+                if (isUserAdmin) {
+                    setAuthenticated(true);
+                    setUser(sessionUser);
+                    return;
+                }
+            }
             setAuthenticated(false);
-        }
+        };
+
+        verifyAdmin();
         setLoading(false);
     }, [sessionStatus, session]);
 

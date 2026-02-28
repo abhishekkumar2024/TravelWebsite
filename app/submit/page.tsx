@@ -163,24 +163,30 @@ export default function SubmitPage() {
 
     useEffect(() => {
         if (sessionStatus === 'loading') return;
-        if (sessionUser) {
-            setUser(sessionUser);
-            // Check if admin
-            setIsAdminUser(isAdmin(sessionUser.role));
-            // Ensure author exists
-            ensureAuthorExists(
-                sessionUser.id,
-                sessionUser.name || sessionUser.email?.split('@')[0] || 'Traveler',
-                sessionUser.email || '',
-                sessionUser.image
-            ).catch(e => console.error('Error ensuring author exists:', e));
-            setSessionReady(true);
-        } else {
-            setUser(null);
-            setSessionReady(false);
-            setIsAdminUser(false);
-        }
-        setLoading(false);
+
+        const checkAdmin = async () => {
+            if (sessionUser) {
+                setUser(sessionUser);
+                // Check if admin
+                const isUserAdmin = await isAdmin(sessionUser.role);
+                setIsAdminUser(isUserAdmin);
+                // Ensure author exists
+                ensureAuthorExists(
+                    sessionUser.id,
+                    sessionUser.name || sessionUser.email?.split('@')[0] || 'Traveler',
+                    sessionUser.email || '',
+                    sessionUser.image
+                ).catch(e => console.error('Error ensuring author exists:', e));
+                setSessionReady(true);
+            } else {
+                setUser(null);
+                setSessionReady(false);
+                setIsAdminUser(false);
+            }
+            setLoading(false);
+        };
+
+        checkAdmin();
     }, [sessionStatus, sessionUser]);
 
     const handleLoginSuccess = () => {
