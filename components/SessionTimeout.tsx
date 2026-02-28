@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 // Configuration
-const TIMEOUT_DURATION = 1 * 60 * 1000;   // 5 minutes of inactivity before logout
+const TIMEOUT_DURATION = 8 * 60 * 1000;   // 5 minutes of inactivity before logout
 const WARNING_BEFORE = 60 * 1000;          // Show warning 60 seconds before logout
 const ACTIVITY_THROTTLE = 30 * 1000;       // Only update activity timestamp every 30s
 const LAST_ACTIVITY_KEY = 'camelthar-last-activity';
