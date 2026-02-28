@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 
-import { submitContactForm } from '@/lib/db/queries';
+import { submitContactForm } from '@/lib/db/queries/contact';
 
 export default function ContactForm() {
     const [formData, setFormData] = useState({

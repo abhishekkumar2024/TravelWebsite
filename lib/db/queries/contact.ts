@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Contact Queries — Database Abstraction Layer
  * 
