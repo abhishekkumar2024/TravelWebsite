@@ -843,7 +843,7 @@ export default function AdminPage() {
                                         if (res.success) {
                                             setSyncResults(res.results);
                                         } else {
-                                            setSyncError(res.error);
+                                            setSyncError(res.error || 'Unknown error occurred');
                                         }
                                     } catch (err: any) {
                                         setSyncError(err.message);
@@ -868,6 +868,16 @@ export default function AdminPage() {
                                         {t('Run Manual Reconciliation', 'मैनुअल मिलान चलाएँ')}
                                     </>
                                 )}
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const { debugFailingBlogAction } = await import('@/lib/actions/db-sync');
+                                    const result = await debugFailingBlogAction();
+                                    alert(JSON.stringify(result, null, 2));
+                                }}
+                                className="text-xs text-white/30 hover:text-white/60 transition-colors uppercase tracking-[0.2em] mt-2 block w-full text-center"
+                            >
+                                [ Debug Sync Failure Reason ]
                             </button>
                         </div>
 
