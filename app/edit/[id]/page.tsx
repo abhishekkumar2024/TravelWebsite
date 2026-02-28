@@ -10,7 +10,7 @@ import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
-import { fetchBlogById, updateBlog } from '@/lib/db/queries';
+import { fetchBlogById, updateBlog } from '@/lib/db/queries/blogs';
 import { SubmitLogger } from '@/lib/submitLogger';
 import { useSession } from 'next-auth/react';
 import { isAdmin } from '@/lib/db/queries/admin';

@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
-import { fetchUserBlogs } from '@/lib/db/queries';
+import { fetchUserBlogs } from '@/lib/db/queries/blogs';
 import { BlogPost } from '@/lib/data';
 import { useSession } from 'next-auth/react';
 import { SubmitDraftData } from '@/hooks/useDraft';

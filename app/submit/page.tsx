@@ -10,10 +10,10 @@ import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal import as we are using redirect now
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
-import { createBlog } from '@/lib/db/queries';
+import { createBlog } from '@/lib/db/queries/blogs';
 import { SubmitLogger } from '@/lib/submitLogger';
 import { useSession, signOut } from 'next-auth/react';
-import { ensureAuthorExists } from '@/lib/db/queries';
+import { ensureAuthorExists } from '@/lib/db/queries/authors';
 import { isAdmin } from '@/lib/db/queries/admin';
 
 const destinations = [

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { getAuthorProfile, updateAuthorProfile, ensureAuthorExists, Author } from '@/lib/db/queries';
+import { getAuthorProfile, updateAuthorProfile, ensureAuthorExists, Author } from '@/lib/db/queries/authors';
 import Link from 'next/link';
 
 export default function ProfilePage() {

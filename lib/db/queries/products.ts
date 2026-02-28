@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Product Queries — Database Abstraction Layer
  * 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { isAdmin as checkIsAdmin, getAdminStats, fetchBlogsByStatus } from '@/lib/db/queries/admin';
-import { approveBlog, rejectBlog, deleteBlog } from '@/lib/db/queries';
+import { approveBlog, rejectBlog, deleteBlog } from '@/lib/db/queries/blogs';
 import AdminLogin from '@/components/AdminLogin';
 import ProfileHeader from '@/components/ProfileHeader';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -17,11 +17,11 @@ import {
     createProduct,
     updateProduct,
     deleteProduct
-} from '@/lib/db/queries';
+} from '@/lib/db/queries/products';
 import {
     fetchContactMessages,
     updateMessageStatus
-} from '@/lib/db/queries';
+} from '@/lib/db/queries/contact';
 import { AffiliateProduct } from '@/app/essentials/EssentialsContent';
 
 export default function AdminPage() {
