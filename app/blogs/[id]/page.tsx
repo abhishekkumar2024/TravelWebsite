@@ -33,13 +33,7 @@ export const revalidate = 60;
 // Use Next.js cache for persistent caching across requests
 const getBlogData = unstable_cache(
     async (id: string): Promise<BlogPost | null> => {
-        // 1. Check demo blogs first (instant)
-        const demoBlog = demoBlogs.find(b => b.id === id);
-        if (demoBlog) {
-            return demoBlog;
-        }
-
-        // 2. Check Database
+        // 1. Check Database
         try {
             const blog = await fetchBlogById(id);
             if (blog) {
