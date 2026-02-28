@@ -95,9 +95,7 @@ async function reconcileTable(master: Client, slave: Client, tableName: string):
 
                 await slave.query(upsertSql, values);
                 syncedCount++;
-            } catch (err: any) {
-                console.error(`[Reconciliation] ❌ Table "${tableName}" - FAILED sync for ID: ${masterRow.id}. Error: ${err.message}`);
-                if (err.detail) console.error(`[Reconciliation] Detail: ${err.detail}`);
+            } catch (err) {
                 failedCount++;
             }
         }
