@@ -76,10 +76,8 @@ export default function SessionTimeout() {
             return;
         }
 
-        // Initialize last activity on login
-        if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
-            localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-        }
+        // Always reset last activity to 'now' on login to prevent instant logouts from old data
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
         lastActivityWriteRef.current = Date.now();
 
         const checkInterval = setInterval(() => {
