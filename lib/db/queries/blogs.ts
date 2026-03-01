@@ -121,7 +121,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             result = await db.query(
                 `SELECT ${BLOG_SELECT_WITH_AUTHOR}
                  ${FROM_BLOGS_WITH_AUTHOR}
-                 WHERE (b.id = $1::uuid OR b.slug = $1::text) AND b.deleted_at IS NULL
+                 WHERE (b.id = $1::uuid OR b.slug ILIKE $1::text) AND b.deleted_at IS NULL
                  LIMIT 1`,
                 [id]
             );
@@ -130,7 +130,7 @@ export async function fetchBlogById(id: string): Promise<BlogPost | null> {
             result = await db.query(
                 `SELECT ${BLOG_SELECT_WITH_AUTHOR}
                  ${FROM_BLOGS_WITH_AUTHOR}
-                 WHERE b.slug = $1 AND b.deleted_at IS NULL
+                 WHERE b.slug ILIKE $1 AND b.deleted_at IS NULL
                  LIMIT 1`,
                 [id]
             );
