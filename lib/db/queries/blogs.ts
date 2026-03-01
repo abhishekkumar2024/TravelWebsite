@@ -400,9 +400,10 @@ export async function updateBlog(id: string, payload: {
 
         // Add the WHERE id param
         params.push(id);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
         const result = await db.executeOne<{ slug: string; status: string }>(
-            `UPDATE blogs SET ${setClauses.join(', ')} WHERE id = $${paramIndex}::uuid RETURNING slug, status`,
+            `UPDATE blogs SET ${setClauses.join(', ')} WHERE ${isUuid ? `id = $${paramIndex}::uuid` : `slug = $${paramIndex}`} RETURNING slug, status`,
             params
         );
 
@@ -457,9 +458,10 @@ export async function fetchUserBlogs(userId: string): Promise<BlogPost[]> {
 
 export async function approveBlog(blogId: string): Promise<{ success: boolean; error: string | null }> {
     try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(blogId);
         const result = await db.executeOne<{ id: string; slug: string }>(
             `UPDATE blogs SET status = 'published', published_at = NOW(), updated_at = NOW()
-             WHERE id = $1::uuid RETURNING id, slug`,
+             WHERE ${isUuid ? 'id = $1::uuid' : 'slug = $1'} RETURNING id, slug`,
             [blogId]
         );
 
@@ -480,9 +482,10 @@ export async function approveBlog(blogId: string): Promise<{ success: boolean; e
 
 export async function rejectBlog(blogId: string): Promise<{ success: boolean; error: string | null }> {
     try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(blogId);
         const result = await db.executeOne<{ id: string }>(
             `UPDATE blogs SET status = 'rejected', updated_at = NOW()
-             WHERE id = $1::uuid RETURNING id`,
+             WHERE ${isUuid ? 'id = $1::uuid' : 'slug = $1'} RETURNING id`,
             [blogId]
         );
 
@@ -496,7 +499,11 @@ export async function rejectBlog(blogId: string): Promise<{ success: boolean; er
 
 export async function deleteBlog(blogId: string): Promise<{ success: boolean; error: string | null }> {
     try {
-        await db.execute("UPDATE blogs SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1::uuid", [blogId]);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(blogId);
+        await db.execute(
+            `UPDATE blogs SET deleted_at = NOW(), updated_at = NOW() WHERE ${isUuid ? 'id = $1::uuid' : 'slug = $1'}`,
+            [blogId]
+        );
         return { success: true, error: null };
     } catch (error: any) {
         console.error('[dbBlogs] deleteBlog error:', error.message);
