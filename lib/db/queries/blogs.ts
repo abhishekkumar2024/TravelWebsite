@@ -68,6 +68,7 @@ function mapRowToBlog(row: any): BlogPost {
         meta_description: row.meta_description ?? row.excerpt_en ?? '',
         canonical_url: row.canonical_url,
         slug: row.slug,
+        updated_at: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
     };
 }
 
