@@ -1,13 +1,22 @@
-import { Suspense } from 'react';
+import { Suspense, cache } from 'react';
 import * as cheerio from 'cheerio';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { unstable_cache } from 'next/cache';
 import { BlogPost } from '@/lib/data';
 import { fetchBlogById, fetchRelatedBlogs } from '@/lib/db/queries';
 import { db } from '@/lib/db';
 import BlogContent from './BlogContent';
 import { extractHeadings, injectHeadingIds } from '@/lib/blog-utils';
+
+// Request-level memoization - ensures DB is only hit once per request
+// (Once for generateMetadata and once for the Page component)
+const getBlogData = cache(async (id: string) => {
+    return fetchBlogById(id);
+});
+
+const getRelatedBlogsData = cache(async (destination: string, currentId: string) => {
+    return fetchRelatedBlogs(destination, currentId);
+});
 
 function extractAndFixH1s(html: string): { cleanedHtml: string; extraTitle: string } {
     if (!html) return { cleanedHtml: html, extraTitle: '' };
@@ -51,7 +60,6 @@ function processContentForSEO(html: string): string {
     });
 
     // 2. Optimize internal links for SEO
-    // This converts absolute internal links to relative paths and removes nofollow/target="_blank"
     processedHtml = processedHtml.replace(/<a\s+([^>]*?)>/gi, (match, attributes) => {
         const hrefMatch = attributes.match(/href="([^"]*?)"/i);
         if (!hrefMatch) return match;
@@ -101,145 +109,95 @@ function processContentForSEO(html: string): string {
 
 // Pre-generate all published blog pages at build time for faster indexing
 export async function generateStaticParams() {
-    const result = await db.query<{ slug: string; id: string }>(
-        `SELECT slug, id FROM blogs WHERE status = 'published'`
-    );
+    try {
+        const result = await db.query<{ slug: string; id: string }>(
+            `SELECT slug, id FROM blogs WHERE status = 'published' AND deleted_at IS NULL`
+        );
 
-    const params = result.rows.map((blog) => ({
-        id: blog.slug || blog.id,
-    }));
-
-    return params;
+        return result.rows.map((blog) => ({
+            slug: blog.slug || blog.id,
+        }));
+    } catch (error) {
+        console.error('[BlogPage] Error in generateStaticParams:', error);
+        return [];
+    }
 }
 
-// Enable ISR - cache pages for 60 seconds, then revalidate in background
-// This dramatically improves TTFB for repeat visitors
+// Enable ISR
 export const revalidate = 60;
-
-// Use Next.js cache for persistent caching across requests
-const getBlogData = unstable_cache(
-    async (id: string): Promise<BlogPost | null> => {
-        // 1. Check Database
-        try {
-            const blog = await fetchBlogById(id);
-            if (blog) {
-                return blog;
-            }
-        } catch (error) {
-            console.error('[BlogPage] Error fetching blog from database:', error);
-        }
-
-        return null;
-    },
-    ['blog-data'], // cache key prefix
-    { revalidate: 60, tags: ['blogs'] } // cache for 60 seconds
-);
-
-interface PageProps {
-    params: {
-        id: string;
-    }
-}
-
-// Generate SEO metadata
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const blog = await getBlogData(params.id);
-
-    if (!blog) {
-        return {
-            title: 'Blog Not Found',
-            robots: {
-                index: false,
-                follow: false,
-            },
-        };
-    }
-
-    // Process content to get the extra title suffix (matching the H1 processing in the page)
-    const { extraTitle: extraEn } = extractAndFixH1s(blog.content_en || '');
-    const { extraTitle: extraHi } = extractAndFixH1s(blog.content_hi || blog.content_en || '');
-
-    const baseTitle_en = blog.meta_title || blog.title_en;
-    const finalTitle_en = extraEn ? `${baseTitle_en}: ${extraEn}` : baseTitle_en;
-
-    const baseTitle_hi = blog.title_hi;
-    const finalTitle_hi = extraHi ? `${baseTitle_hi}: ${extraHi}` : baseTitle_hi;
-
-    const pageSlug = blog.slug || blog.id;
-    const pagePath = `/blogs/${pageSlug}/`;
-
-    return {
-        title: finalTitle_en,
-        description: blog.meta_description || blog.excerpt_en,
-        alternates: {
-            canonical: pagePath,
-        },
-        robots: {
-            index: true,
-            follow: true,
-        },
-        openGraph: {
-            title: finalTitle_en,
-            description: blog.meta_description || blog.excerpt_en,
-            url: pagePath,
-            siteName: 'CamelThar',
-            locale: 'en_IN',
-            type: 'article',
-            publishedTime: blog.publishedAt || blog.created_at,
-            modifiedTime: blog.updated_at || blog.created_at,
-            authors: blog.author?.name ? [blog.author.name] : ['CamelThar Team'],
-            tags: [blog.category, blog.destination].filter(Boolean),
-            images: [
-                {
-                    url: blog.coverImage,
-                    width: 1200,
-                    height: 630,
-                    alt: finalTitle_en,
-                }
-            ],
-        },
-        twitter: {
-            card: 'summary_large_image',
-            title: finalTitle_en,
-            description: blog.meta_description || blog.excerpt_en,
-            images: [blog.coverImage],
-            creator: '@CamelThar',
-        },
-    };
-}
-
-// Cached related blogs fetch
-const getRelatedBlogs = unstable_cache(
-    async (destination: string, currentId: string) => {
-        return fetchRelatedBlogs(destination, currentId);
-    },
-    ['related-blogs'],
-    { revalidate: 60, tags: ['blogs'] }
-);
-
-// Optimization: Force static generation and allow dynamic params (ISR)
 export const dynamic = 'force-static';
 export const dynamicParams = true;
 
-export default async function BlogPage({ params }: PageProps) {
-    const { id } = params;
+interface PageProps {
+    params: {
+        slug: string;
+    }
+}
 
-    // Fetch blog data (cached)
-    const blog = await getBlogData(id);
+// Generate SEO metadata - Directly from DB (Best for SEO)
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    try {
+        const blog = await getBlogData(params.slug);
+
+        if (!blog) {
+            return {
+                title: 'Blog Post Not Found | CamelThar',
+                robots: { index: false, follow: true },
+            };
+        }
+
+        // Process title to match page content logic
+        const { extraTitle: extraEn } = extractAndFixH1s(blog.content_en || '');
+        const baseTitle = blog.meta_title || blog.title_en;
+        const finalTitle = extraEn ? `${baseTitle}: ${extraEn}` : baseTitle;
+
+        const pageSlug = blog.slug || blog.id;
+        const pagePath = `/blogs/${pageSlug}/`;
+
+        return {
+            title: finalTitle,
+            description: blog.meta_description || blog.excerpt_en,
+            alternates: {
+                canonical: pagePath,
+            },
+            openGraph: {
+                title: finalTitle,
+                description: blog.meta_description || blog.excerpt_en,
+                url: pagePath,
+                siteName: 'CamelThar',
+                locale: 'en_IN',
+                type: 'article',
+                publishedTime: blog.publishedAt,
+                images: [{ url: blog.coverImage, width: 1200, height: 630, alt: finalTitle }],
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title: finalTitle,
+                description: blog.meta_description || blog.excerpt_en,
+                images: [blog.coverImage],
+            },
+        };
+    } catch (err) {
+        return { title: 'Travel Blog | CamelThar' };
+    }
+}
+
+export default async function BlogPage({ params }: PageProps) {
+    const { slug } = params;
+
+    // Fetch blog data - Direct DB query (Server-Side)
+    const blog = await getBlogData(slug);
 
     if (!blog) {
         notFound();
     }
 
-    // Fetch related blogs (cached, for SEO)
-    const relatedBlogs = await getRelatedBlogs(blog.destination, blog.id);
+    // Fetch related blogs - Direct DB query
+    const relatedBlogs = await getRelatedBlogsData(blog.destination, blog.id);
 
-    // Calculate word count for GEO richness signal
+    // Calculate word count
     const plainText = (blog.content_en || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const wordCount = plainText.split(/\s+/).filter(Boolean).length;
-
-    // Extract first 2 sentences for Speakable (AEO — voice assistants)
-    const firstSentences = plainText.split(/[.!?]\s/).slice(0, 2).join('. ').trim();
 
     // structured data for rich snippets — Enhanced for SEO + AEO + GEO
     const jsonLd = {
@@ -248,8 +206,8 @@ export default async function BlogPage({ params }: PageProps) {
         headline: blog.meta_title || blog.title_en,
         description: blog.meta_description || blog.excerpt_en,
         image: blog.coverImage.startsWith('http') ? blog.coverImage : `https://www.camelthar.com${blog.coverImage}`,
-        datePublished: blog.publishedAt ? new Date(blog.publishedAt).toISOString() : new Date(blog.created_at || Date.now()).toISOString(),
-        dateModified: blog.updated_at ? new Date(blog.updated_at).toISOString() : new Date(blog.publishedAt || Date.now()).toISOString(),
+        datePublished: blog.publishedAt ? new Date(blog.publishedAt).toISOString() : new Date().toISOString(),
+        dateModified: blog.updated_at ? new Date(blog.updated_at).toISOString() : new Date().toISOString(),
         author: {
             '@type': 'Person',
             name: blog.author?.name || 'CamelThar Explorer',
@@ -267,66 +225,38 @@ export default async function BlogPage({ params }: PageProps) {
             '@type': 'WebPage',
             '@id': `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`
         },
-        // --- GEO: Helps AI engines understand content depth & topic ---
         inLanguage: 'en-IN',
         wordCount: wordCount,
         articleSection: blog.category || 'Travel',
         ...(blog.destination ? {
             about: {
                 '@type': 'TouristDestination',
-                name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1),
+                name: blog.destination.split(',')[0].trim().charAt(0).toUpperCase() + blog.destination.split(',')[0].trim().slice(1),
                 containedInPlace: {
                     '@type': 'State',
                     name: 'Rajasthan',
                     containedInPlace: { '@type': 'Country', name: 'India' }
                 }
-            },
-            mentions: {
-                '@type': 'Place',
-                name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1) + ', Rajasthan',
-                containedInPlace: { '@type': 'Country', name: 'India' }
-            },
+            }
         } : {}),
-        // --- GEO: Connect article to website for topical authority ---
-        isPartOf: {
-            '@type': 'WebSite',
-            name: 'CamelThar',
-            url: 'https://www.camelthar.com'
-        },
-        // --- AEO: Speakable — tells voice assistants which text to read aloud ---
-        speakable: {
-            '@type': 'SpeakableSpecification',
-            cssSelector: ['article h1', 'article p:nth-of-type(1)']
-        },
     };
 
     const breadcrumbJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-            {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'Home',
-                item: 'https://www.camelthar.com/'
-            },
-            {
-                '@type': 'ListItem',
-                position: 2,
-                name: 'Travel Blogs',
-                item: 'https://www.camelthar.com/blogs/'
-            },
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.camelthar.com/' },
+            { '@type': 'ListItem', position: 2, name: 'Travel Blogs', item: 'https://www.camelthar.com/blogs/' },
             {
                 '@type': 'ListItem',
                 position: 3,
-                name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1),
-                item: `https://www.camelthar.com/destinations/${blog.destination}/`
+                name: blog.destination?.split(',')[0].trim() || 'Rajasthan',
+                item: `https://www.camelthar.com/destinations/${blog.destination?.split(',')[0].trim() || 'rajasthan'}/`
             }
         ]
     };
 
-    // --- Server-Side Content Processing (SEO Powerhouse) ---
-    // This ensures Google sees the final, processed HTML immediately without waiting for JS.
+    // --- Server-Side Content Processing ---
     const rawContentEn = blog.content_en || '';
     const rawContentHi = blog.content_hi || blog.content_en || '';
 
@@ -340,27 +270,12 @@ export default async function BlogPage({ params }: PageProps) {
     const headingsHi = extractHeadings(docHi);
     const htmlHi = processContentForSEO(injectHeadingIds(docHi, headingsHi));
 
-    // Create a modified blog object with the merged title for display
+    // Create a modified blog object with the merged title
     const mergedBlog = {
         ...blog,
         title_en: blog.title_en + (extraEn ? `: ${extraEn}` : ''),
         title_hi: blog.title_hi + (extraHi ? `: ${extraHi}` : ''),
     };
-
-    // --- FAQ Schema: Extract FAQ content from blog for rich results ---
-    const faqHeadings = headingsHi ? headingsHi.filter(h => h.text.includes('?') || h.text.endsWith('?')) : [];
-    const faqJsonLd = faqHeadings.length > 0 ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: faqHeadings.map(h => ({
-            '@type': 'Question',
-            name: h.text,
-            acceptedAnswer: {
-                '@type': 'Answer',
-                text: `Read more about ${h.text} in our comprehensive guide to ${blog.destination}.`
-            }
-        }))
-    } : null;
 
     return (
         <>
@@ -372,12 +287,6 @@ export default async function BlogPage({ params }: PageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
             />
-            {faqJsonLd && (
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-                />
-            )}
             <BlogContent
                 blog={mergedBlog}
                 relatedBlogs={relatedBlogs}
@@ -389,3 +298,4 @@ export default async function BlogPage({ params }: PageProps) {
         </>
     );
 }
+
