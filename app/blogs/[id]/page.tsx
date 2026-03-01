@@ -1,5 +1,5 @@
-
 import { Suspense } from 'react';
+import * as cheerio from 'cheerio';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
@@ -9,24 +9,31 @@ import { db } from '@/lib/db';
 import BlogContent from './BlogContent';
 import { extractHeadings, injectHeadingIds } from '@/lib/blog-utils';
 
-function extractAndMergeH1s(html: string): { cleanedHtml: string; extraTitle: string } {
+function extractAndFixH1s(html: string): { cleanedHtml: string; extraTitle: string } {
     if (!html) return { cleanedHtml: html, extraTitle: '' };
 
+    // Load as fragment to prevent cheerio from adding <html><body> tags
+    const $ = cheerio.load(html, null, false);
     let extraTitle = '';
-    // Regex to match H1 tags and capture their inner content
-    const h1Regex = /<h1[^>]*>(.*?)<\/h1>/gi;
+    let isFirst = true;
 
-    const cleanedHtml = html.replace(h1Regex, (match, content) => {
-        // Strip any nested tags from the H1 content to get plain text
-        const text = content.replace(/<[^>]*>/g, '').trim();
-        if (text) {
-            // Append to extra title with a separator if needed
-            extraTitle += (extraTitle ? ' ' : '') + text;
+    $('h1').each((_, element) => {
+        const text = $(element).text().trim();
+
+        if (isFirst) {
+            extraTitle = text;
+            $(element).remove(); // Remove first H1 as it's merged into page title
+            isFirst = false;
+        } else {
+            // Convert extra H1 to H2 for SEO
+            $(element).replaceWith(`<h2>${$(element).html()}</h2>`);
         }
-        return ''; // Remove the H1 from body content
     });
 
-    return { cleanedHtml, extraTitle };
+    return {
+        cleanedHtml: $.html(),
+        extraTitle
+    };
 }
 
 function processContentForSEO(html: string): string {
@@ -345,12 +352,12 @@ export default async function BlogPage({ params }: PageProps) {
     const rawContentHi = blog.content_hi || blog.content_en || '';
 
     // Process English
-    const { cleanedHtml: docEn, extraTitle: extraEn } = extractAndMergeH1s(rawContentEn);
+    const { cleanedHtml: docEn, extraTitle: extraEn } = extractAndFixH1s(rawContentEn);
     const headingsEn = extractHeadings(docEn);
     const htmlEn = processContentForSEO(injectHeadingIds(docEn, headingsEn));
 
     // Process Hindi
-    const { cleanedHtml: docHi, extraTitle: extraHi } = extractAndMergeH1s(rawContentHi);
+    const { cleanedHtml: docHi, extraTitle: extraHi } = extractAndFixH1s(rawContentHi);
     const headingsHi = extractHeadings(docHi);
     const htmlHi = processContentForSEO(injectHeadingIds(docHi, headingsHi));
 
