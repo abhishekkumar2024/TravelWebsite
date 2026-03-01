@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
@@ -13,6 +13,7 @@ import type { BlogPost } from '@/lib/data';
 import BackToTop from '@/components/BackToTop';
 import TableOfContents from '@/components/TableOfContents';
 import { TocHeading } from '@/lib/blog-utils';
+import CommentScroller from './CommentScroller';
 
 // Lazy load heavy below-the-fold components
 const AuthorBox = dynamic(() => import('./AuthorBox'), {
@@ -41,28 +42,6 @@ interface BlogContentProps {
         en: { html: string; headings: TocHeading[] };
         hi: { html: string; headings: TocHeading[] };
     };
-}
-
-/**
- * Isolated Component for search params handling.
- * Wrapped in Suspense to prevent deoptimization of the entire parent article.
- */
-function CommentScroller() {
-    const searchParams = useSearchParams();
-
-    useEffect(() => {
-        if (searchParams.get('scroll') === 'comments') {
-            const timer = setTimeout(() => {
-                const element = document.getElementById('comments-section');
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }, 800);
-            return () => clearTimeout(timer);
-        }
-    }, [searchParams]);
-
-    return null;
 }
 
 export default function BlogContent({ blog, relatedBlogs = [], initialContent }: BlogContentProps) {
