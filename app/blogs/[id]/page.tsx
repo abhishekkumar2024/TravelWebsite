@@ -12,17 +12,17 @@ import { extractHeadings, injectHeadingIds } from '@/lib/blog-utils';
 function extractAndFixH1s(html: string): { cleanedHtml: string; extraTitle: string } {
     if (!html) return { cleanedHtml: html, extraTitle: '' };
 
-    // Load as fragment to prevent cheerio from adding <html><body> tags
-    const $ = cheerio.load(html, null, false);
+    // Load into a wrapper to handle root-level H1s correctly
+    const $ = cheerio.load(`<div id="__wrapper">${html}</div>`, null, false);
     let extraTitle = '';
     let isFirst = true;
 
-    $('h1').each((_, element) => {
+    $('#__wrapper > h1, #__wrapper h1').each((_, element) => {
         const text = $(element).text().trim();
 
         if (isFirst) {
             extraTitle = text;
-            $(element).remove(); // Remove first H1 as it's merged into page title
+            $(element).remove(); // Remove first H1 as it's merged into hero title
             isFirst = false;
         } else {
             // Convert extra H1 to H2 for SEO
@@ -31,7 +31,7 @@ function extractAndFixH1s(html: string): { cleanedHtml: string; extraTitle: stri
     });
 
     return {
-        cleanedHtml: $.html(),
+        cleanedHtml: $('#__wrapper').html() || '',
         extraTitle
     };
 }
@@ -155,21 +155,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         };
     }
 
+    // Process content to get the extra title suffix (matching the H1 processing in the page)
+    const { extraTitle: extraEn } = extractAndFixH1s(blog.content_en || '');
+    const { extraTitle: extraHi } = extractAndFixH1s(blog.content_hi || blog.content_en || '');
+
+    const baseTitle_en = blog.meta_title || blog.title_en;
+    const finalTitle_en = extraEn ? `${baseTitle_en}: ${extraEn}` : baseTitle_en;
+
+    const baseTitle_hi = blog.title_hi;
+    const finalTitle_hi = extraHi ? `${baseTitle_hi}: ${extraHi}` : baseTitle_hi;
+
     const pageSlug = blog.slug || blog.id;
     const pagePath = `/blogs/${pageSlug}/`;
 
     return {
-        title: blog.meta_title || blog.title_en,
+        title: finalTitle_en,
         description: blog.meta_description || blog.excerpt_en,
         alternates: {
-            canonical: pagePath, // Uses metadataBase from layout
+            canonical: pagePath,
         },
         robots: {
             index: true,
             follow: true,
         },
         openGraph: {
-            title: blog.meta_title || blog.title_en,
+            title: finalTitle_en,
             description: blog.meta_description || blog.excerpt_en,
             url: pagePath,
             siteName: 'CamelThar',
@@ -178,20 +188,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             publishedTime: blog.publishedAt || blog.created_at,
             modifiedTime: blog.updated_at || blog.created_at,
             authors: blog.author?.name ? [blog.author.name] : ['CamelThar Team'],
-
             tags: [blog.category, blog.destination].filter(Boolean),
             images: [
                 {
                     url: blog.coverImage,
                     width: 1200,
                     height: 630,
-                    alt: blog.title_en,
+                    alt: finalTitle_en,
                 }
             ],
         },
         twitter: {
             card: 'summary_large_image',
-            title: blog.meta_title || blog.title_en,
+            title: finalTitle_en,
             description: blog.meta_description || blog.excerpt_en,
             images: [blog.coverImage],
             creator: '@CamelThar',
