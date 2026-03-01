@@ -11,7 +11,7 @@ import CommentButton from '@/components/CommentButton';
 import ShareButton from '@/components/ShareButton';
 import type { BlogPost } from '@/lib/data';
 import BackToTop from '@/components/BackToTop';
-import TableOfContents, { extractHeadings, injectHeadingIds } from '@/components/TableOfContents';
+import TableOfContents, { TocHeading } from '@/components/TableOfContents';
 
 // Lazy load heavy below-the-fold components
 const AuthorBox = dynamic(() => import('./AuthorBox'), {
@@ -36,51 +36,18 @@ const RelatedReads = dynamic(() => import('@/components/RelatedReads'), {
 interface BlogContentProps {
     blog: BlogPost;
     relatedBlogs?: any[];
+    initialContent: {
+        en: { html: string; headings: TocHeading[] };
+        hi: { html: string; headings: TocHeading[] };
+    };
 }
 
-/**
- * Downgrade heading levels inside blog content HTML for proper SEO hierarchy.
- * - h1 → h2  (page already has a real h1 for the blog title)
- * - Ensures only ONE h1 per page, which is critical for SEO
- * - The TOC component already handles mixed heading levels correctly
- */
-function downgradeContentHeadings(html: string): string {
-    if (!html) return html;
-    // Convert <h1> → <h2> (preserving attributes and content)
-    return html.replace(/<(\/?)h1(\s|>)/gi, '<$1h2$2');
-}
-
-/**
- * Processes blog HTML content to hide hashtag blocks and keyword dumps
- * from users while keeping them in the DOM for SEO crawlers.
- * Uses visually-hidden technique: content is invisible but still parsed by crawlers.
- */
-function processContentForDisplay(html: string): string {
-    if (!html) return html;
-
-    // Pattern 1: Hide paragraphs that are primarily hashtag strings
-    // e.g., <p>#JaisalmerTourism #TheGoldenCity #RajasthanDiaries ...</p>
-    const hashtagBlockRegex = /(<p[^>]*>)(\s*(?:[^<]*#\w+[^<]*){3,})(<\/p>)/gi;
-    html = html.replace(hashtagBlockRegex, (match, openTag, content, closeTag) => {
-        // Only hide if the paragraph is mostly hashtags (more than 50% of words are hashtags)
-        const words = content.trim().split(/\s+/);
-        const hashtagCount = words.filter((w: string) => w.startsWith('#')).length;
-        if (hashtagCount >= 3 || hashtagCount / words.length > 0.4) {
-            return `${openTag}<span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true">${content}</span>${closeTag}`;
-        }
-        return match;
-    });
-
-    return html;
-}
-
-export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProps) {
+export default function BlogContent({ blog, relatedBlogs = [], initialContent }: BlogContentProps) {
     const { lang, t, mounted } = useLanguage();
     const searchParams = useSearchParams();
 
     useEffect(() => {
         if (searchParams.get('scroll') === 'comments') {
-            // Small delay to ensure the page has rendered enough content for accurate position
             const timer = setTimeout(() => {
                 const element = document.getElementById('comments-section');
                 if (element) {
@@ -91,17 +58,12 @@ export default function BlogContent({ blog, relatedBlogs = [] }: BlogContentProp
         }
     }, [searchParams]);
 
-    // Use English content for SSR, then switch to lang-based on client
+    // VERY IMPORTANT: Use initialContent for SSR/Hydration to match page.tsx
+    // Once mounted, we can switch based on localStorage language
+    const currentData = mounted && lang === 'hi' ? initialContent.hi : initialContent.en;
     const title = mounted && lang === 'hi' ? blog.title_hi : blog.title_en;
-    const rawContent = mounted && lang === 'hi' ? blog.content_hi : blog.content_en;
-
-    // Step 1: Downgrade h1→h2 in content (page already has a real h1 for blog title)
-    const normalizedContent = useMemo(() => downgradeContentHeadings(rawContent), [rawContent]);
-    // Step 2: Extract headings and inject anchor IDs for Table of Contents
-    const headings = useMemo(() => extractHeadings(normalizedContent), [normalizedContent]);
-    const contentWithIds = useMemo(() => injectHeadingIds(normalizedContent, headings), [normalizedContent, headings]);
-    // Step 3: Process content to hide hashtag blocks and keyword dumps from users
-    const content = useMemo(() => processContentForDisplay(contentWithIds), [contentWithIds]);
+    const content = currentData.html;
+    const headings = currentData.headings;
 
     const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
     const date = new Date(blog.publishedAt).toLocaleDateString(
