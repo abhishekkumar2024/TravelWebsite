@@ -120,6 +120,64 @@ body.hindi {
     margin: 1.5rem 0;
 }
 
+/* Table styles for blog content and editor */
+.prose table,
+.tiptap-editor table {
+    border-collapse: collapse;
+    margin: 2rem 0;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+}
+
+.prose th,
+.tiptap-editor th,
+.prose td,
+.tiptap-editor td {
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    min-width: 1em;
+    position: relative;
+    vertical-align: top;
+    box-sizing: border-box;
+}
+
+.prose th,
+.tiptap-editor th {
+    background-color: #f8fafc;
+    font-weight: 700;
+    text-align: left;
+    color: #1e293b;
+}
+
+.prose tr:nth-child(even),
+.tiptap-editor tr:nth-child(even) {
+    background-color: #fcfcfc;
+}
+
+/* selected cell styles in editor */
+.tiptap-editor .selectedCell:after {
+    background: rgba(200, 200, 255, 0.4);
+    content: "";
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+}
+
+.tiptap-editor .column-resize-handle {
+    background-color: #adf;
+    bottom: -2px;
+    position: absolute;
+    right: -2px;
+    top: 0;
+    width: 4px;
+}
+
 .prose strong,
 .prose b {
     font-weight: 700;
