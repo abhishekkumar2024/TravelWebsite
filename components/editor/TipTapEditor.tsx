@@ -64,7 +64,7 @@ export default function TipTapEditor({
         extensions: [
             StarterKit.configure({
                 heading: {
-                    levels: [2, 3],
+                    levels: [1, 2, 3],
                 },
             }),
             TextStyle,

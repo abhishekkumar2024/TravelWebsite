@@ -11,8 +11,7 @@ import { extractHeadings, injectHeadingIds } from '@/lib/blog-utils';
 
 function downgradeHeadings(html: string): string {
     if (!html) return html;
-    // Robust replacement: matches <h1 and </h1 regardless of attributes or casing
-    return html.replace(/<(\/?)h1\b/gi, '<$1h2');
+    return html.replace(/<(\/?)h1(\s|>)/gi, '<$1h2$2');
 }
 
 function processContentForSEO(html: string): string {

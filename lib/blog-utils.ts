@@ -89,8 +89,7 @@ export function injectHeadingIds(html: string, headings: TocHeading[]): string {
             } else {
                 attrs = ` id="${heading.id}"${attrs}`;
             }
-            // USE heading.level instead of level to ensure downgraded headings stay downgraded
-            return `<h${heading.level}${attrs}>${content}</h${heading.level}>`;
+            return `<h${level}${attrs}>${content}</h${level}>`;
         }
         return fullMatch;
     });
