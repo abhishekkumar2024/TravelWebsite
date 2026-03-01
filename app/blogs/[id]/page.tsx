@@ -7,7 +7,7 @@ import { BlogPost } from '@/lib/data';
 import { fetchBlogById, fetchRelatedBlogs } from '@/lib/db/queries';
 import { db } from '@/lib/db';
 import BlogContent from './BlogContent';
-import { extractHeadings, injectHeadingIds } from '@/components/TableOfContents';
+import { extractHeadings, injectHeadingIds } from '@/lib/blog-utils';
 
 function downgradeHeadings(html: string): string {
     if (!html) return html;

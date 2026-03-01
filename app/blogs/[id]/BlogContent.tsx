@@ -3,15 +3,16 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
 import ShareButton from '@/components/ShareButton';
 import type { BlogPost } from '@/lib/data';
 import BackToTop from '@/components/BackToTop';
-import TableOfContents, { TocHeading } from '@/components/TableOfContents';
+import TableOfContents from '@/components/TableOfContents';
+import { TocHeading } from '@/lib/blog-utils';
 
 // Lazy load heavy below-the-fold components
 const AuthorBox = dynamic(() => import('./AuthorBox'), {
@@ -45,6 +46,30 @@ interface BlogContentProps {
 export default function BlogContent({ blog, relatedBlogs = [], initialContent }: BlogContentProps) {
     const { lang, t, mounted } = useLanguage();
     const searchParams = useSearchParams();
+    const router = useRouter();
+
+    // Intercept internal link clicks for fast SPA-like navigation
+    useEffect(() => {
+        const handleInternalLinks = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const link = target.closest('a');
+
+            if (link && link instanceof HTMLAnchorElement) {
+                const href = link.getAttribute('href');
+                const isInternal = href?.startsWith('/') || href?.includes(window.location.host);
+
+                if (isInternal && !link.hasAttribute('target')) {
+                    e.preventDefault();
+                    // Extract path if it's an absolute URL but internal
+                    const url = new URL(link.href);
+                    router.push(url.pathname + url.search + url.hash);
+                }
+            }
+        };
+
+        document.addEventListener('click', handleInternalLinks);
+        return () => document.removeEventListener('click', handleInternalLinks);
+    }, [router]);
 
     useEffect(() => {
         if (searchParams.get('scroll') === 'comments') {

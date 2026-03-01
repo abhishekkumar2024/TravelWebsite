@@ -69,6 +69,15 @@ export default async function DestinationDetailsPage({ params }: Props) {
     // Fetch blogs dynamically for this destination
     const blogs = await fetchBlogsByDestination(params.slug);
 
+    // Identify "Core Guides" for Cluster SEO (Itineraries, Best Time, etc.)
+    const coreGuides = blogs.filter(b => {
+        const title = b.title_en.toLowerCase();
+        return title.includes('itinerary') ||
+            title.includes('best time') ||
+            title.includes('how to reach') ||
+            title.includes('packing list');
+    }).slice(0, 3);
+
     // Tourist Destination structured data for rich search results — Enhanced for SEO + AEO + GEO
     const touristDestinationJsonLd = {
         '@context': 'https://schema.org',
@@ -212,6 +221,53 @@ export default async function DestinationDetailsPage({ params }: Props) {
                     </div>
                 </div>
             </section>
+
+            {/* CLUSTER SEO: CORE GUIDES SECTION */}
+            {coreGuides.length > 0 && (
+                <section className="py-12 px-4 max-w-7xl mx-auto border-b border-sand">
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 bg-royal-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-royal-blue/20">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-royal-blue font-outfit uppercase tracking-tight">Essential {destination.name_en} Guides</h2>
+                            <p className="text-sm text-gray-500">Must-read articles to plan your perfect trip.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {coreGuides.map(guide => (
+                            <Link
+                                key={guide.id}
+                                href={`/blogs/${guide.slug}/`}
+                                className="group flex items-center gap-4 bg-white p-4 rounded-2xl border border-sand hover:border-desert-gold hover:shadow-xl hover:shadow-desert-gold/5 transition-all"
+                            >
+                                <div className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden shadow-sm">
+                                    <Image
+                                        src={guide.coverImage}
+                                        alt={guide.title_en}
+                                        fill
+                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-royal-blue leading-tight group-hover:text-desert-gold transition-colors line-clamp-2">
+                                        {guide.title_en}
+                                    </h3>
+                                    <div className="flex items-center gap-2 mt-1 text-[10px] font-bold text-desert-gold uppercase tracking-wider">
+                                        <span>Read Guide</span>
+                                        <svg className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* BLOGS LISTING (The Silo Content) */}
             <section className="py-20 px-4 max-w-7xl mx-auto">
