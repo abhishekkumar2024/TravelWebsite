@@ -9,9 +9,24 @@ import { db } from '@/lib/db';
 import BlogContent from './BlogContent';
 import { extractHeadings, injectHeadingIds } from '@/lib/blog-utils';
 
-function downgradeHeadings(html: string): string {
-    if (!html) return html;
-    return html.replace(/<(\/?)h1(\s|>)/gi, '<$1h2$2');
+function extractAndMergeH1s(html: string): { cleanedHtml: string; extraTitle: string } {
+    if (!html) return { cleanedHtml: html, extraTitle: '' };
+
+    let extraTitle = '';
+    // Regex to match H1 tags and capture their inner content
+    const h1Regex = /<h1[^>]*>(.*?)<\/h1>/gi;
+
+    const cleanedHtml = html.replace(h1Regex, (match, content) => {
+        // Strip any nested tags from the H1 content to get plain text
+        const text = content.replace(/<[^>]*>/g, '').trim();
+        if (text) {
+            // Append to extra title with a separator if needed
+            extraTitle += (extraTitle ? ' ' : '') + text;
+        }
+        return ''; // Remove the H1 from body content
+    });
+
+    return { cleanedHtml, extraTitle };
 }
 
 function processContentForSEO(html: string): string {
@@ -330,14 +345,21 @@ export default async function BlogPage({ params }: PageProps) {
     const rawContentHi = blog.content_hi || blog.content_en || '';
 
     // Process English
-    const docEn = downgradeHeadings(rawContentEn);
+    const { cleanedHtml: docEn, extraTitle: extraEn } = extractAndMergeH1s(rawContentEn);
     const headingsEn = extractHeadings(docEn);
     const htmlEn = processContentForSEO(injectHeadingIds(docEn, headingsEn));
 
     // Process Hindi
-    const docHi = downgradeHeadings(rawContentHi);
+    const { cleanedHtml: docHi, extraTitle: extraHi } = extractAndMergeH1s(rawContentHi);
     const headingsHi = extractHeadings(docHi);
     const htmlHi = processContentForSEO(injectHeadingIds(docHi, headingsHi));
+
+    // Create a modified blog object with the merged title for display
+    const mergedBlog = {
+        ...blog,
+        title_en: blog.title_en + (extraEn ? `: ${extraEn}` : ''),
+        title_hi: blog.title_hi + (extraHi ? `: ${extraHi}` : ''),
+    };
 
     return (
         <Suspense fallback={
@@ -361,7 +383,7 @@ export default async function BlogPage({ params }: PageProps) {
                 />
             )}
             <BlogContent
-                blog={blog}
+                blog={mergedBlog}
                 relatedBlogs={relatedBlogs}
                 initialContent={{
                     en: { html: htmlEn, headings: headingsEn },
