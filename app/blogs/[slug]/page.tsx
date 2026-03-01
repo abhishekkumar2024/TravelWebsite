@@ -114,18 +114,21 @@ export async function generateStaticParams() {
             `SELECT slug, id FROM blogs WHERE status = 'published' AND deleted_at IS NULL`
         );
 
+        if (!result.rows.length) {
+            console.warn('[BlogPage] No blogs found — check DB connection');
+        }
+
         return result.rows.map((blog) => ({
             slug: blog.slug || blog.id,
         }));
     } catch (error) {
-        console.error('[BlogPage] Error in generateStaticParams:', error);
-        return [];
+        console.error('[BlogPage] generateStaticParams DB error:', error);
+        throw error;
     }
 }
 
-// Enable ISR
-export const revalidate = 60;
-export const dynamic = 'force-static';
+// Enable ISR - 1 hour revalidation
+export const revalidate = 3600;
 export const dynamicParams = true;
 
 interface PageProps {
@@ -141,8 +144,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
         if (!blog) {
             return {
-                title: 'Blog Post Not Found | CamelThar',
-                robots: { index: false, follow: true },
+                title: 'Travel Blog | CamelThar',
             };
         }
 
