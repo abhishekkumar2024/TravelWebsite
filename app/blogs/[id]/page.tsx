@@ -16,8 +16,10 @@ function downgradeHeadings(html: string): string {
 
 function processContentForSEO(html: string): string {
     if (!html) return html;
+
+    // 1. Handle hashtag blocks
     const hashtagBlockRegex = /(<p[^>]*>)(\s*(?:[^<]*#\w+[^<]*){3,})(<\/p>)/gi;
-    return html.replace(hashtagBlockRegex, (match, openTag, content, closeTag) => {
+    let processedHtml = html.replace(hashtagBlockRegex, (match, openTag, content, closeTag) => {
         const words = content.trim().split(/\s+/);
         const hashtagCount = words.filter((w: string) => w.startsWith('#')).length;
         if (hashtagCount >= 3 || hashtagCount / words.length > 0.4) {
@@ -25,6 +27,54 @@ function processContentForSEO(html: string): string {
         }
         return match;
     });
+
+    // 2. Optimize internal links for SEO
+    // This converts absolute internal links to relative paths and removes nofollow/target="_blank"
+    processedHtml = processedHtml.replace(/<a\s+([^>]*?)>/gi, (match, attributes) => {
+        const hrefMatch = attributes.match(/href="([^"]*?)"/i);
+        if (!hrefMatch) return match;
+
+        const href = hrefMatch[1];
+        const isInternal = href.startsWith('/') ||
+            href.includes('camelthar.com') ||
+            href.startsWith('#');
+
+        if (isInternal && !href.startsWith('#')) {
+            let newAttributes = attributes;
+
+            // Convert absolute to relative
+            if (href.includes('camelthar.com')) {
+                try {
+                    const url = new URL(href.startsWith('http') ? href : `https://${href}`);
+                    if (url.hostname.includes('camelthar.com')) {
+                        const relativePath = url.pathname + url.search + url.hash;
+                        newAttributes = newAttributes.replace(/href="[^"]*?"/i, `href="${relativePath}"`);
+                    }
+                } catch (e) {
+                    // Fallback if URL parsing fails
+                }
+            }
+
+            // Remove target="_blank"
+            newAttributes = newAttributes.replace(/\s*target="_blank"/gi, '');
+
+            // Remove nofollow from rel
+            newAttributes = newAttributes.replace(/rel="([^"]*?)"/gi, (m: string, relValue: string) => {
+                const newRelValue = relValue.split(/\s+/)
+                    .filter((r: string) => r.toLowerCase() !== 'nofollow')
+                    .join(' ');
+                return newRelValue ? `rel="${newRelValue}"` : '';
+            });
+
+            // Clean up attributes
+            newAttributes = newAttributes.replace(/\s+/g, ' ').trim();
+            return `<a ${newAttributes}>`;
+        }
+
+        return match;
+    });
+
+    return processedHtml;
 }
 
 // Pre-generate all published blog pages at build time for faster indexing
