@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Page Not Found | CamelThar',
+    title: 'When something goes wrong | CamelThar',
     robots: { index: false, follow: false },
 };
 
