@@ -106,14 +106,14 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
         }
 
         const initializePage = async () => {
+            // CRITICAL: Only load blog data ONCE
+            if (blogDataLoaded.current) return;
+
             setLoading(true);
             try {
                 setUser(sessionUser);
                 const isUserAdmin = await isAdmin(sessionUser.role);
                 setIsAdminUser(isUserAdmin);
-
-                // CRITICAL: Only load blog data ONCE
-                if (blogDataLoaded.current) return;
 
                 // Load Blog Data
                 const blog = await fetchBlogById(params.id);
