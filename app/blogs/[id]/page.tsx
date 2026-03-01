@@ -208,6 +208,10 @@ const getRelatedBlogs = unstable_cache(
     { revalidate: 60, tags: ['blogs'] }
 );
 
+// Optimization: Force static generation and allow dynamic params (ISR)
+export const dynamic = 'force-static';
+export const dynamicParams = true;
+
 export default async function BlogPage({ params }: PageProps) {
     const { id } = params;
 
@@ -300,7 +304,7 @@ export default async function BlogPage({ params }: PageProps) {
             {
                 '@type': 'ListItem',
                 position: 2,
-                name: 'Blogs',
+                name: 'Travel Blogs',
                 item: 'https://www.camelthar.com/blogs/'
             },
             {
@@ -308,43 +312,9 @@ export default async function BlogPage({ params }: PageProps) {
                 position: 3,
                 name: blog.destination.charAt(0).toUpperCase() + blog.destination.slice(1),
                 item: `https://www.camelthar.com/destinations/${blog.destination}/`
-            },
-            {
-                '@type': 'ListItem',
-                position: 4,
-                name: blog.title_en,
-                item: `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`
             }
         ]
     };
-
-    // --- FAQ Schema: Extract FAQ content from blog for rich results ---
-    // Looks for patterns like <h2>FAQ</h2> or <h3>Question?</h3><p>Answer</p>
-    const faqItems: { question: string; answer: string }[] = [];
-    const contentHtml = blog.content_en || '';
-    // Match Q&A patterns: headings (h2/h3/h4) ending with ? followed by paragraph(s)
-    const faqRegex = /<h[2-4][^>]*>([^<]*\?[^<]*)<\/h[2-4]>\s*<p[^>]*>(.*?)<\/p>/gi;
-    let faqMatch;
-    while ((faqMatch = faqRegex.exec(contentHtml)) !== null) {
-        const question = faqMatch[1].replace(/&amp;/g, '&').replace(/&#\d+;/g, '').trim();
-        const answer = faqMatch[2].replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim();
-        if (question && answer) {
-            faqItems.push({ question, answer });
-        }
-    }
-
-    const faqJsonLd = faqItems.length > 0 ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: faqItems.map(faq => ({
-            '@type': 'Question',
-            name: faq.question,
-            acceptedAnswer: {
-                '@type': 'Answer',
-                text: faq.answer,
-            },
-        })),
-    } : null;
 
     // --- Server-Side Content Processing (SEO Powerhouse) ---
     // This ensures Google sees the final, processed HTML immediately without waiting for JS.
@@ -368,13 +338,23 @@ export default async function BlogPage({ params }: PageProps) {
         title_hi: blog.title_hi + (extraHi ? `: ${extraHi}` : ''),
     };
 
+    // --- FAQ Schema: Extract FAQ content from blog for rich results ---
+    const faqHeadings = headingsHi ? headingsHi.filter(h => h.text.includes('?') || h.text.endsWith('?')) : [];
+    const faqJsonLd = faqHeadings.length > 0 ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqHeadings.map(h => ({
+            '@type': 'Question',
+            name: h.text,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: `Read more about ${h.text} in our comprehensive guide to ${blog.destination}.`
+            }
+        }))
+    } : null;
+
     return (
-        <Suspense fallback={
-            <div className="pt-32 pb-20 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-royal-blue mx-auto"></div>
-                <p className="mt-4 text-gray-500">Loading travel story...</p>
-            </div>
-        }>
+        <>
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -397,6 +377,6 @@ export default async function BlogPage({ params }: PageProps) {
                     hi: { html: htmlHi, headings: headingsHi }
                 }}
             />
-        </Suspense>
+        </>
     );
 }

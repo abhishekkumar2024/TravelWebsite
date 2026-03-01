@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
@@ -43,9 +43,30 @@ interface BlogContentProps {
     };
 }
 
+/**
+ * Isolated Component for search params handling.
+ * Wrapped in Suspense to prevent deoptimization of the entire parent article.
+ */
+function CommentScroller() {
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('scroll') === 'comments') {
+            const timer = setTimeout(() => {
+                const element = document.getElementById('comments-section');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
+
+    return null;
+}
+
 export default function BlogContent({ blog, relatedBlogs = [], initialContent }: BlogContentProps) {
     const { lang, t, mounted } = useLanguage();
-    const searchParams = useSearchParams();
     const router = useRouter();
 
     // Intercept internal link clicks for fast SPA-like navigation
@@ -71,18 +92,6 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
         return () => document.removeEventListener('click', handleInternalLinks);
     }, [router]);
 
-    useEffect(() => {
-        if (searchParams.get('scroll') === 'comments') {
-            const timer = setTimeout(() => {
-                const element = document.getElementById('comments-section');
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }, 800);
-            return () => clearTimeout(timer);
-        }
-    }, [searchParams]);
-
     // VERY IMPORTANT: Use initialContent for SSR/Hydration to match page.tsx
     // Once mounted, we can switch based on localStorage language
     const currentData = mounted && lang === 'hi' ? initialContent.hi : initialContent.en;
@@ -106,6 +115,10 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
 
     return (
         <article className="pt-28 pb-20 px-4 bg-gray-50/30 min-h-screen">
+            {/* Suspense boundary for search params hook to prevent root bailout */}
+            <Suspense fallback={null}>
+                <CommentScroller />
+            </Suspense>
             {/* Top Breadcrumbs */}
             <div className="max-w-4xl mx-auto mb-6">
                 <nav className="flex items-center gap-2 text-sm text-gray-500 font-medium overflow-x-auto whitespace-nowrap pb-2 md:pb-0 no-scrollbar">
