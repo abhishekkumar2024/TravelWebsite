@@ -20,8 +20,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         <SessionProvider
             // Re-fetch session every 5 minutes (for session timeout)
             refetchInterval={5 * 60}
-            // Re-fetch when window gains focus
-            refetchOnWindowFocus={true}
+            // Re-fetch when window gains focus — Disabled to prevent edit-page refreshes
+            refetchOnWindowFocus={false}
         >
             {children}
         </SessionProvider>
