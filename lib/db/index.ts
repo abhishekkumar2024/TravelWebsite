@@ -1,10 +1,8 @@
-/**
- * DB Module — Public API
- * 
- * Import everything from here:
- *   import { db } from '@/lib/db';
- *   import { NeonProvider } from '@/lib/db';
- */
+// This module MUST only run on the server.
+// Next.js will throw a build error if a 'use client' component imports this.
+import 'server-only';
+
+
 
 export { db, DBRouter } from './router';
 export { NeonProvider } from './providers/neon';

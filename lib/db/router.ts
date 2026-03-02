@@ -16,7 +16,12 @@
  *   await db.execute('INSERT INTO blogs (title_en) VALUES ($1)', ['My Blog']);
  */
 
+// This module MUST only run on the server.
+// Next.js will throw a build error if a 'use client' component imports this.
+import 'server-only';
+
 import { DBProvider, QueryResult, RouterOptions, DBEvent, DBEventListener } from './types';
+
 import { HealthChecker } from './health';
 import { SyncEngine } from './sync';
 import { NeonProvider } from './providers/neon';
@@ -300,6 +305,13 @@ class DBRouter {
     }
 
     private ensureInitialized(): void {
+        // Hard guard: DB can never run in a browser — env vars are server-only
+        if (typeof window !== 'undefined') {
+            throw new Error(
+                '[DBRouter] Database access attempted on the client side. ' +
+                'Only use db in Server Components, API routes, or server actions.'
+            );
+        }
         if (!this.initialized) {
             this.init();
         }
