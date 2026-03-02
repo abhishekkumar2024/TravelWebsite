@@ -113,12 +113,24 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
             modalConfig.onSuccess();
         }
         // We do NOT clear pendingAction here automatically, 
-        // because the consumer component (LikeButton) needs to consume it.
+        // because the consumer component (LikeButton/CommentSection) needs to consume it.
         // It will call clearPendingAction() when done.
 
-        // However, if the user logged in via Email (not redirect), 
-        // the `onSuccess` callback might be sufficient. 
-        // But to be safe and consistent, we leave it to the consumer.
+        // For non-redirect login (email/credentials), scroll to the comment section
+        // ONLY if the login was initiated from the comment section.
+        // (Google/OAuth login handles this via the mount useEffect + redirect flow.)
+        if (
+            pendingAction &&
+            (pendingAction.type === 'comment' || pendingAction.type === 'like_comment') &&
+            pendingAction.returnUrl?.includes('scroll=comments')
+        ) {
+            setTimeout(() => {
+                const el = document.getElementById('comments-section');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 800); // Wait for modal close animation and session update
+        }
     };
 
     const clearPendingAction = () => {
