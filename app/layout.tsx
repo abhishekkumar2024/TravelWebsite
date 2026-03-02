@@ -59,6 +59,7 @@ export const metadata: Metadata = {
         shortcut: '/logo-round.png?v=4',
         apple: '/logo-round.png?v=4',
     },
+    // Preconnect hints via Next.js metadata (avoids manual <head> duplication)
     other: {
         'p:domain_verify': '8babaaa14408702493a829fbe247adda',
         // GEO: AI content classification hints for generative engines
@@ -76,23 +77,16 @@ export default function RootLayout({
     return (
         <html lang="en" className={`${outfit.variable} ${notoSansDevanagari.variable}`}>
             <head>
-                {/* Preconnect to external domains for faster loading */}
+                {/*
+                 * Preconnect hints: establish early connections to 3rd-party origins.
+                 * Kept here (not in metadata) because Next.js metadata API
+                 * doesn't support <link rel="preconnect"> natively.
+                 * These are safe — only 2 tags, no duplication risk.
+                 */}
                 <link rel="preconnect" href="https://res.cloudinary.com" />
                 <link rel="dns-prefetch" href="https://res.cloudinary.com" />
 
                 <meta name="referrer" content="strict-origin-when-cross-origin" />
-                <link
-                    rel="preload"
-                    as="image"
-                    href="/images/rajasthan-desert-hero-mobile.webp"
-                    media="(max-width: 768px)"
-                />
-                <link
-                    rel="preload"
-                    as="image"
-                    href="/images/rajasthan-desert-hero.webp"
-                    media="(min-width: 769px)"
-                />
 
                 {/* RSS Feed autodiscovery — allows browsers, feed readers, and AI engines to find the feed */}
                 <link
@@ -101,18 +95,31 @@ export default function RootLayout({
                     title="CamelThar - Rajasthan Travel Stories"
                     href="https://www.camelthar.com/feed.xml"
                 />
+            </head>
+            <body className="bg-gray-50 font-sans">
+                <AuthProvider>
+                    <LanguageProvider>
+                        <LoginModalProvider>
+                            <SessionTimeout />
+                            <Navbar />
+                            <main>{children}</main>
+                            <Footer />
+                        </LoginModalProvider>
+                    </LanguageProvider>
+                </AuthProvider>
 
+                {/* GA4 — afterInteractive scripts belong inside the React tree (body), not <head> */}
                 <Script
                     src="https://www.googletagmanager.com/gtag/js?id=G-BG1VBT8E8B"
                     strategy="afterInteractive"
                 />
                 <Script id="ga4" strategy="afterInteractive">
                     {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-BG1VBT8E8B');
-          `}
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+                        gtag('config', 'G-BG1VBT8E8B');
+                    `}
                 </Script>
 
                 <Script
@@ -123,7 +130,7 @@ export default function RootLayout({
                     data-wpfc-render="false"
                 />
 
-                {/* Organization structured data for brand visibility — Enhanced for GEO */}
+                {/* Organization structured data — runs on every page for brand visibility */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -133,33 +140,19 @@ export default function RootLayout({
                             name: 'CamelThar',
                             url: 'https://www.camelthar.com',
                             logo: 'https://www.camelthar.com/camelthar_logo.webp',
-                            description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips. Expert coverage of Jaipur, Udaipur, Jaisalmer, Jodhpur, Pushkar, and the Thar Desert.',
+                            description: 'Your gateway to Rajasthan travel stories, destination guides, and insider tips.',
                             foundingDate: '2024',
-                            // GEO: Establish topical authority — tells AI what this org is an expert on
                             knowsAbout: [
-                                'Rajasthan tourism',
-                                'Thar Desert travel',
-                                'India heritage tourism',
-                                'Jaipur travel guide',
-                                'Udaipur travel guide',
-                                'Jaisalmer travel guide',
-                                'Jodhpur travel guide',
-                                'Desert safari India',
-                                'Rajasthan culture and heritage',
+                                'Rajasthan tourism', 'Thar Desert travel', 'India heritage tourism',
+                                'Jaipur travel guide', 'Udaipur travel guide', 'Jaisalmer travel guide',
+                                'Jodhpur travel guide', 'Desert safari India', 'Rajasthan culture and heritage',
                             ],
-                            // GEO: Geographic scope for AI engines
                             areaServed: {
                                 '@type': 'State',
                                 name: 'Rajasthan',
-                                containedInPlace: {
-                                    '@type': 'Country',
-                                    name: 'India',
-                                },
+                                containedInPlace: { '@type': 'Country', name: 'India' },
                             },
-                            sameAs: [
-                                'https://x.com/camelthar',
-                                'https://www.instagram.com/cameltharinfo/',
-                            ],
+                            sameAs: ['https://x.com/camelthar', 'https://www.instagram.com/cameltharinfo/'],
                             contactPoint: {
                                 '@type': 'ContactPoint',
                                 contactType: 'customer service',
@@ -169,7 +162,7 @@ export default function RootLayout({
                     }}
                 />
 
-                {/* WebSite structured data for sitelinks search box + AEO Speakable */}
+                {/* WebSite structured data — sitelinks search box + AEO Speakable */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -191,18 +184,6 @@ export default function RootLayout({
                         }),
                     }}
                 />
-            </head>
-            <body className="bg-gray-50 font-sans">
-                <AuthProvider>
-                    <LanguageProvider>
-                        <LoginModalProvider>
-                            <SessionTimeout />
-                            <Navbar />
-                            <main>{children}</main>
-                            <Footer />
-                        </LoginModalProvider>
-                    </LanguageProvider>
-                </AuthProvider>
             </body>
         </html>
     );

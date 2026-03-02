@@ -18,30 +18,25 @@ const getRelatedBlogsData = cache(async (destination: string, currentId: string)
     return fetchRelatedBlogs(destination, currentId);
 });
 
-function extractAndFixH1s(html: string): { cleanedHtml: string; extraTitle: string } {
-    if (!html) return { cleanedHtml: html, extraTitle: '' };
+/**
+ * Strips ALL <h1> tags from blog content and converts them to <h2>.
+ * The hero section already renders the sole <h1> (the blog title).
+ * Having any additional <h1> in the content body would violate the
+ * "one H1 per page" SEO rule and confuse Google's topic understanding.
+ */
+function extractAndFixH1s(html: string): { cleanedHtml: string } {
+    if (!html) return { cleanedHtml: html };
 
     // Load into a wrapper to handle root-level H1s correctly
     const $ = cheerio.load(`<div id="__wrapper">${html}</div>`, null, false);
-    let extraTitle = '';
-    let isFirst = true;
 
-    $('#__wrapper > h1, #__wrapper h1').each((_, element) => {
-        const text = $(element).text().trim();
-
-        if (isFirst) {
-            extraTitle = text;
-            $(element).remove(); // Remove first H1 as it's merged into hero title
-            isFirst = false;
-        } else {
-            // Convert extra H1 to H2 for SEO
-            $(element).replaceWith(`<h2>${$(element).html()}</h2>`);
-        }
+    // Convert EVERY h1 in content to h2 — the hero <h1> is the page's sole H1
+    $('#__wrapper h1').each((_, element) => {
+        $(element).replaceWith(`<h2>${$(element).html()}</h2>`);
     });
 
     return {
         cleanedHtml: $('#__wrapper').html() || '',
-        extraTitle
     };
 }
 
@@ -148,33 +143,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             };
         }
 
-        // Process title to match page content logic
-        const { extraTitle: extraEn } = extractAndFixH1s(blog.content_en || '');
-        const baseTitle = blog.meta_title || blog.title_en;
-        const finalTitle = extraEn ? `${baseTitle}: ${extraEn}` : baseTitle;
+        // Use meta_title if set by admin, otherwise fall back to blog title.
+        // Do NOT append content H1 text — that causes keyword stuffing & over-long titles.
+        const pageTitle = blog.meta_title || blog.title_en;
 
         const pageSlug = blog.slug || blog.id;
         const pagePath = `/blogs/${pageSlug}/`;
 
         return {
-            title: finalTitle,
+            title: pageTitle,
             description: blog.meta_description || blog.excerpt_en,
             alternates: {
                 canonical: pagePath,
             },
             openGraph: {
-                title: finalTitle,
+                title: pageTitle,
                 description: blog.meta_description || blog.excerpt_en,
                 url: pagePath,
                 siteName: 'CamelThar',
                 locale: 'en_IN',
                 type: 'article',
                 publishedTime: blog.publishedAt,
-                images: [{ url: blog.coverImage, width: 1200, height: 630, alt: finalTitle }],
+                images: [{ url: blog.coverImage, width: 1200, height: 630, alt: pageTitle }],
             },
             twitter: {
                 card: 'summary_large_image',
-                title: finalTitle,
+                title: pageTitle,
                 description: blog.meta_description || blog.excerpt_en,
                 images: [blog.coverImage],
             },
@@ -243,6 +237,8 @@ export default async function BlogPage({ params }: PageProps) {
         } : {}),
     };
 
+    const destName = blog.destination?.split(',')[0].trim() || 'rajasthan';
+    const destLabel = destName.charAt(0).toUpperCase() + destName.slice(1);
     const breadcrumbJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -252,8 +248,14 @@ export default async function BlogPage({ params }: PageProps) {
             {
                 '@type': 'ListItem',
                 position: 3,
-                name: blog.destination?.split(',')[0].trim() || 'Rajasthan',
-                item: `https://www.camelthar.com/destinations/${blog.destination?.split(',')[0].trim() || 'rajasthan'}/`
+                name: destLabel,
+                item: `https://www.camelthar.com/destinations/${destName}/`
+            },
+            {
+                '@type': 'ListItem',
+                position: 4,
+                name: blog.meta_title || blog.title_en,
+                item: `https://www.camelthar.com/blogs/${blog.slug || blog.id}/`
             }
         ]
     };
@@ -262,22 +264,19 @@ export default async function BlogPage({ params }: PageProps) {
     const rawContentEn = blog.content_en || '';
     const rawContentHi = blog.content_hi || blog.content_en || '';
 
-    // Process English
-    const { cleanedHtml: docEn, extraTitle: extraEn } = extractAndFixH1s(rawContentEn);
+    // Process English — all H1s in content are converted to H2
+    const { cleanedHtml: docEn } = extractAndFixH1s(rawContentEn);
     const headingsEn = extractHeadings(docEn);
     const htmlEn = processContentForSEO(injectHeadingIds(docEn, headingsEn));
 
-    // Process Hindi
-    const { cleanedHtml: docHi, extraTitle: extraHi } = extractAndFixH1s(rawContentHi);
+    // Process Hindi — same H1 → H2 conversion
+    const { cleanedHtml: docHi } = extractAndFixH1s(rawContentHi);
     const headingsHi = extractHeadings(docHi);
     const htmlHi = processContentForSEO(injectHeadingIds(docHi, headingsHi));
 
-    // Create a modified blog object with the merged title
-    const mergedBlog = {
-        ...blog,
-        title_en: blog.title_en + (extraEn ? `: ${extraEn}` : ''),
-        title_hi: blog.title_hi + (extraHi ? `: ${extraHi}` : ''),
-    };
+    // Pass blog as-is — title_en is used directly as the hero <h1>,
+    // no extra H1 text is appended (prevents duplicate/stuffed titles)
+    const mergedBlog = { ...blog };
 
     return (
         <>
