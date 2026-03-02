@@ -391,7 +391,7 @@ export async function updateBlog(id: string, payload: {
             paramIndex++;
         }
 
-        // Handle slug
+        // Handle slug — auto-regenerate from title if title changed
         const newSlug = payload.slug || (payload.title_en ? await generateSlug(payload.title_en) : undefined);
         if (newSlug) {
             setClauses.push(`slug = $${paramIndex}`);

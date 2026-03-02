@@ -81,6 +81,8 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
     const [pendingDraft, setPendingDraft] = useState<EditDraftData | null>(null);
     const draftInitialized = useRef(false);
     const blogDataLoaded = useRef(false);
+    // Track original slug so we can redirect after title/slug changes
+    const originalSlug = useRef<string>('');
     // Track original data to compute diffs on submit (only send changed fields)
     const originalData = useRef<{
         titleEn: string; titleHi: string; excerptEn: string; excerptHi: string;
@@ -136,6 +138,9 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
                 setCoverImage(blog.coverImage);
                 setUploadedImages(blog.images || []);
                 setCurrentStatus(blog.status);
+
+                // Track original slug for redirect after title change
+                originalSlug.current = blog.slug || '';
 
                 // SEO
                 setMetaTitle(blog.meta_title || '');
@@ -403,9 +408,17 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
 
             // Stage 6: Cache revalidation (server-side via Server Action)
             logger.startStage('cache_revalidation');
-            const slug = result.slug || params.id;
-            await revalidateBlogPaths(slug, destination);
+            const newSlug = result.slug || params.id;
+            const oldSlug = originalSlug.current;
+            // Revalidate both old and new slugs (old slug cleared from cache)
+            await revalidateBlogPaths(newSlug, destination, oldSlug);
             logger.endStage('cache_revalidation');
+
+            // If slug changed, redirect to the new URL instead of showing "not found"
+            if (newSlug && oldSlug && newSlug !== oldSlug) {
+                originalSlug.current = newSlug; // Update ref for future edits
+                router.replace(`/edit/${newSlug}`);
+            }
 
             // Update originalData to reflect new state
             originalData.current = {
@@ -423,7 +436,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             // Save performance log to Supabase (non-blocking)
             logger.save({
                 blogId: params.id,
-                blogSlug: slug,
+                blogSlug: newSlug,
                 payloadSizeKB: parseFloat(payloadSizeKB),
                 contentWordCount: logWordCount,
                 imagesCount: usedImages.length,

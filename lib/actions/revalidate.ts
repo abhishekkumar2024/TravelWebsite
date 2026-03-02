@@ -12,17 +12,24 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 
 /**
  * Revalidate all pages affected by a blog change.
- * @param slug - Blog slug (for the detail page)
+ * @param slug - New blog slug (for the detail page)
  * @param destination - Comma-separated destination slugs (for destination pages)
+ * @param oldSlug - Previous slug if it changed (to clear old URL from cache)
  */
-export async function revalidateBlogPaths(slug?: string, destination?: string) {
+export async function revalidateBlogPaths(slug?: string, destination?: string, oldSlug?: string) {
     try {
         const revalidated: string[] = [];
 
-        // Revalidate blog detail page
+        // Revalidate new blog detail page
         if (slug) {
             revalidatePath(`/blogs/${slug}/`);
             revalidated.push(`/blogs/${slug}/`);
+        }
+
+        // Revalidate OLD blog URL if slug changed (prevents stale 404)
+        if (oldSlug && oldSlug !== slug) {
+            revalidatePath(`/blogs/${oldSlug}/`);
+            revalidated.push(`/blogs/${oldSlug}/ (old)`);
         }
 
         // Revalidate blog listing page
