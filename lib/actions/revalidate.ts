@@ -60,3 +60,38 @@ export async function revalidateBlogPaths(slug?: string, destination?: string, o
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * Revalidate pages affected by an author profile update (bio, avatar, social links).
+ * Blog pages show author data via AuthorBox — those need cache-busting too.
+ * @param authorSlug - Author's slug for their profile page
+ */
+export async function revalidateAuthorPages(authorSlug?: string) {
+    try {
+        const revalidated: string[] = [];
+
+        // Revalidate all blog pages (author data is shown in AuthorBox)
+        revalidatePath('/blogs/', 'layout');
+        revalidated.push('/blogs/ (layout)');
+
+        // Revalidate author profile page
+        if (authorSlug) {
+            revalidatePath(`/author/${authorSlug}/`);
+            revalidated.push(`/author/${authorSlug}/`);
+        }
+
+        // Revalidate homepage (may show author info)
+        revalidatePath('/');
+        revalidated.push('/');
+
+        // Bust cache tag
+        revalidateTag('blogs');
+        revalidated.push('tag:blogs');
+
+        console.log('[revalidateAuthorPages] Revalidated:', revalidated.join(', '));
+        return { success: true, revalidated };
+    } catch (error: any) {
+        console.error('[revalidateAuthorPages] Error:', error.message);
+        return { success: false, error: error.message };
+    }
+}

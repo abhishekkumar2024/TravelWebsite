@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { getAuthorProfile, updateAuthorProfile, ensureAuthorExists, Author } from '@/lib/db/queries/authors';
+import { revalidateAuthorPages } from '@/lib/actions/revalidate';
 import Link from 'next/link';
 
 export default function ProfilePage() {
@@ -88,6 +89,8 @@ export default function ProfilePage() {
                 if (result.data) {
                     setAuthor(result.data as Author);
                 }
+                // Bust ISR cache so blog pages show updated author data
+                await revalidateAuthorPages(formData.slug || author.slug);
             } else {
                 setMessage({ type: 'error', text: 'Failed to update profile: ' + result.error });
             }
