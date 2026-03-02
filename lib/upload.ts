@@ -1,10 +1,44 @@
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
+/**
+ * Generate an SEO-friendly public_id from the filename.
+ * Example: "Jaisalmer Fort Sunset.jpeg" → "jaisalmer-fort-sunset-a3b8"
+ * - Converts to lowercase
+ * - Replaces spaces/underscores with hyphens
+ * - Removes special characters
+ * - Appends a short hash to prevent collisions
+ */
+function generateSeoPublicId(filename: string): string {
+    // Remove extension
+    const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
+
+    // Clean: lowercase, replace separators with hyphens, remove special chars
+    let slug = nameWithoutExt
+        .toLowerCase()
+        .replace(/[_\s]+/g, '-')          // spaces/underscores → hyphens
+        .replace(/[^a-z0-9-]/g, '')       // remove non-alphanumeric
+        .replace(/-+/g, '-')              // collapse multiple hyphens
+        .replace(/^-|-$/g, '')            // trim leading/trailing hyphens
+        .slice(0, 60);                    // cap length
+
+    // If filename was just special chars, use a fallback
+    if (!slug || slug.length < 3) {
+        slug = 'blog-image';
+    }
+
+    // Append a short unique hash to prevent collisions
+    const hash = Math.random().toString(36).slice(2, 6);
+    return `${slug}-${hash}`;
+}
+
 async function uploadToCloudinary(file: File, folder: string, onProgress?: (percent: number) => void): Promise<string> {
     if (!cloudName || !uploadPreset) {
         throw new Error('Cloudinary is not configured. Please set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.');
     }
+
+    // Generate SEO-friendly public_id from filename
+    const seoPublicId = generateSeoPublicId(file.name);
 
     // Helper to construct optimized URL
     const getOptimizedUrl = (publicId: string, resourceType: string) => {
@@ -20,6 +54,7 @@ async function uploadToCloudinary(file: File, folder: string, onProgress?: (perc
         formData.append('file', file);
         formData.append('upload_preset', uploadPreset);
         formData.append('folder', folder);
+        formData.append('public_id', seoPublicId);
 
         const res = await fetch(url, {
             method: 'POST',
@@ -59,6 +94,7 @@ async function uploadToCloudinary(file: File, folder: string, onProgress?: (perc
         formData.append('file', chunk);
         formData.append('upload_preset', uploadPreset);
         formData.append('folder', folder);
+        formData.append('public_id', seoPublicId);
 
         // Headers for chunked upload
         const contentRange = `bytes ${start}-${end - 1}/${TOTAL_SIZE}`;
