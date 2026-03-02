@@ -385,7 +385,7 @@ export default function Toolbar({ editor, onImageClick, onVideoClick, onLinkClic
             {/* Tables */}
             <div className="flex items-center gap-1 bg-gray-100/50 p-1 rounded-lg border border-gray-200">
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                    onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run()}
                     title="Insert Table"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,18 +396,75 @@ export default function Toolbar({ editor, onImageClick, onVideoClick, onLinkClic
                 {editor.isActive('table') && (
                     <>
                         <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
+
+                        {/* Toggle Header */}
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleHeaderRow().run()} title="Toggle Header Row">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="6" rx="1" strokeWidth="2" fill="currentColor" opacity="0.2" />
+                                <rect x="3" y="3" width="18" height="18" rx="1" strokeWidth="2" />
+                                <path strokeLinecap="round" strokeWidth="2" d="M3 9h18M3 15h18" />
+                            </svg>
+                        </ToolbarButton>
+
+                        <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
+
+                        {/* Row: Add Above */}
                         <ToolbarButton onClick={() => editor.chain().focus().addRowBefore().run()} title="Add Row Above">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                <rect x="2" y="14" width="20" height="8" rx="1" strokeWidth="1" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 5V1m0 0L9 4m3-3l3 3" />
+                                <rect x="3" y="8" width="18" height="6" rx="1" strokeWidth="1.5" />
+                                <rect x="3" y="16" width="18" height="6" rx="1" strokeWidth="1" opacity="0.4" />
                             </svg>
                         </ToolbarButton>
+
+                        {/* Row: Add Below */}
+                        <ToolbarButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row Below">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="2" width="18" height="6" rx="1" strokeWidth="1" opacity="0.4" />
+                                <rect x="3" y="10" width="18" height="6" rx="1" strokeWidth="1.5" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19v4m0 0l-3-3m3 3l3-3" />
+                            </svg>
+                        </ToolbarButton>
+
+                        {/* Row: Delete */}
+                        <ToolbarButton onClick={() => editor.chain().focus().deleteRow().run()} title="Delete Row">
+                            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="8" width="18" height="8" rx="1" strokeWidth="1.5" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h8" />
+                            </svg>
+                        </ToolbarButton>
+
+                        <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
+
+                        {/* Column: Add Left */}
                         <ToolbarButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="Add Column Left">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                <rect x="2" y="2" width="8" height="20" rx="1" strokeWidth="1" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 12H1m0 0l3-3m-3 3l3 3" />
+                                <rect x="8" y="3" width="6" height="18" rx="1" strokeWidth="1.5" />
+                                <rect x="16" y="3" width="6" height="18" rx="1" strokeWidth="1" opacity="0.4" />
                             </svg>
                         </ToolbarButton>
+
+                        {/* Column: Add Right */}
+                        <ToolbarButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Column Right">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="2" y="3" width="6" height="18" rx="1" strokeWidth="1" opacity="0.4" />
+                                <rect x="10" y="3" width="6" height="18" rx="1" strokeWidth="1.5" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 12h4m0 0l-3-3m3 3l-3 3" />
+                            </svg>
+                        </ToolbarButton>
+
+                        {/* Column: Delete */}
+                        <ToolbarButton onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete Column">
+                            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="8" y="3" width="8" height="18" rx="1" strokeWidth="1.5" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v8" />
+                            </svg>
+                        </ToolbarButton>
+
+                        <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
+
+                        {/* Delete Table */}
                         <ToolbarButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Table">
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V4a1 1 0 011-1h6a1 1 0 011 1v3" />

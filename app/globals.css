@@ -64,7 +64,8 @@ body.hindi {
     margin-top: 2rem;
     margin-bottom: 1rem;
     color: #1E3A5F;
-    scroll-margin-top: 100px; /* Account for fixed navbar on anchor scroll */
+    scroll-margin-top: 100px;
+    /* Account for fixed navbar on anchor scroll */
 }
 
 .prose h3 {
@@ -73,7 +74,8 @@ body.hindi {
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
     color: #1E3A5F;
-    scroll-margin-top: 100px; /* Account for fixed navbar on anchor scroll */
+    scroll-margin-top: 100px;
+    /* Account for fixed navbar on anchor scroll */
 }
 
 .prose p {
@@ -146,45 +148,75 @@ body.hindi {
     margin: 1.5rem 0;
 }
 
-/* Table styles for blog content and editor */
+/* Modern Table styles for blog content and editor */
 .prose table,
 .tiptap-editor table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 2rem 0;
     width: 100%;
-    overflow: hidden;
     border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    font-size: 0.95rem;
 }
 
 .prose th,
 .tiptap-editor th,
 .prose td,
 .tiptap-editor td {
-    border: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #f1f5f9;
     padding: 0.75rem 1rem;
     min-width: 1em;
     position: relative;
-    vertical-align: top;
+    vertical-align: middle;
     box-sizing: border-box;
+    transition: background-color 0.15s ease;
 }
 
+/* Remove right border on last column */
+.prose th:last-child,
+.tiptap-editor th:last-child,
+.prose td:last-child,
+.tiptap-editor td:last-child {
+    border-right: none;
+}
+
+/* Remove bottom border on last row */
+.prose tr:last-child td,
+.tiptap-editor tr:last-child td,
+.prose tr:last-child th,
+.tiptap-editor tr:last-child th {
+    border-bottom: none;
+}
+
+/* Header cells — NOT forced bold. Same as regular cells by default.
+   User can bold manually via toolbar if they want. */
 .prose th,
 .tiptap-editor th {
     background-color: #f8fafc;
-    font-weight: 700;
+    font-weight: normal;
     text-align: left;
-    color: #1e293b;
+    color: #374151;
 }
 
+/* Alternating row colors for readability */
 .prose tr:nth-child(even),
 .tiptap-editor tr:nth-child(even) {
-    background-color: #fcfcfc;
+    background-color: #fafbfc;
 }
 
-/* selected cell styles in editor */
+/* Row hover effect — subtle highlight */
+.prose tbody tr:hover,
+.tiptap-editor tbody tr:hover {
+    background-color: #f0f4ff;
+}
+
+/* Selected cell styles in editor */
 .tiptap-editor .selectedCell:after {
-    background: rgba(200, 200, 255, 0.4);
+    background: rgba(59, 130, 246, 0.12);
     content: "";
     left: 0;
     right: 0;
@@ -196,12 +228,25 @@ body.hindi {
 }
 
 .tiptap-editor .column-resize-handle {
-    background-color: #adf;
+    background-color: #3b82f6;
     bottom: -2px;
     position: absolute;
     right: -2px;
     top: 0;
-    width: 4px;
+    width: 3px;
+    border-radius: 3px;
+    opacity: 0.6;
+}
+
+/* Mobile: horizontal scroll for wide tables */
+@media (max-width: 640px) {
+
+    .prose table,
+    .tiptap-editor table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 .prose strong,
