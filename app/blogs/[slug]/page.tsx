@@ -201,6 +201,13 @@ function processContentForSEO(html: string): string {
         }
     );
 
+    // 6. Wrap <table> in a scrollable container for mobile-friendly layout.
+    //    Tables break mobile layout easily; a wrapper div ensures horizontal scroll.
+    processedHtml = processedHtml.replace(
+        /<table([\s\S]*?<\/table>)/gi,
+        '<div class="table-scroll-wrapper"><table$1</div>'
+    );
+
     return processedHtml;
 }
 

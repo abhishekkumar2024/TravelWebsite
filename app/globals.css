@@ -238,10 +238,21 @@ body.hindi {
     opacity: 0.6;
 }
 
-/* Mobile: horizontal scroll for wide tables */
-@media (max-width: 640px) {
+/* Mobile: scrollable wrapper for blog tables (injected by processContentForSEO) */
+.table-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 2rem 0;
+}
 
-    .prose table,
+/* Remove margin from table when inside wrapper (wrapper handles it) */
+.table-scroll-wrapper table {
+    margin: 0;
+}
+
+/* Editor tables: keep direct scroll on mobile */
+@media (max-width: 640px) {
     .tiptap-editor table {
         display: block;
         overflow-x: auto;
