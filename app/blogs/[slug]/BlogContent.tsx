@@ -85,6 +85,76 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
     const { html: content, headings } = initialContent.en;
     const title = blog.title_en;
 
+    // Auto-play videos when they scroll into view, pause when out
+    // Strategy: try unmuted → if blocked → muted → unmute after user interaction
+    useEffect(() => {
+        const videos = document.querySelectorAll<HTMLVideoElement>('.prose video, .blog-content video');
+        if (videos.length === 0) return;
+
+        let userHasInteracted = false;
+
+        videos.forEach(video => {
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+        });
+
+        // Try to play a video — unmuted first, muted fallback
+        const tryPlay = (video: HTMLVideoElement) => {
+            if (userHasInteracted) {
+                // User has clicked on the page — browser allows unmuted autoplay
+                video.muted = false;
+                video.play().catch(() => { });
+            } else {
+                // First try unmuted
+                video.muted = false;
+                video.play().catch(() => {
+                    // Browser blocked unmuted — fallback to muted
+                    video.muted = true;
+                    video.play().catch(() => { });
+                });
+            }
+        };
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const video = entry.target as HTMLVideoElement;
+                    if (entry.isIntersecting) {
+                        tryPlay(video);
+                    } else {
+                        video.pause();
+                    }
+                });
+            },
+            { threshold: 0.5 }
+        );
+
+        videos.forEach(video => observer.observe(video));
+
+        // After ANY user click/tap, unmute all currently playing videos
+        const handleUserInteraction = () => {
+            userHasInteracted = true;
+            videos.forEach(video => {
+                if (!video.paused) {
+                    video.muted = false;
+                }
+            });
+            // Remove listener — only need it once
+            document.removeEventListener('click', handleUserInteraction);
+            document.removeEventListener('touchstart', handleUserInteraction);
+        };
+
+        document.addEventListener('click', handleUserInteraction, { once: true });
+        document.addEventListener('touchstart', handleUserInteraction, { once: true });
+
+        return () => {
+            videos.forEach(video => observer.unobserve(video));
+            observer.disconnect();
+            document.removeEventListener('click', handleUserInteraction);
+            document.removeEventListener('touchstart', handleUserInteraction);
+        };
+    }, [content]);
+
     const publishedDate = new Date(blog.publishedAt).toLocaleDateString('en-US', { dateStyle: 'long' });
 
     const isUpdated = blog.updated_at &&
