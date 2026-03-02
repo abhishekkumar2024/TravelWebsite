@@ -96,6 +96,15 @@ function processContentForSEO(html: string): string {
             return `<a ${newAttributes}>`;
         }
 
+        // 3. For EXTERNAL links: remove target="_blank" from image credit/attribution links.
+        // These are short attribution anchors (e.g. "Image source", "Photo by", "via Unsplash")
+        // that don't need to force-open a new tab. Keeps rel="noopener noreferrer nofollow" intact.
+        const isImageCredit = /\b(image\s*source|photo\s*by|photo\s*credit|source|via\s+\w|credit|photographer)\b/i.test(attributes);
+        if (isImageCredit) {
+            let newAttributes = attributes.replace(/\s*target="_blank"/gi, '').replace(/\s+/g, ' ').trim();
+            return `<a ${newAttributes}>`;
+        }
+
         return match;
     });
 
