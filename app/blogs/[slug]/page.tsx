@@ -151,7 +151,25 @@ function processContentForSEO(html: string): string {
         return match;
     });
 
-    // 4. Wrap <img> in semantic <figure> + <figcaption> for SEO
+    // 4. Add loading="lazy" + decoding="async" to all content images for performance.
+    //    This prevents off-screen images from blocking the initial page render.
+    processedHtml = processedHtml.replace(
+        /<img\s([^>]*?)\/?>/gi,
+        (match, attrs: string) => {
+            let newAttrs = attrs;
+            // Add loading="lazy" if not already present
+            if (!/loading=/i.test(newAttrs)) {
+                newAttrs += ' loading="lazy"';
+            }
+            // Add decoding="async" if not already present
+            if (!/decoding=/i.test(newAttrs)) {
+                newAttrs += ' decoding="async"';
+            }
+            return `<img ${newAttrs.trim()}>`;
+        }
+    );
+
+    // 5. Wrap <img> in semantic <figure> + <figcaption> for SEO
     //    Uses the title attribute as visible caption, falls back to alt.
     //    Also absorbs any immediately following "Image source" <p> into the figcaption.
     processedHtml = processedHtml.replace(
@@ -282,13 +300,31 @@ export default async function BlogPage({ params }: PageProps) {
     // Extract FAQ pairs for FAQPage schema (rich snippets)
     const faqPairs = extractFAQSchema(blog.content_en || '');
 
+    // Build ImageObject array for structured data
+    // Cover image + all content images with proper schema
+    const coverImgUrl = blog.coverImage.startsWith('http') ? blog.coverImage : `https://www.camelthar.com${blog.coverImage}`;
+    const imageObjects: Array<{ '@type': string; url: string; caption?: string }> = [
+        { '@type': 'ImageObject', url: coverImgUrl, caption: blog.meta_title || blog.title_en },
+    ];
+    // Add content images (from blog.images array) as ImageObject entries
+    if (blog.images && blog.images.length > 0) {
+        for (const imgUrl of blog.images.slice(0, 10)) { // Cap at 10 to keep schema lean
+            if (imgUrl && !imgUrl.includes('/video/')) { // Skip videos
+                imageObjects.push({
+                    '@type': 'ImageObject',
+                    url: imgUrl.startsWith('http') ? imgUrl : `https://www.camelthar.com${imgUrl}`,
+                });
+            }
+        }
+    }
+
     // structured data for rich snippets — Enhanced for SEO + AEO + GEO
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
         headline: blog.meta_title || blog.title_en,
         description: blog.meta_description || blog.excerpt_en,
-        image: blog.coverImage.startsWith('http') ? blog.coverImage : `https://www.camelthar.com${blog.coverImage}`,
+        image: imageObjects.length === 1 ? imageObjects[0] : imageObjects,
         datePublished: blog.publishedAt ? new Date(blog.publishedAt).toISOString() : new Date().toISOString(),
         dateModified: blog.updated_at ? new Date(blog.updated_at).toISOString() : new Date().toISOString(),
         author: {
