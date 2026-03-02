@@ -69,6 +69,19 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
         return () => document.removeEventListener('click', handleInternalLinks);
     }, [router]);
 
+    // Track view — fire-and-forget, deduped per session
+    useEffect(() => {
+        const viewKey = `viewed_${blog.id}`;
+        if (sessionStorage.getItem(viewKey)) return; // Already counted this session
+
+        sessionStorage.setItem(viewKey, '1');
+        fetch('/api/views', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blogId: blog.id }),
+        }).catch(() => { }); // Silent fail — views are not critical
+    }, [blog.id]);
+
     const { html: content, headings } = initialContent.en;
     const title = blog.title_en;
 

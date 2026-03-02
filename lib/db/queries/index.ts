@@ -80,3 +80,8 @@ export {
     fetchBlogsByStatus,
     getAdminStats,
 } from './admin';
+
+// Counters (views, shares, etc.)
+export {
+    incrementBlogCounter,
+} from './counters';
