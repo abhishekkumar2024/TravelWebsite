@@ -151,6 +151,38 @@ function processContentForSEO(html: string): string {
         return match;
     });
 
+    // 4. Wrap <img> in semantic <figure> + <figcaption> for SEO
+    //    Uses the title attribute as visible caption, falls back to alt.
+    //    Also absorbs any immediately following "Image source" <p> into the figcaption.
+    processedHtml = processedHtml.replace(
+        /(<img\s[^>]*?>)(\s*<p[^>]*>\s*<a[^>]*>\s*(?:Image\s*source|Photo\s*(?:by|credit)|Source|Credit)[^<]*<\/a>\s*<\/p>)?/gi,
+        (match, imgTag: string, creditP?: string) => {
+            // Extract title and alt from the img tag
+            const titleMatch = imgTag.match(/title="([^"]*)"/i);
+            const altMatch = imgTag.match(/alt="([^"]*)"/i);
+
+            const captionText = titleMatch?.[1]?.trim() || altMatch?.[1]?.trim() || '';
+
+            // Don't wrap if there's no meaningful caption
+            if (!captionText && !creditP) return match;
+
+            // Build figcaption content
+            let figcaptionInner = '';
+            if (captionText) {
+                figcaptionInner += `<span>${captionText}</span>`;
+            }
+            if (creditP) {
+                // Extract just the <a> tag from the credit paragraph
+                const creditLink = creditP.match(/<a[^>]*>[^<]*<\/a>/i)?.[0] || '';
+                if (creditLink) {
+                    figcaptionInner += (figcaptionInner ? ' — ' : '') + creditLink;
+                }
+            }
+
+            return `<figure>${imgTag}<figcaption>${figcaptionInner}</figcaption></figure>`;
+        }
+    );
+
     return processedHtml;
 }
 

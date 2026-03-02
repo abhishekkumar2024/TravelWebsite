@@ -97,6 +97,32 @@ body.hindi {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Semantic figure + figcaption for blog images (SEO + UX) */
+.prose figure {
+    margin: 2rem auto;
+    max-width: 100%;
+    text-align: center;
+}
+
+.prose figure img {
+    margin-bottom: 0.5rem;
+}
+
+.prose figcaption {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
+    padding: 0 1rem;
+    font-style: italic;
+}
+
+.prose figcaption a {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    text-decoration: underline;
+    font-style: normal;
+}
+
 .prose a {
     color: #D4A853;
     text-decoration: underline;
