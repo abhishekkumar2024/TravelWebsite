@@ -57,24 +57,24 @@ class DBRouter {
     init(): void {
         if (this.initialized) return;
 
-        // Register Neon as master (priority 0 = highest)
-        const neonUrl = process.env.NEON_DATABASE_URL;
-        if (neonUrl) {
-            const neonProvider = new NeonProvider(neonUrl, 'master', 0);
-            this.addProvider(neonProvider);
-        } else {
-            console.warn('[DBRouter] ⚠️ NEON_DATABASE_URL not set.');
-        }
-
-        // Register Supabase as slave/failover (priority 10 = lower)
+        // Register Supabase as master (priority 0 = highest)
         const supabaseUrl = process.env.SUPABASE_DATABASE_URL;
         if (supabaseUrl) {
             try {
-                const supabaseProvider = new SupabaseProvider(supabaseUrl, 'slave', 10);
+                const supabaseProvider = new SupabaseProvider(supabaseUrl, 'master', 0);
                 this.addProvider(supabaseProvider);
             } catch (err: any) {
-                console.warn(`[DBRouter] Supabase slave not registered: ${err.message}`);
+                console.warn(`[DBRouter] Supabase master not registered: ${err.message}`);
             }
+        } else {
+            console.warn('[DBRouter] ⚠️ SUPABASE_DATABASE_URL not set.');
+        }
+
+        // Register Neon as slave/failover (priority 10 = lower)
+        const neonUrl = process.env.NEON_DATABASE_URL;
+        if (neonUrl) {
+            const neonProvider = new NeonProvider(neonUrl, 'slave', 10);
+            this.addProvider(neonProvider);
         }
 
         // Start health checking (only in server environments)

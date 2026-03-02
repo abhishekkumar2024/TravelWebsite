@@ -36,8 +36,8 @@ export class SupabaseProvider extends BaseProvider {
             ssl: {
                 rejectUnauthorized: false // Required for Supabase in many environments
             },
-            max: 10, // Reduced from 20 to prevent "Max clients" errors in dev mode
-            idleTimeoutMillis: 10000, // Close idle clients faster to free up slots
+            max: 3, // Reduced to prevent "Max clients" errors during parallel Next.js builds
+            idleTimeoutMillis: 10000,
             connectionTimeoutMillis: 5000,
         });
 
