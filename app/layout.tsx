@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
-import { outfit, notoSansDevanagari } from '@/lib/fonts';
+import { outfit } from '@/lib/fonts';
+
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { LoginModalProvider } from '@/components/LoginModalContext';
 
@@ -75,7 +76,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className={`${outfit.variable} ${notoSansDevanagari.variable}`}>
+        <html lang="en" className={outfit.variable}>
+
             <head>
                 {/*
                  * Preconnect hints: establish early connections to 3rd-party origins.
@@ -121,14 +123,6 @@ export default function RootLayout({
                         gtag('config', 'G-BG1VBT8E8B');
                     `}
                 </Script>
-
-                <Script
-                    src="https://emrldco.com/NTAwNjIy.js?t=500622"
-                    strategy="afterInteractive"
-                    data-noptimize="1"
-                    data-cfasync="false"
-                    data-wpfc-render="false"
-                />
 
                 {/* Organization structured data — runs on every page for brand visibility */}
                 <script

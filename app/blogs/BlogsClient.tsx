@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useLanguage } from '@/components/LanguageProvider';
+
 import Link from 'next/link';
 
 import BlogCard from '@/components/BlogCard';
@@ -16,7 +16,7 @@ interface BlogsClientProps {
 }
 
 export default function BlogsClient({ initialBlogs, destinations: initialDestinations }: BlogsClientProps) {
-    const { t, lang } = useLanguage();
+
 
     // Ensure 'all' is the first option
     const destinations = ['all', ...initialDestinations];
@@ -35,15 +35,14 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
     const filteredBlogs = useMemo(() => {
         return blogs.filter((blog) => {
             const matchesFilter = filter === 'all' || (blog.destination && blog.destination.toLowerCase().includes(filter));
-            const title = lang === 'hi' ? blog.title_hi : blog.title_en;
-            const excerpt = lang === 'hi' ? blog.excerpt_hi : blog.excerpt_en;
             const matchesSearch =
                 !search ||
-                title.toLowerCase().includes(search.toLowerCase()) ||
-                excerpt.toLowerCase().includes(search.toLowerCase());
+                blog.title_en.toLowerCase().includes(search.toLowerCase()) ||
+                blog.excerpt_en.toLowerCase().includes(search.toLowerCase());
             return matchesFilter && matchesSearch;
         });
-    }, [blogs, filter, search, lang]);
+    }, [blogs, filter, search]);
+
 
     return (
         <main className="min-h-screen bg-gray-50/30">
@@ -58,7 +57,8 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
                             Home
                         </Link>
                         <span className="text-gray-300">/</span>
-                        <span className="text-royal-blue font-bold">{t('Travel Blogs', 'यात्रा ब्लॉग')}</span>
+                        <span className="text-royal-blue font-bold">Travel Blogs</span>
+
                     </nav>
                 </div>
             </div>
@@ -70,15 +70,11 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
                 <div className="max-w-7xl mx-auto text-center relative z-10">
-                    <h1 className="text-4xl md:text-6xl font-bold mb-6 font-outfit">
-                        {t('Travel Blogs', 'यात्रा ब्लॉग')}
-                    </h1>
+                    <h1 className="text-4xl md:text-6xl font-bold mb-6 font-outfit">Travel Blogs</h1>
                     <p className="text-lg md:text-xl opacity-90 max-w-2xl mx-auto font-light">
-                        {t(
-                            'Authentic stories, guides, and tips from travelers exploring the royal heritage of Rajasthan.',
-                            'राजस्थान की शाही विरासत की खोज करने वाले यात्रियों की प्रामाणिक कहानियां, गाइड और टिप्स।'
-                        )}
+                        Authentic stories, guides, and tips from travelers exploring the royal heritage of Rajasthan.
                     </p>
+
                 </div>
             </section>
 
@@ -95,7 +91,8 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
-                                {dest === 'all' ? t('All', 'सभी') : dest.charAt(0).toUpperCase() + dest.slice(1)}
+                                {dest === 'all' ? 'All' : dest.charAt(0).toUpperCase() + dest.slice(1)}
+
                             </button>
                         ))}
                     </div>
@@ -104,7 +101,8 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder={t('Search blogs...', 'ब्लॉग खोजें...')}
+                            placeholder="Search blogs..."
+
                             className="px-4 py-2 pl-10 border border-gray-200 rounded-xl focus:outline-none focus:border-desert-gold focus:ring-2 focus:ring-desert-gold/20 w-64 transition-all"
                         />
                         <svg
@@ -128,14 +126,14 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
             <section className="py-12 px-4">
                 <div className="max-w-7xl mx-auto">
                     {loading ? (
-                        <div className="text-center py-12">{t('Loading...', 'लोड हो रहा है...')}</div>
+                        <div className="text-center py-12">Loading...</div>
+
                     ) : filteredBlogs.length === 0 ? (
                         <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
                             <div className="text-6xl mb-6">📝</div>
-                            <p className="text-gray-500 text-xl font-medium mb-2">{t('No blogs found', 'कोई ब्लॉग नहीं मिला')}</p>
-                            <p className="text-gray-400">
-                                {t('Try adjusting your filters or search', 'अपने फ़िल्टर या खोज को समायोजित करने का प्रयास करें')}
-                            </p>
+                            <p className="text-gray-500 text-xl font-medium mb-2">No blogs found</p>
+                            <p className="text-gray-400">Try adjusting your filters or search</p>
+
                         </div>
                     ) : (
                         <BlogInteractionsProvider blogIds={filteredBlogs.map(b => b.id)}>
@@ -158,12 +156,14 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
             <div className="max-w-7xl mx-auto px-4 pb-20 mt-8">
                 <div className="flex items-center justify-between pt-8 border-t border-gray-100">
                     <Link href="/" className="text-sm font-bold text-royal-blue hover:text-desert-gold transition-colors flex items-center gap-2">
-                        ← {t('Back to Home', 'होम पर वापस जाएं')}
+                        ← Back to Home
+
                     </Link>
                     <nav className="flex items-center gap-2 text-xs text-gray-400 font-medium">
                         <Link href="/" className="hover:text-royal-blue">Home</Link>
                         <span>/</span>
-                        <span>{t('Travel Blogs', 'यात्रा ब्लॉग')}</span>
+                        <span>Travel Blogs</span>
+
                     </nav>
                 </div>
             </div>

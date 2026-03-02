@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useLanguage } from './LanguageProvider';
 import type { BlogPost } from '@/lib/data';
 import { useState, useEffect } from 'react';
+
 import LikeButton from './LikeButton';
 import CommentButton from './CommentButton';
 import ShareButton from './ShareButton';
@@ -14,15 +14,11 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ blog, priority = false }: BlogCardProps) {
-    const { lang, mounted } = useLanguage();
+    const title = blog.title_en;
+    const excerpt = blog.excerpt_en;
 
-    const title = lang === 'hi' && mounted ? blog.title_hi : blog.title_en;
-    const excerpt = lang === 'hi' && mounted ? blog.excerpt_hi : blog.excerpt_en;
-
-    // Use consistent locale for SSR (en-US), then switch to lang-based on client
-    const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
     const date = new Date(blog.publishedAt || blog.created_at || new Date()).toLocaleDateString(
-        dateLocale,
+        'en-US',
         { month: 'short', day: 'numeric', year: 'numeric' }
     );
 
@@ -102,9 +98,10 @@ export default function BlogCard({ blog, priority = false }: BlogCardProps) {
                     <ShareButton
                         title={title}
                         text={excerpt || title}
-                        url={mounted ? `${window.location.origin}/blogs/${blog.slug || blog.id}` : `https://camelthar.com/blogs/${blog.slug || blog.id}`}
+                        url={`https://camelthar.com/blogs/${blog.slug || blog.id}`}
                         compact={true}
                     />
+
                 </div>
             </div>
         </div>

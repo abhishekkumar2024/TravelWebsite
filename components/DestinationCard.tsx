@@ -2,19 +2,16 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useLanguage } from './LanguageProvider';
 import type { Destination } from '@/lib/data';
+
 
 interface DestinationCardProps {
     destination: Destination;
 }
 
 export default function DestinationCard({ destination }: DestinationCardProps) {
-    const { lang, t, mounted } = useLanguage();
-
-    // Use English for SSR, then switch to lang-based on client
-    const name = mounted && lang === 'hi' ? destination.name_hi : destination.name_en;
-    const tagline = mounted && lang === 'hi' ? destination.tagline_hi : destination.tagline_en;
+    const name = destination.name_en;
+    const tagline = destination.tagline_en;
 
     return (
         <Link
@@ -42,8 +39,9 @@ export default function DestinationCard({ destination }: DestinationCardProps) {
                         />
                     </svg>
                     <span>
-                        {destination.blogCount} {t('blogs', 'ब्लॉग')}
+                        {destination.blogCount} blogs
                     </span>
+
                 </div>
             </div>
         </Link>

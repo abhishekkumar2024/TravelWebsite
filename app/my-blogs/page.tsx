@@ -263,7 +263,8 @@ export default function MyBlogsPage() {
                                     <div className="w-full md:w-48 h-48 md:h-auto relative shrink-0">
                                         <img
                                             src={blog.coverImage || 'https://via.placeholder.com/400'}
-                                            alt={lang === 'hi' ? blog.title_hi : blog.title_en}
+                                            alt={blog.title_en}
+
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -280,10 +281,12 @@ export default function MyBlogsPage() {
                                                 </span>
                                             </div>
                                             <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
-                                                {lang === 'hi' ? blog.title_hi : blog.title_en}
+                                                {blog.title_en}
+
                                             </h2>
                                             <p className="text-gray-600 text-sm line-clamp-2 mb-4">
-                                                {lang === 'hi' ? blog.excerpt_hi : blog.excerpt_en}
+                                                {blog.excerpt_en}
+
                                             </p>
                                         </div>
 

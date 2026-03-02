@@ -2,30 +2,27 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLanguage } from '@/components/LanguageProvider';
 import { Destination } from '@/lib/data';
+
 
 interface DestinationsClientProps {
     destinations: Destination[];
 }
 
 export default function DestinationsClient({ destinations }: DestinationsClientProps) {
-    const { t, lang } = useLanguage();
+
 
     return (
         <>
             {/* Page Header */}
             <section className="pt-32 pb-16 px-4 bg-gradient-to-br from-royal-blue to-deep-maroon text-white">
                 <div className="max-w-7xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                        {t('Explore Rajasthan', 'राजस्थान का अन्वेषण करें')}
-                    </h1>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4">Explore Rajasthan</h1>
+
                     <p className="text-lg opacity-90 max-w-2xl mx-auto">
-                        {t(
-                            'Discover the majestic cities of the Land of Kings',
-                            'राजाओं की भूमि के भव्य शहरों की खोज करें'
-                        )}
+                        Discover the majestic cities of the Land of Kings
                     </p>
+
                 </div>
             </section>
 
@@ -34,9 +31,10 @@ export default function DestinationsClient({ destinations }: DestinationsClientP
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {destinations.map((dest) => {
-                            const name = lang === 'hi' ? dest.name_hi : dest.name_en;
-                            const tagline = lang === 'hi' ? dest.tagline_hi : dest.tagline_en;
-                            const description = lang === 'hi' ? dest.description_hi : dest.description_en;
+                            const name = dest.name_en;
+                            const tagline = dest.tagline_en;
+                            const description = dest.description_en;
+
 
                             return (
                                 <Link
@@ -76,14 +74,16 @@ export default function DestinationsClient({ destinations }: DestinationsClientP
                                         <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                             <div className="text-sm text-gray-500">
                                                 <span className="font-medium">
-                                                    {t('Best Time', 'सबसे अच्छा समय')}:
+                                                    Best Time:
+
                                                 </span>{' '}
                                                 {dest.bestTime}
                                             </div>
                                             <span
                                                 className="text-desert-gold font-semibold text-sm group-hover:underline"
                                             >
-                                                {dest.blogCount} {t('blogs', 'ब्लॉग')} →
+                                                {dest.blogCount} blogs →
+
                                             </span>
                                         </div>
                                     </div>
@@ -97,36 +97,29 @@ export default function DestinationsClient({ destinations }: DestinationsClientP
             {/* Travel Tips */}
             <section className="py-16 px-4 bg-sand">
                 <div className="max-w-4xl mx-auto text-center">
-                    <h2 className="text-3xl font-bold mb-4">
-                        {t('Best Time to Visit', 'घूमने का सबसे अच्छा समय')}
-                    </h2>
+                    <h2 className="text-3xl font-bold mb-4">Best Time to Visit</h2>
                     <p className="text-gray-600 mb-8">
-                        {t(
-                            'October to March is the ideal time to explore Rajasthan when the weather is pleasant and perfect for sightseeing.',
-                            'अक्टूबर से मार्च राजस्थान घूमने का आदर्श समय है जब मौसम सुहावना होता है।'
-                        )}
+                        October to March is the ideal time to explore Rajasthan when the weather is pleasant and perfect for sightseeing.
                     </p>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-white p-6 rounded-xl">
                             <div className="text-4xl mb-3">🌡️</div>
-                            <h3 className="font-bold mb-2">{t('Weather', 'मौसम')}</h3>
-                            <p className="text-gray-600 text-sm">
-                                {t('15°C - 30°C in winter, comfortable for travel', 'सर्दियों में 15°C - 30°C, यात्रा के लिए आरामदायक')}
-                            </p>
+                            <h3 className="font-bold mb-2">Weather</h3>
+                            <p className="text-gray-600 text-sm">15°C - 30°C in winter, comfortable for travel</p>
+
                         </div>
                         <div className="bg-white p-6 rounded-xl">
                             <div className="text-4xl mb-3">🎪</div>
-                            <h3 className="font-bold mb-2">{t('Festivals', 'त्योहार')}</h3>
-                            <p className="text-gray-600 text-sm">
-                                {t('Pushkar Fair, Desert Festival, Holi', 'पुष्कर मेला, रेगिस्तान उत्सव, होली')}
-                            </p>
+                            <h3 className="font-bold mb-2">Festivals</h3>
+                            <p className="text-gray-600 text-sm">Pushkar Fair, Desert Festival, Holi</p>
+
                         </div>
                         <div className="bg-white p-6 rounded-xl">
                             <div className="text-4xl mb-3">✈️</div>
-                            <h3 className="font-bold mb-2">{t('How to Reach', 'कैसे पहुंचें')}</h3>
-                            <p className="text-gray-600 text-sm">
-                                {t('Airports in Jaipur, Udaipur, Jodhpur', 'जयपुर, उदयपुर, जोधपुर में हवाई अड्डे')}
-                            </p>
+                            <h3 className="font-bold mb-2">How to Reach</h3>
+                            <p className="text-gray-600 text-sm">Airports in Jaipur, Udaipur, Jodhpur</p>
+
                         </div>
                     </div>
                 </div>

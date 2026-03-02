@@ -1,55 +1,44 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+/**
+ * LanguageProvider — English-only stub.
+ *
+ * Hindi support has been removed. This file is kept so that all existing
+ * imports don't need to change. The `t()` helper always returns the English
+ * string. `lang` is always 'en'. `setLang` is a no-op.
+ */
 
-type Language = 'en' | 'hi';
+import { createContext, useContext, ReactNode } from 'react';
 
 interface LanguageContextType {
-    lang: Language;
-    setLang: (lang: Language) => void;
-    t: (en: string, hi: string) => string;
+    lang: 'en';
+    setLang: (lang: string) => void;
+    t: (en: string, hi?: string) => string;
     mounted: boolean;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType>({
+    lang: 'en',
+    setLang: () => { },
+    t: (en) => en,
+    mounted: true,
+});
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-    const [lang, setLangState] = useState<Language>('en');
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        const saved = localStorage.getItem('language') as Language;
-        if (saved === 'en' || saved === 'hi') {
-            setLangState(saved);
-        }
-        setMounted(true);
-    }, []);
-
-    const setLang = (newLang: Language) => {
-        setLangState(newLang);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('language', newLang);
-            document.body.classList.toggle('hindi', newLang === 'hi');
-        }
-    };
-
-    // Always return English during SSR to prevent hydration mismatch
-    const t = (en: string, hi: string) => {
-        if (!mounted) return en;
-        return lang === 'hi' ? hi : en;
-    };
-
     return (
-        <LanguageContext.Provider value={{ lang, setLang, t, mounted }}>
+        <LanguageContext.Provider
+            value={{
+                lang: 'en',
+                setLang: () => { },
+                t: (en) => en,
+                mounted: true,
+            }}
+        >
             {children}
         </LanguageContext.Provider>
     );
 }
 
 export function useLanguage() {
-    const context = useContext(LanguageContext);
-    if (!context) {
-        throw new Error('useLanguage must be used within a LanguageProvider');
-    }
-    return context;
+    return useContext(LanguageContext);
 }

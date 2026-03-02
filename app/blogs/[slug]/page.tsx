@@ -40,6 +40,49 @@ function extractAndFixH1s(html: string): { cleanedHtml: string } {
     };
 }
 
+/**
+ * Extracts FAQ Q&A pairs from blog content for FAQPage schema.
+ * Looks for h3 elements (questions) followed by p elements (answers)
+ * inside sections that contain "faq" in a preceding heading.
+ */
+function extractFAQSchema(html: string): Array<{ question: string; answer: string }> | null {
+    if (!html) return null;
+    try {
+        const $ = cheerio.load(`<div id="__wrapper">${html}</div>`, null, false);
+        const faqs: Array<{ question: string; answer: string }> = [];
+
+        // Find FAQ sections by looking for headings containing "faq" or "frequently asked"
+        $('#__wrapper h2, #__wrapper h3').each((_, heading) => {
+            const headingText = $(heading).text().toLowerCase();
+            if (!headingText.includes('faq') && !headingText.includes('frequently asked') && !headingText.includes('question')) {
+                return;
+            }
+
+            // Collect h3 elements following this heading until next h2
+            let sibling = $(heading).next();
+            while (sibling.length) {
+                const tag = sibling.prop('tagName')?.toLowerCase();
+                if (tag === 'h2') break;
+
+                if (tag === 'h3') {
+                    const question = sibling.text().trim().replace(/^\d+\.\s*/, '');
+                    const answerEl = sibling.next();
+                    const answer = answerEl.text().trim();
+
+                    if (question && answer && answer.length > 10) {
+                        faqs.push({ question, answer: answer.slice(0, 500) });
+                    }
+                }
+                sibling = sibling.next();
+            }
+        });
+
+        return faqs.length >= 2 ? faqs : null;
+    } catch {
+        return null;
+    }
+}
+
 function processContentForSEO(html: string): string {
     if (!html) return html;
 
@@ -204,6 +247,9 @@ export default async function BlogPage({ params }: PageProps) {
     const plainText = (blog.content_en || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const wordCount = plainText.split(/\s+/).filter(Boolean).length;
 
+    // Extract FAQ pairs for FAQPage schema (rich snippets)
+    const faqPairs = extractFAQSchema(blog.content_en || '');
+
     // structured data for rich snippets — Enhanced for SEO + AEO + GEO
     const jsonLd = {
         '@context': 'https://schema.org',
@@ -269,26 +315,42 @@ export default async function BlogPage({ params }: PageProps) {
         ]
     };
 
-    // --- Server-Side Content Processing ---
+    // FAQPage schema — only injected when the content has real Q&A pairs.
+    // Enables Google rich FAQ snippets without manual maintenance.
+    const faqJsonLd = faqPairs ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqPairs.map(({ question, answer }) => ({
+            '@type': 'Question',
+            name: question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: answer,
+            },
+        })),
+    } : null;
+
+    // --- Server-Side Content Processing (English only) ---
     const rawContentEn = blog.content_en || '';
-    const rawContentHi = blog.content_hi || blog.content_en || '';
 
     // Process English — all H1s in content are converted to H2
     const { cleanedHtml: docEn } = extractAndFixH1s(rawContentEn);
     const headingsEn = extractHeadings(docEn);
     const htmlEn = processContentForSEO(injectHeadingIds(docEn, headingsEn));
 
-    // Process Hindi — same H1 → H2 conversion
-    const { cleanedHtml: docHi } = extractAndFixH1s(rawContentHi);
-    const headingsHi = extractHeadings(docHi);
-    const htmlHi = processContentForSEO(injectHeadingIds(docHi, headingsHi));
-
-    // Pass blog as-is — title_en is used directly as the hero <h1>,
-    // no extra H1 text is appended (prevents duplicate/stuffed titles)
-    const mergedBlog = { ...blog };
+    // Strip raw content fields from the prop sent to the client.
+    // They are already processed into htmlEn and sent as initialContent.
+    const { content_en: _ce, content_hi: _ch, ...blogForClient } = { ...blog };
 
     return (
         <>
+            {/* LCP preload: tell the browser about the hero image early */}
+            <link
+                rel="preload"
+                as="image"
+                href={blog.coverImage}
+                fetchPriority="high"
+            />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -297,14 +359,20 @@ export default async function BlogPage({ params }: PageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
             />
+            {faqJsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                />
+            )}
             <BlogContent
-                blog={mergedBlog}
+                blog={blogForClient as typeof blog}
                 relatedBlogs={relatedBlogs}
                 initialContent={{
                     en: { html: htmlEn, headings: headingsEn },
-                    hi: { html: htmlHi, headings: headingsHi }
                 }}
             />
+
         </>
     );
 }

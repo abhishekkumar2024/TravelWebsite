@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLanguage } from '@/components/LanguageProvider';
 import LikeButton, { LikeCount } from '@/components/LikeButton';
 import CommentButton from '@/components/CommentButton';
 import ShareButton from '@/components/ShareButton';
@@ -14,6 +13,7 @@ import BackToTop from '@/components/BackToTop';
 import TableOfContents from '@/components/TableOfContents';
 import { TocHeading } from '@/lib/blog-utils';
 import CommentScroller from './CommentScroller';
+
 
 // Lazy load heavy below-the-fold components
 const AuthorBox = dynamic(() => import('./AuthorBox'), {
@@ -40,12 +40,11 @@ interface BlogContentProps {
     relatedBlogs?: any[];
     initialContent: {
         en: { html: string; headings: TocHeading[] };
-        hi: { html: string; headings: TocHeading[] };
     };
 }
 
+
 export default function BlogContent({ blog, relatedBlogs = [], initialContent }: BlogContentProps) {
-    const { lang, t, mounted } = useLanguage();
     const router = useRouter();
 
     // Intercept internal link clicks for fast SPA-like navigation
@@ -60,7 +59,6 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
 
                 if (isInternal && !link.hasAttribute('target')) {
                     e.preventDefault();
-                    // Extract path if it's an absolute URL but internal
                     const url = new URL(link.href);
                     router.push(url.pathname + url.search + url.hash);
                 }
@@ -71,26 +69,18 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
         return () => document.removeEventListener('click', handleInternalLinks);
     }, [router]);
 
-    // VERY IMPORTANT: Use initialContent for SSR/Hydration to match page.tsx
-    // Once mounted, we can switch based on localStorage language
-    const currentData = mounted && lang === 'hi' ? initialContent.hi : initialContent.en;
-    const title = mounted && lang === 'hi' ? blog.title_hi : blog.title_en;
-    const content = currentData.html;
-    const headings = currentData.headings;
+    const { html: content, headings } = initialContent.en;
+    const title = blog.title_en;
 
-    const dateLocale = mounted && lang === 'hi' ? 'hi-IN' : 'en-US';
-    const publishedDate = new Date(blog.publishedAt).toLocaleDateString(
-        dateLocale,
-        { dateStyle: 'long' }
-    );
+    const publishedDate = new Date(blog.publishedAt).toLocaleDateString('en-US', { dateStyle: 'long' });
 
-    // Show updated date if it exists and is different from published date
     const isUpdated = blog.updated_at &&
         new Date(blog.updated_at).toLocaleDateString() !== new Date(blog.publishedAt).toLocaleDateString();
 
     const updatedDate = isUpdated
-        ? new Date(blog.updated_at!).toLocaleDateString(dateLocale, { dateStyle: 'long' })
+        ? new Date(blog.updated_at!).toLocaleDateString('en-US', { dateStyle: 'long' })
         : null;
+
 
     return (
         <article className="pt-28 pb-20 px-4 bg-gray-50/30 min-h-screen">
@@ -108,7 +98,8 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
                         Home
                     </Link>
                     <span className="text-gray-300">/</span>
-                    <Link href="/blogs/" className="hover:text-royal-blue transition-colors">{t('Blogs', 'ब्लॉग')}</Link>
+                    <Link href="/blogs/" className="hover:text-royal-blue transition-colors">Blogs</Link>
+
                     <span className="text-gray-300">/</span>
                     <Link href={`/destinations/${blog.destination}/`} className="hover:text-royal-blue transition-colors capitalize">
                         {blog.destination}
@@ -147,9 +138,10 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    {t('Updated:', 'अपडेट किया गया:')} {updatedDate}
+                                    Updated: {updatedDate}
                                 </div>
                             )}
+
                             <div className="flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -257,7 +249,8 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
                         <nav className="flex items-center gap-2 text-xs text-gray-400 font-medium italic">
                             <Link href="/" className="hover:text-royal-blue">Home</Link>
                             <span>/</span>
-                            <Link href="/blogs/" className="hover:text-royal-blue">{t('Blogs', 'ब्लॉग')}</Link>
+                            <Link href="/blogs/" className="hover:text-royal-blue">Blogs</Link>
+
                             <span>/</span>
                             <span className="capitalize">{blog.destination}</span>
                         </nav>

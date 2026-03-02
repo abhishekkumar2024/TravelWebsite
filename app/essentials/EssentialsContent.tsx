@@ -39,6 +39,7 @@ export default function EssentialsContent({ products }: EssentialsContentProps) 
     const { t, lang } = useLanguage();
     const [selectedCategory, setSelectedCategory] = useState('all');
 
+
     const filteredProducts = selectedCategory === 'all'
         ? products
         : products.filter(p => p.destinations.includes(selectedCategory) || p.destinations.length === 0);
@@ -71,7 +72,8 @@ export default function EssentialsContent({ products }: EssentialsContentProps) 
                         {essentialTips.map((tip, i) => (
                             <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/20 transition-all">
                                 <span className="text-3xl mb-2 block">{tip.icon}</span>
-                                <p className="font-semibold text-sm">{lang === 'hi' ? tip.titleHi : tip.title}</p>
+                                <p className="font-semibold text-sm">{tip.title}</p>
+
                             </div>
                         ))}
                     </div>
@@ -92,7 +94,8 @@ export default function EssentialsContent({ products }: EssentialsContentProps) 
                                     }`}
                             >
                                 <span>{cat.icon}</span>
-                                {lang === 'hi' ? cat.nameHi : cat.name}
+                                {cat.name}
+
                             </button>
                         ))}
                     </div>

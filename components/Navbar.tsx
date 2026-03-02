@@ -4,17 +4,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useLanguage } from './LanguageProvider';
 import { useSession, signOut } from 'next-auth/react';
 
+
 export default function Navbar() {
-    const { lang, setLang, t, mounted } = useLanguage();
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const navRef = useRef<HTMLDivElement | null>(null);
     const { data: session } = useSession();
     const user = session?.user;
     const avatarUrl = user?.image || null;
-    const navRef = useRef<HTMLDivElement | null>(null);
+    const mounted = true; // always mounted (no language hydration overhead)
+
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -47,47 +49,28 @@ export default function Navbar() {
                             className="h-12 w-auto rounded-full"
                         />
                         <span className="text-xl font-bold text-royal-blue whitespace-nowrap">
-                            {t('CamelThar', 'कैमलथार')}
+                            CamelThar
                         </span>
+
                     </Link>
                 </div>
 
                 {/* Nav Links - Center (Desktop) */}
                 <div className="hidden md:flex items-center justify-center gap-8">
-                    <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
-                        {t('Home', 'होम')}
-                    </Link>
-                    <Link href="/blogs/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
-                        {t('Blogs', 'ब्लॉग')}
-                    </Link>
-                    <Link href="/destinations/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">
-                        {t('Destinations', 'स्थान')}
-                    </Link>
+                    <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Home</Link>
+                    <Link href="/blogs/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Blogs</Link>
+                    <Link href="/destinations/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Destinations</Link>
+
                     <Link href="/essentials/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors flex items-center gap-1">
                         <span className="text-sm">🎒</span>
-                        {t('Travel Essentials', 'यात्रा आवश्यकताएं')}
+                        Travel Essentials
                     </Link>
+
                 </div>
 
                 {/* Actions Section - Right */}
                 <div className="flex justify-end items-center gap-4">
-                    {/* Language Toggle */}
-                    <div className="flex bg-gray-200 rounded-full p-1">
-                        <button
-                            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${lang === 'en' ? 'bg-white text-royal-blue shadow-sm' : 'text-gray-500'
-                                }`}
-                            onClick={() => setLang('en')}
-                        >
-                            EN
-                        </button>
-                        <button
-                            className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${lang === 'hi' ? 'bg-white text-royal-blue shadow-sm' : 'text-gray-500'
-                                }`}
-                            onClick={() => setLang('hi')}
-                        >
-                            हि
-                        </button>
-                    </div>
+
 
                     {mounted && user && (
                         <div className="flex items-center gap-2">
@@ -105,7 +88,8 @@ export default function Navbar() {
                                         />
                                     </div>
                                 ) : null}
-                                {t('My Blogs', 'मेरे ब्लॉग')}
+                                My Blogs
+
                             </Link>
                             <button
                                 onClick={async () => {
@@ -113,7 +97,8 @@ export default function Navbar() {
                                     window.location.reload();
                                 }}
                                 className="hidden sm:inline-flex items-center justify-center w-9 h-9 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-all"
-                                title={t('Logout', 'लॉगआउट')}
+                                title="Logout"
+
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -126,7 +111,8 @@ export default function Navbar() {
                         href="/submit/"
                         className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-desert-gold to-[#B8922F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
                     >
-                        {t('Submit Blog', 'ब्लॉग जमा करें')}
+                        Submit Blog
+
                     </Link>
 
                     {/* Mobile Menu Button */}
@@ -151,29 +137,19 @@ export default function Navbar() {
                             className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            {t('Home', 'होम')}
+                            Home
                         </Link>
-                        <Link
-                            href="/blogs/"
-                            className={`text-lg py-2 px-4 rounded-lg hover:bg-gray-100 ${pathname.startsWith('/blogs') ? 'text-royal-blue font-bold' : ''}`}
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            {t('Blogs', 'ब्लॉग')}
-                        </Link>
-                        <Link
-                            href="/destinations/"
-                            className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            {t('Destinations', 'स्थान')}
-                        </Link>
+                        <Link href="/blogs/" className={`text-lg py-2 px-4 rounded-lg hover:bg-gray-100 ${pathname.startsWith('/blogs') ? 'text-royal-blue font-bold' : ''}`} onClick={() => setMobileMenuOpen(false)}>Blogs</Link>
+                        <Link href="/destinations/" className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100" onClick={() => setMobileMenuOpen(false)}>Destinations</Link>
+
                         <Link
                             href="/essentials/"
                             className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 flex items-center gap-2"
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <span>🎒</span>
-                            {t('Travel Essentials', 'यात्रा आवश्यकताएं')}
+                            Travel Essentials
+
                         </Link>
 
                         {mounted && user && (
@@ -183,7 +159,8 @@ export default function Navbar() {
                                     className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 font-medium text-royal-blue"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
-                                    {t('My Blogs', 'मेरे ब्लॉग')}
+                                    My Blogs
+
                                 </Link>
                                 <button
                                     className="text-lg py-2 px-4 rounded-lg hover:bg-red-50 font-medium text-red-600 text-left flex items-center gap-2"
@@ -194,7 +171,8 @@ export default function Navbar() {
                                     }}
                                 >
                                     <span>🚪</span>
-                                    {t('Logout', 'लॉगआउट')}
+                                    Logout
+
                                 </button>
                             </>
                         )}
@@ -204,7 +182,8 @@ export default function Navbar() {
                             className="text-lg py-2 px-4 rounded-lg bg-desert-gold text-white text-center"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            {t('Submit Blog', 'ब्लॉग जमा करें')}
+                            Submit Blog
+
                         </Link>
                     </div>
                 </div>
