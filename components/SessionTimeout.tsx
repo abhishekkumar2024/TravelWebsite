@@ -5,15 +5,16 @@ import { useSession, signOut } from 'next-auth/react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 // Configuration
-const TIMEOUT_DURATION = 30 * 60 * 1000;   // 5 minutes of inactivity before logout
+const TIMEOUT_DURATION = 30 * 60 * 1000;   // 30 minutes of inactivity before logout
 const WARNING_BEFORE = 60 * 1000;          // Show warning 60 seconds before logout
-const ACTIVITY_THROTTLE = 30 * 1000;       // Only update activity timestamp every 30s
+const ACTIVITY_THROTTLE = 5 * 1000;        // Update activity timestamp every 5s (was 30s — too coarse)
+const MOUSEMOVE_THROTTLE = 10 * 1000;      // Mousemove updates every 10s (separate throttle)
 const LAST_ACTIVITY_KEY = 'camelthar-last-activity';
 
 /**
  * SessionTimeout Component
  * 
- * Automatically logs out the user after 5 minutes of inactivity.
+ * Automatically logs out the user after 30 minutes of inactivity.
  * Shows a 60-second countdown warning before logging out.
  * 
  * How it works:
@@ -30,12 +31,14 @@ export default function SessionTimeout() {
 
     const isLoggedIn = status === 'authenticated';
     const showWarningRef = useRef(false);
-    const lastActivityWriteRef = useRef(0);
+    // Initialize to now so the first activity write doesn't get blocked by a 0-timestamp ref
+    const lastActivityWriteRef = useRef(Date.now());
+    const lastMouseMoveWriteRef = useRef(Date.now());
 
     // Keep ref in sync with state (for use in event handlers without re-registering)
     showWarningRef.current = showWarning;
 
-    // Record activity in localStorage (throttled)
+    // Record activity in localStorage (throttled) — for keyboard/click/scroll/touch
     const recordActivity = useCallback(() => {
         // Don't reset if warning is showing — user must click "Stay Logged In"
         if (showWarningRef.current) return;
@@ -44,6 +47,19 @@ export default function SessionTimeout() {
         // Throttle: only write to localStorage every ACTIVITY_THROTTLE ms
         if (now - lastActivityWriteRef.current < ACTIVITY_THROTTLE) return;
 
+        lastActivityWriteRef.current = now;
+        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+    }, []);
+
+    // Record mousemove separately with a longer throttle to avoid performance issues
+    const recordMouseMove = useCallback(() => {
+        if (showWarningRef.current) return;
+
+        const now = Date.now();
+        if (now - lastMouseMoveWriteRef.current < MOUSEMOVE_THROTTLE) return;
+
+        lastMouseMoveWriteRef.current = now;
+        // Also update the main activity ref so click/scroll throttle doesn't lag behind
         lastActivityWriteRef.current = now;
         localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
     }, []);
@@ -114,19 +130,23 @@ export default function SessionTimeout() {
     useEffect(() => {
         if (!isLoggedIn) return;
 
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-        // Note: 'mousemove' intentionally excluded — too frequent, hurts performance
+        // High-signal events: update timestamp every 5s
+        const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'visibilitychange'];
 
         events.forEach((event) => {
             window.addEventListener(event, recordActivity, { passive: true });
         });
 
+        // Mousemove: user is actively using the page — update every 10s (separate throttle)
+        window.addEventListener('mousemove', recordMouseMove, { passive: true });
+
         return () => {
             events.forEach((event) => {
                 window.removeEventListener(event, recordActivity);
             });
+            window.removeEventListener('mousemove', recordMouseMove);
         };
-    }, [isLoggedIn, recordActivity]);
+    }, [isLoggedIn, recordActivity, recordMouseMove]);
 
     // Don't render unless we need to show the warning
     if (!showWarning || !isLoggedIn) return null;
