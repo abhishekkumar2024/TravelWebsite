@@ -11,6 +11,7 @@ import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
 import { fetchBlogById, updateBlog } from '@/lib/db/queries/blogs';
+import { revalidateBlogPaths } from '@/lib/actions/revalidate';
 import { SubmitLogger } from '@/lib/submitLogger';
 import { useSession } from 'next-auth/react';
 import { isAdmin } from '@/lib/db/queries/admin';
@@ -400,17 +401,10 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
             }
             logger.endStage('orphan_cleanup');
 
-            // Stage 6: Cache revalidation
+            // Stage 6: Cache revalidation (server-side via Server Action)
             logger.startStage('cache_revalidation');
             const slug = result.slug || params.id;
-            fetch('/api/revalidate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    paths: [`/blogs/${slug}`, '/blogs', '/'],
-                    tags: ['blogs'],
-                }),
-            }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
+            await revalidateBlogPaths(slug, destination);
             logger.endStage('cache_revalidation');
 
             // Update originalData to reflect new state

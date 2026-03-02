@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 // Revalidate homepage every 60 seconds (ISR) — fast for repeat visitors, fresh content
-export const revalidate = 60;
+export const revalidate = parseInt(process.env.REVALIDATE_SECONDS || '60', 10);
 
 export default async function HomePage() {
     // Fetch data on the server — this HTML is what Google sees

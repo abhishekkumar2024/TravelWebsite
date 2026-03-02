@@ -11,6 +11,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { createBlog } from '@/lib/db/queries/blogs';
 import { ensureAuthorExists } from '@/lib/db/queries/authors';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function POST(req: NextRequest) {
     try {
@@ -47,6 +48,23 @@ export async function POST(req: NextRequest) {
 
         if (error || !id) {
             return NextResponse.json({ error: error || 'Blog creation failed' }, { status: 500 });
+        }
+
+        // Server-side cache revalidation — runs immediately on the server
+        try {
+            revalidatePath('/blogs/');
+            revalidatePath('/');
+            revalidateTag('blogs');
+
+            // Revalidate destination pages where this blog appears
+            if (body.destination) {
+                const destSlugs = body.destination.split(',').filter(Boolean);
+                for (const d of destSlugs) {
+                    revalidatePath(`/destinations/${d}/`);
+                }
+            }
+        } catch (revalErr) {
+            console.warn('[submit/route] Revalidation error (non-critical):', revalErr);
         }
 
         return NextResponse.json({ id, slug, isAdmin: isAdminUser }, { status: 200 });

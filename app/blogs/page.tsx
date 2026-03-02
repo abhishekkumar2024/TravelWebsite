@@ -32,8 +32,8 @@ export const metadata: Metadata = {
     },
 };
 
-// Revalidate every hour
-export const revalidate = 3600;
+// Revalidate interval (configurable via env)
+export const revalidate = parseInt(process.env.REVALIDATE_SECONDS || '60', 10);
 
 export default async function BlogsPage() {
     // 1. Fetch data on the server

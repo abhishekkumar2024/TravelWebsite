@@ -354,15 +354,7 @@ export default function SubmitPage() {
                 });
             }
 
-            // Stage 5: Cache revalidation
-            fetch('/api/revalidate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    paths: ['/blogs', '/'],
-                    tags: ['blogs'],
-                }),
-            }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
+            // Cache revalidation is handled server-side in /api/blogs/submit
 
             // Clear draft on success
             clearDraft();

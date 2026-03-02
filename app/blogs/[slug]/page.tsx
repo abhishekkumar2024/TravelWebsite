@@ -174,8 +174,8 @@ export async function generateStaticParams() {
     }
 }
 
-// Enable ISR - 1 hour revalidation
-export const revalidate = 3600;
+// Enable ISR - safety net for on-demand revalidation (configurable via env)
+export const revalidate = parseInt(process.env.REVALIDATE_SECONDS || '60', 10);
 export const dynamicParams = true;
 
 interface PageProps {

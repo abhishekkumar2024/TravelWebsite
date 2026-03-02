@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 // Revalidate every hour
-export const revalidate = 3600;
+export const revalidate = parseInt(process.env.REVALIDATE_SECONDS || '60', 10);
 
 export default async function DestinationsPage() {
     // Fetch on the server so all destination data is in the initial HTML

@@ -105,25 +105,24 @@ const nextConfig = {
                 ],
             },
 
-            // ── Caching Headers ──
+            // ── Caching Headers (values from env) ──
             {
-                // Blog pages: CDN cache must match ISR revalidate (60s)
-                // On-demand revalidation (via /api/revalidate) also purges CDN cache
+                // Blog pages: CDN cache matches ISR (configurable via CACHE_S_MAXAGE)
                 source: '/blogs/:path*',
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=60, stale-while-revalidate=300',
+                        value: `public, s-maxage=${process.env.CACHE_S_MAXAGE || '60'}, stale-while-revalidate=${(parseInt(process.env.CACHE_S_MAXAGE || '60', 10) * 5)}`,
                     },
                 ],
             },
             {
-                // Destination pages: cache for 5 minutes (rarely updated)
+                // Destination pages: CDN cache matches ISR (configurable via CACHE_S_MAXAGE)
                 source: '/destinations/:path*',
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, s-maxage=300, stale-while-revalidate=600',
+                        value: `public, s-maxage=${process.env.CACHE_S_MAXAGE || '60'}, stale-while-revalidate=${(parseInt(process.env.CACHE_S_MAXAGE || '60', 10) * 5)}`,
                     },
                 ],
             },
