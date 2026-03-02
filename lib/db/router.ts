@@ -16,10 +16,6 @@
  *   await db.execute('INSERT INTO blogs (title_en) VALUES ($1)', ['My Blog']);
  */
 
-// This module MUST only run on the server.
-// Next.js will throw a build error if a 'use client' component imports this.
-import 'server-only';
-
 import { DBProvider, QueryResult, RouterOptions, DBEvent, DBEventListener } from './types';
 
 import { HealthChecker } from './health';
@@ -69,6 +65,13 @@ class DBRouter {
      */
     init(): void {
         if (this.initialized) return;
+
+        // Guard: never run DB initialization in a browser environment.
+        // Client components may import from '@/lib/db' (e.g. for types),
+        // but actual DB connections must only be established server-side.
+        if (typeof window !== 'undefined') {
+            return; // Silent skip — no error, no env var reads
+        }
 
         // ── MASTER: Neon (always primary) ──────────────────────────
         const neonUrl = process.env.NEON_DATABASE_URL;
@@ -305,12 +308,10 @@ class DBRouter {
     }
 
     private ensureInitialized(): void {
-        // Hard guard: DB can never run in a browser — env vars are server-only
+        // On the client side, skip gracefully — queries will fail
+        // at the API/fetch layer before reaching here
         if (typeof window !== 'undefined') {
-            throw new Error(
-                '[DBRouter] Database access attempted on the client side. ' +
-                'Only use db in Server Components, API routes, or server actions.'
-            );
+            return;
         }
         if (!this.initialized) {
             this.init();

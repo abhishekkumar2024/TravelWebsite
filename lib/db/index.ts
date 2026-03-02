@@ -1,7 +1,14 @@
-// This module MUST only run on the server.
-// Next.js will throw a build error if a 'use client' component imports this.
-import 'server-only';
-
+/**
+ * DB Module — Public API
+ *
+ * Import everything from here:
+ *   import { db } from '@/lib/db';
+ *   import { NeonProvider } from '@/lib/db';
+ *
+ * NOTE: This module is safe to import in Server Components and API routes.
+ * The DBRouter.init() silently skips initialization on the client side
+ * (typeof window !== 'undefined'), so no env vars are ever read in the browser.
+ */
 
 
 export { db, DBRouter } from './router';

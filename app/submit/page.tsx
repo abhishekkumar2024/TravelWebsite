@@ -10,11 +10,8 @@ import ImageUploader from '@/components/editor/ImageUploader';
 import ImageGallery from '@/components/editor/ImageGallery';
 // Removed LoginModal import as we are using redirect now
 import { uploadBlogImage, uploadCoverImage, deleteMedia, extractPublicIdFromUrl } from '@/lib/upload';
-import { createBlog } from '@/lib/db/queries/blogs';
-import { SubmitLogger } from '@/lib/submitLogger';
 import { useSession, signOut } from 'next-auth/react';
-import { ensureAuthorExists } from '@/lib/db/queries/authors';
-import { isAdmin } from '@/lib/db/queries/admin';
+
 
 const destinations = [
     { value: '', label: 'Select destination' },
@@ -167,16 +164,16 @@ export default function SubmitPage() {
         const checkAdmin = async () => {
             if (sessionUser) {
                 setUser(sessionUser);
-                // Check if admin
-                const isUserAdmin = await isAdmin(sessionUser.role);
-                setIsAdminUser(isUserAdmin);
-                // Ensure author exists
-                ensureAuthorExists(
-                    sessionUser.id,
-                    sessionUser.name || sessionUser.email?.split('@')[0] || 'Traveler',
-                    sessionUser.email || '',
-                    sessionUser.image
-                ).catch(e => console.error('Error ensuring author exists:', e));
+                // Call API to get admin status and register author (server-side DB access)
+                try {
+                    const res = await fetch('/api/auth/session-info');
+                    if (res.ok) {
+                        const data = await res.json();
+                        setIsAdminUser(data.isAdmin ?? false);
+                    }
+                } catch (e) {
+                    console.error('Error fetching session info:', e);
+                }
                 setSessionReady(true);
             } else {
                 setUser(null);
@@ -278,11 +275,9 @@ export default function SubmitPage() {
         }
 
         setSubmitting(true);
-        const logger = new SubmitLogger('submit', user.id, user.email || '');
 
         try {
             // Stage 1: Base64 cleanup
-            logger.startStage('base64_cleanup');
             let cleanContentEn = contentEn;
             let cleanContentHi = contentHi || contentEn;
 
@@ -306,22 +301,14 @@ export default function SubmitPage() {
                 cleanContentEn = contentEn.replace(base64Pattern, '<!-- image removed: please use upload button -->');
                 cleanContentHi = (contentHi || contentEn).replace(base64Pattern, '<!-- image removed: please use upload button -->');
             }
-            logger.endStage('base64_cleanup');
 
             // Stage 2: Image filtering
-            logger.startStage('image_filtering');
             const allContent = cleanContentEn + (cleanContentHi || '');
             const usedImages = uploadedImages.filter(url => allContent.includes(url) || url === coverImage);
             const orphanedImages = uploadedImages.filter(url => !allContent.includes(url) && url !== coverImage);
-            logger.endStage('image_filtering');
 
-            // Stage 3: Database insert
-            logger.startStage('database_insert');
+            // Stage 3: Submit via API (server handles DB write)
             const blogData = {
-                author: {
-                    name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Traveler',
-                    email: user?.email || ''
-                },
                 destination,
                 category,
                 title_en: titleEn,
@@ -332,28 +319,31 @@ export default function SubmitPage() {
                 content_hi: cleanContentHi,
                 coverImage: coverImage || '/images/jaipur-hawa-mahal.webp',
                 images: usedImages,
-                status: (isAdminUser ? 'published' : 'pending') as 'published' | 'pending',
                 meta_title: metaTitle || titleEn,
                 meta_description: metaDescription || excerptEn,
                 canonical_url: canonicalUrl,
-                authorId: user.id,
             };
 
-            const payloadSize = new Blob([JSON.stringify(blogData)]).size;
+            const res = await fetch('/api/blogs/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(blogData),
+            });
 
-            const { id, slug, error } = await createBlog(blogData);
-            logger.endStage('database_insert');
+            const result = await res.json();
 
-            if (error || !id) {
-                if (error?.includes('logged in') || error?.includes('authenticated')) {
+            if (!res.ok || result.error) {
+                if (result.error?.includes('authenticated') || res.status === 401) {
                     router.push('/login?redirectTo=/submit');
                     return;
                 }
-                throw new Error(error || 'Unknown error');
+                throw new Error(result.error || 'Blog submission failed');
             }
 
-            // Stage 4: Orphan cleanup
-            logger.startStage('orphan_cleanup');
+            const { id, slug, isAdmin: submittedAsAdmin } = result;
+            if (submittedAsAdmin !== undefined) setIsAdminUser(submittedAsAdmin);
+
+            // Stage 4: Orphan cleanup (non-blocking)
             if (orphanedImages.length > 0) {
                 orphanedImages.forEach(url => {
                     const publicId = extractPublicIdFromUrl(url);
@@ -363,10 +353,8 @@ export default function SubmitPage() {
                     }
                 });
             }
-            logger.endStage('orphan_cleanup');
 
             // Stage 5: Cache revalidation
-            logger.startStage('cache_revalidation');
             fetch('/api/revalidate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -375,35 +363,14 @@ export default function SubmitPage() {
                     tags: ['blogs'],
                 }),
             }).catch(err => console.warn('[Revalidate] Non-critical error:', err));
-            logger.endStage('cache_revalidation');
 
-            // Calculate word count for logging
-            const logWordCount = cleanContentEn.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').length;
-
-            // Save performance log to Supabase (non-blocking)
-            logger.save({
-                blogId: id,
-                blogSlug: slug || undefined,
-                payloadSizeKB: parseFloat((payloadSize / 1024).toFixed(2)),
-                contentWordCount: logWordCount,
-                imagesCount: usedImages.length,
-                orphanedImagesCount: orphanedImages.length,
-                status: 'success',
-            });
-
-            // Clear draft on successful submission
+            // Clear draft on success
             clearDraft();
             setCreatedSlug(slug || id);
             setSubmitted(true);
+
         } catch (error: any) {
             console.error('Submit error:', error);
-
-            // Save error log to Supabase
-            logger.save({
-                status: 'error',
-                errorMessage: error?.message || 'Unknown error',
-            });
-
             if (error?.message?.includes('logged in') || error?.message?.includes('authenticated')) {
                 router.push('/login?redirectTo=/submit');
             } else {
