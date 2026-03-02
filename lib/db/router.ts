@@ -52,29 +52,49 @@ class DBRouter {
 
     /**
      * Initialize the router with database providers.
-     * Call this once at app startup.
+     * 
+     * Role assignment (configurable via env vars):
+     *   NEON_DATABASE_URL          → Neon = MASTER  (primary, always active)
+     *   SUPABASE_DATABASE_URL      → Supabase connection URL
+     *   SUPABASE_SLAVE_ENABLED     → Set to 'true' to use Supabase as slave/failover
+     * 
+     * If SUPABASE_SLAVE_ENABLED is not 'true', Supabase is never registered,
+     * even if SUPABASE_DATABASE_URL is set. This prevents accidental slave
+     * registration in environments that don't need it.
      */
     init(): void {
         if (this.initialized) return;
 
-        // Register Supabase as master (priority 0 = highest)
-        const supabaseUrl = process.env.SUPABASE_DATABASE_URL;
-        if (supabaseUrl) {
-            try {
-                const supabaseProvider = new SupabaseProvider(supabaseUrl, 'master', 0);
-                this.addProvider(supabaseProvider);
-            } catch (err: any) {
-                console.warn(`[DBRouter] Supabase master not registered: ${err.message}`);
-            }
-        } else {
-            console.warn('[DBRouter] ⚠️ SUPABASE_DATABASE_URL not set.');
-        }
-
-        // Register Neon as slave/failover (priority 10 = lower)
+        // ── MASTER: Neon (always primary) ──────────────────────────
         const neonUrl = process.env.NEON_DATABASE_URL;
         if (neonUrl) {
-            const neonProvider = new NeonProvider(neonUrl, 'slave', 10);
-            this.addProvider(neonProvider);
+            try {
+                const neonProvider = new NeonProvider(neonUrl, 'master', 0);
+                this.addProvider(neonProvider);
+                console.log('[DBRouter] ✅ Neon registered as MASTER (priority 0)');
+            } catch (err: any) {
+                console.error(`[DBRouter] ❌ Neon master failed to register: ${err.message}`);
+            }
+        } else {
+            console.error('[DBRouter] ❌ NEON_DATABASE_URL is not set — no master available!');
+        }
+
+        // ── SLAVE: Supabase (opt-in via SUPABASE_SLAVE_ENABLED=true) ─
+        const slaveEnabled = process.env.SUPABASE_SLAVE_ENABLED === 'true';
+        const supabaseUrl = process.env.SUPABASE_DATABASE_URL;
+
+        if (slaveEnabled && supabaseUrl) {
+            try {
+                const supabaseProvider = new SupabaseProvider(supabaseUrl, 'slave', 10);
+                this.addProvider(supabaseProvider);
+                console.log('[DBRouter] ✅ Supabase registered as SLAVE/FAILOVER (priority 10)');
+            } catch (err: any) {
+                console.warn(`[DBRouter] ⚠️ Supabase slave not registered: ${err.message}`);
+            }
+        } else if (slaveEnabled && !supabaseUrl) {
+            console.warn('[DBRouter] ⚠️ SUPABASE_SLAVE_ENABLED=true but SUPABASE_DATABASE_URL is not set.');
+        } else {
+            console.log('[DBRouter] ℹ️ Supabase slave disabled (set SUPABASE_SLAVE_ENABLED=true to enable).');
         }
 
         // Start health checking (only in server environments)
