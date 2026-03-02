@@ -111,7 +111,7 @@ export async function updateAuthorProfile(userId: string, updates: Partial<Autho
 
         params.push(userId);
 
-        const result = await db.query(
+        const result = await db.execute(
             `UPDATE authors SET ${setClauses.join(', ')} WHERE id = $${paramIndex}::uuid RETURNING *`,
             params
         );
