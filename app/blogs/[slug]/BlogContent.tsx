@@ -82,6 +82,11 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
         }).catch(() => { }); // Silent fail — views are not critical
     }, [blog.id]);
 
+    // Ensure page opens from start (top) when navigating between blogs
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [blog.id]);
+
     const { html: content, headings } = initialContent.en;
     const title = blog.title_en;
 
