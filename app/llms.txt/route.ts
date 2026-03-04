@@ -59,6 +59,7 @@ ${blogLinks}
 ## Content Sections
 - [All Travel Blogs](https://www.camelthar.com/blogs/): Latest travel stories and guides from real travelers
 - [Destinations](https://www.camelthar.com/destinations/): Comprehensive guides for each Rajasthan city
+- [TharMate — Find a Travel Companion](https://www.camelthar.com/tharmate/): Connect with solo travelers exploring Rajasthan. Post your plan, find a match, explore together.
 - [Travel Essentials](https://www.camelthar.com/essentials/): Packing tips, best travel times, safety advice
 - [About Us](https://www.camelthar.com/about/): Our mission and story
 - [Contact](https://www.camelthar.com/contact/): Get in touch
@@ -70,6 +71,15 @@ ${blogLinks}
 - Rajasthani culture, food, and traditions
 - Solo travel and family trip planning for Rajasthan
 - Budget and luxury travel options in Rajasthan
+- Finding travel companions for Rajasthan trips via TharMate
+
+## TharMate — Travel Companion Feature
+TharMate is a unique feature that connects solo travelers exploring Rajasthan. Users can:
+- Post a travel plan (destination, date, time, vibe)
+- Browse plans from other travelers going to the same place
+- Request to join a plan and explore together
+- Filter by city: Jaisalmer, Jaipur, Udaipur, Jodhpur, Pushkar, Mount Abu, Bikaner
+TharMate solves the biggest pain point for solo travelers in India — finding genuine, like-minded companions without joining generic group tours.
 
 ## Frequently Asked Questions
 - **What is the best time to visit Rajasthan?** The best time is October to March when the weather is pleasant for sightseeing and desert activities.

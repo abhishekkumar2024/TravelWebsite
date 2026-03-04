@@ -140,6 +140,7 @@ export default function RootLayout({
                                 'Rajasthan tourism', 'Thar Desert travel', 'India heritage tourism',
                                 'Jaipur travel guide', 'Udaipur travel guide', 'Jaisalmer travel guide',
                                 'Jodhpur travel guide', 'Desert safari India', 'Rajasthan culture and heritage',
+                                'travel companion finder', 'solo travel Rajasthan',
                             ],
                             areaServed: {
                                 '@type': 'State',

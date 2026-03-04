@@ -85,3 +85,18 @@ export {
 export {
     incrementBlogCounter,
 } from './counters';
+
+// TharMate (Travel Companion)
+export {
+    fetchTharMatePlans,
+    fetchTharMatePlanById,
+    fetchUserPlans,
+    createTharMatePlan,
+    cancelTharMatePlan,
+    createJoinRequest,
+    fetchPlanRequests,
+    updateRequestStatus,
+    checkExistingRequest,
+    getActivePlanCount,
+} from './tharmate';
+export type { TharMatePlan, TharMateRequest } from './tharmate';

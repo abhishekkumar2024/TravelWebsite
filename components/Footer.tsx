@@ -109,6 +109,9 @@ export default function Footer() {
                             <Link href="/destinations/" className="text-gray-400 hover:text-desert-gold transition-colors">
                                 {t('Destinations', 'स्थान')}
                             </Link>
+                            <Link href="/tharmate/" className="text-gray-400 hover:text-desert-gold transition-colors">
+                                {t('Find Companion', 'साथी खोजें')}
+                            </Link>
                             <Link href="/about/" className="text-gray-400 hover:text-desert-gold transition-colors">
                                 {t('About Us', 'हमारे बारे में')}
                             </Link>

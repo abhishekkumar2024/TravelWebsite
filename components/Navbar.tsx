@@ -56,15 +56,13 @@ export default function Navbar() {
                 </div>
 
                 {/* Nav Links - Center (Desktop) */}
-                <div className="hidden md:flex items-center justify-center gap-8">
+                <div className="hidden md:flex items-center justify-center gap-6">
                     <Link href="/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Home</Link>
                     <Link href="/blogs/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Blogs</Link>
                     <Link href="/destinations/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Destinations</Link>
 
-                    <Link href="/essentials/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors flex items-center gap-1">
-                        <span className="text-sm">🎒</span>
-                        Travel Essentials
-                    </Link>
+                    <Link href="/tharmate/" className="font-medium text-terracotta hover:text-deep-maroon transition-colors whitespace-nowrap">Find Companion</Link>
+                    <Link href="/essentials/" className="font-medium text-gray-600 hover:text-royal-blue transition-colors">Essentials</Link>
 
                 </div>
 
@@ -143,13 +141,18 @@ export default function Navbar() {
                         <Link href="/destinations/" className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100" onClick={() => setMobileMenuOpen(false)}>Destinations</Link>
 
                         <Link
-                            href="/essentials/"
-                            className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100 flex items-center gap-2"
+                            href="/tharmate/"
+                            className={`text-lg py-2 px-4 rounded-lg hover:bg-orange-50 ${pathname.startsWith('/tharmate') ? 'text-terracotta font-bold' : ''}`}
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            <span>🎒</span>
-                            Travel Essentials
-
+                            Find Companion
+                        </Link>
+                        <Link
+                            href="/essentials/"
+                            className="text-lg py-2 px-4 rounded-lg hover:bg-gray-100"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            Essentials
                         </Link>
 
                         {mounted && user && (

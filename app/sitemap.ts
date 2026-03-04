@@ -86,6 +86,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { url: `${baseUrl}/blogs/`, lastModified: latestBlogDate, changeFrequency: 'daily', priority: 0.9 },
         { url: `${baseUrl}/destinations/`, lastModified: latestBlogDate, changeFrequency: 'weekly', priority: 0.9 },
 
+        // Feature pages
+        { url: `${baseUrl}/tharmate/`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+
         // Static pages
         { url: `${baseUrl}/about/`, lastModified: siteLaunchDate, changeFrequency: 'monthly', priority: 0.5 },
         { url: `${baseUrl}/contact/`, lastModified: siteLaunchDate, changeFrequency: 'monthly', priority: 0.5 },
