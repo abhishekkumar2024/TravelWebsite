@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { isAdmin as checkIsAdmin, getAdminStats, fetchBlogsByStatus } from '@/lib/db/queries/admin';
 import { approveBlog, rejectBlog, deleteBlog } from '@/lib/db/queries/blogs';
@@ -8,6 +8,7 @@ import AdminLogin from '@/components/AdminLogin';
 import ProfileHeader from '@/components/ProfileHeader';
 import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
+import { uploadProductImage } from '@/lib/upload';
 
 type BlogStatus = 'pending' | 'published' | 'rejected' | 'draft';
 type MainTab = 'blogs' | 'products' | 'messages' | 'database';
@@ -56,6 +57,10 @@ export default function AdminPage() {
         destinations: [],
         isActive: true,
     });
+    const [imageUploading, setImageUploading] = useState(false);
+    const [imageUploadProgress, setImageUploadProgress] = useState(0);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const productImageInputRef = useRef<HTMLInputElement>(null);
 
     // Database Sync State
     const [isSyncing, setIsSyncing] = useState(false);
@@ -132,8 +137,29 @@ export default function AdminPage() {
         }
     };
 
+    const handleProductImageUpload = async (file: File) => {
+        setImageUploading(true);
+        setImageUploadProgress(0);
+        try {
+            const url = await uploadProductImage(file, (percent) => {
+                setImageUploadProgress(percent);
+            });
+            setProductForm(prev => ({ ...prev, imageUrl: url }));
+            setImagePreview(url);
+        } catch (error: any) {
+            alert('Image upload failed: ' + (error.message || 'Unknown error'));
+        } finally {
+            setImageUploading(false);
+            setImageUploadProgress(0);
+        }
+    };
+
     const handleProductSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!productForm.imageUrl) {
+            alert('Please upload a product image first.');
+            return;
+        }
         setProcessing('product-form');
         try {
             if (editingProduct) {
@@ -154,6 +180,7 @@ export default function AdminPage() {
                 destinations: [],
                 isActive: true,
             });
+            setImagePreview(null);
             await loadProducts();
         } catch (error: any) {
             alert(error.message || 'Error saving product');
@@ -187,6 +214,7 @@ export default function AdminPage() {
             destinations: product.destinations,
             isActive: product.isActive,
         });
+        setImagePreview(product.imageUrl || null);
         setShowProductModal(true);
     };
 
@@ -563,6 +591,7 @@ export default function AdminPage() {
                                     destinations: [],
                                     isActive: true,
                                 });
+                                setImagePreview(null);
                                 setShowProductModal(true);
                             }}
                             className="px-6 py-2 bg-desert-gold hover:bg-desert-gold/90 text-white font-bold rounded-lg transition-all"
@@ -740,15 +769,74 @@ export default function AdminPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Image URL</label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Product Image</label>
                                     <input
-                                        type="url"
-                                        required
-                                        value={productForm.imageUrl}
-                                        onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
-                                        placeholder="https://images.unsplash.com/..."
+                                        ref={productImageInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleProductImageUpload(file);
+                                        }}
                                     />
+                                    {imagePreview || productForm.imageUrl ? (
+                                        <div className="relative group">
+                                            <img
+                                                src={imagePreview || productForm.imageUrl}
+                                                alt="Product preview"
+                                                className="w-full h-40 object-cover rounded-lg border border-white/10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setImagePreview(null);
+                                                    setProductForm(prev => ({ ...prev, imageUrl: '' }));
+                                                    if (productImageInputRef.current) productImageInputRef.current.value = '';
+                                                }}
+                                                className="absolute top-2 right-2 w-8 h-8 bg-red-600/80 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                ✕
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => productImageInputRef.current?.click()}
+                                                className="absolute bottom-2 right-2 px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                Change Image
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => productImageInputRef.current?.click()}
+                                            disabled={imageUploading}
+                                            className="w-full h-40 bg-white/5 border-2 border-dashed border-white/20 hover:border-desert-gold/50 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-desert-gold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-desert-gold', 'bg-desert-gold/5'); }}
+                                            onDragLeave={(e) => { e.currentTarget.classList.remove('border-desert-gold', 'bg-desert-gold/5'); }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.remove('border-desert-gold', 'bg-desert-gold/5');
+                                                const file = e.dataTransfer.files?.[0];
+                                                if (file && file.type.startsWith('image/')) handleProductImageUpload(file);
+                                            }}
+                                        >
+                                            {imageUploading ? (
+                                                <>
+                                                    <div className="w-8 h-8 border-2 border-desert-gold/30 border-t-desert-gold rounded-full animate-spin" />
+                                                    <span className="text-sm">Uploading... {imageUploadProgress}%</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <span className="text-sm font-medium">Click or drag image here</span>
+                                                    <span className="text-xs text-gray-500">PNG, JPG, WEBP up to 20MB</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
