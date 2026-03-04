@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
-import Image from 'next/image';
 
 export interface AffiliateProduct {
     id: string;
@@ -140,20 +139,22 @@ export default function EssentialsContent({ products }: EssentialsContentProps) 
                                     >
                                         <div className="aspect-square bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden relative">
                                             {product.imageUrl ? (
-                                                <div className="relative w-full h-full">
-                                                    <Image
-                                                        src={product.imageUrl}
-                                                        alt={product.name}
-                                                        fill
-                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <span className="text-5xl">🎒</span>
-                                                </div>
-                                            )}
+                                                <img
+                                                    src={product.imageUrl}
+                                                    alt={product.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                    loading="lazy"
+                                                    onError={(e) => {
+                                                        const target = e.currentTarget;
+                                                        target.style.display = 'none';
+                                                        const fallback = target.nextElementSibling as HTMLElement;
+                                                        if (fallback) fallback.style.display = 'flex';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <div className="w-full h-full items-center justify-center" style={{ display: product.imageUrl ? 'none' : 'flex' }}>
+                                                <span className="text-5xl">🎒</span>
+                                            </div>
                                             {/* Hover overlay with Buy Now */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
                                                 <span className="px-4 py-2 bg-white text-amber-600 font-semibold rounded-full shadow-lg flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
