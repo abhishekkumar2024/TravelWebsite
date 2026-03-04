@@ -56,11 +56,10 @@ export default function TharMateClient() {
         fetchPlans();
     }, [fetchPlans]);
 
-    // Auto-refresh every 30 seconds
-    useEffect(() => {
-        const interval = setInterval(fetchPlans, 30000);
-        return () => clearInterval(interval);
-    }, [fetchPlans]);
+    // No auto-refresh — plans only reload when:
+    // 1. User changes the destination filter (via fetchPlans dependency)
+    // 2. User posts a new plan (via onCreated callback)
+    // 3. User sends a join request (via onJoinRequest callback)
 
     const sparkPlans = plans.filter(p => p.isSpark);
     const regularPlans = plans.filter(p => !p.isSpark);
@@ -127,8 +126,8 @@ export default function TharMateClient() {
                             key={dest.id}
                             onClick={() => setActiveFilter(dest.id)}
                             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeFilter === dest.id
-                                    ? 'bg-terracotta text-white shadow-md shadow-terracotta/20'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-terracotta text-white shadow-md shadow-terracotta/20'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             <span>{dest.emoji}</span>
