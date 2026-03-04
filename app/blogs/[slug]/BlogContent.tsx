@@ -266,25 +266,47 @@ export default function BlogContent({ blog, relatedBlogs = [], initialContent }:
                 <div className="p-8 md:p-12">
                     {/* Author & Interactions */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-gray-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl overflow-hidden">
-                                {blog.author.avatar ? (
-                                    <Image
-                                        src={blog.author.avatar}
-                                        alt={blog.author.name}
-                                        width={48}
-                                        height={48}
-                                        className="rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <span>{blog.author.name.charAt(0)}</span>
-                                )}
+                        {blog.author.slug ? (
+                            <Link href={`/author/${blog.author.slug}/`} className="flex items-center gap-4 group">
+                                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl overflow-hidden ring-2 ring-transparent group-hover:ring-desert-gold transition-all">
+                                    {blog.author.avatar ? (
+                                        <Image
+                                            src={blog.author.avatar}
+                                            alt={blog.author.name}
+                                            width={48}
+                                            height={48}
+                                            className="rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <span>{blog.author.name.charAt(0)}</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-royal-blue group-hover:text-desert-gold transition-colors">{blog.author.name}</p>
+                                    <p className="text-sm text-gray-500">Traveler</p>
+                                </div>
+                            </Link>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl overflow-hidden">
+                                    {blog.author.avatar ? (
+                                        <Image
+                                            src={blog.author.avatar}
+                                            alt={blog.author.name}
+                                            width={48}
+                                            height={48}
+                                            className="rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <span>{blog.author.name.charAt(0)}</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-royal-blue">{blog.author.name}</p>
+                                    <p className="text-sm text-gray-500">Traveler</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="font-bold text-royal-blue">{blog.author.name}</p>
-                                <p className="text-sm text-gray-500">Traveler</p>
-                            </div>
-                        </div>
+                        )}
 
                         {/* Likes Integration */}
                         <div className="flex items-center bg-gray-50 px-4 py-2 rounded-full self-start md:self-auto">
