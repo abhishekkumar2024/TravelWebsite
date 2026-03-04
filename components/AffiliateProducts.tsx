@@ -50,13 +50,10 @@ export default function AffiliateProducts({ destination, limit = 4 }: AffiliateP
 
     return (
         <section className="py-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6">
                 <h3 className="text-xl font-bold text-gray-800">
                     {t('Recommended Products', 'अनुशंसित उत्पाद')} ✨
                 </h3>
-                <span className="text-sm text-gray-500">
-                    {t('Affiliate links', 'सहबद्ध लिंक')}
-                </span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.map((product) => (
