@@ -49,6 +49,7 @@ export async function fetchAllProductsForAdmin(): Promise<AffiliateProduct[]> {
         const result = await db.query(
             `SELECT * FROM products ORDER BY created_at DESC`
         );
+        console.log('[dbProducts] fetchAllProductsForAdmin: found', result.rows.length, 'products');
         return result.rows.map(mapRowToProduct);
     } catch (error: any) {
         console.error('[dbProducts] fetchAllProductsForAdmin error:', error.message);

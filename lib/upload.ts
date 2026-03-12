@@ -142,6 +142,10 @@ export async function uploadProductImage(file: File, onProgress?: (percent: numb
     return uploadToCloudinary(file, 'product-images', onProgress);
 }
 
+export async function uploadChatImage(file: File, onProgress?: (percent: number) => void): Promise<string> {
+    return uploadToCloudinary(file, 'tharmate-chat', onProgress);
+}
+
 export async function uploadAvatar(file: File): Promise<string> {
     if (!cloudName || !uploadPreset) {
         throw new Error('Cloudinary is not configured');
