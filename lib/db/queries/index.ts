@@ -100,3 +100,12 @@ export {
     getActivePlanCount,
 } from './tharmate';
 export type { TharMatePlan, TharMateRequest } from './tharmate';
+
+// Destinations
+export {
+    fetchDestinations,
+    fetchDestinationById,
+    createDestination,
+    updateDestination,
+    deleteDestination,
+} from './destinations';
