@@ -8,7 +8,7 @@ import AdminLogin from '@/components/AdminLogin';
 import ProfileHeader from '@/components/ProfileHeader';
 import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
-import { uploadProductImage } from '@/lib/upload';
+import { uploadProductImage, uploadDestinationImage } from '@/lib/upload';
 
 type BlogStatus = 'pending' | 'published' | 'rejected' | 'draft';
 type MainTab = 'blogs' | 'products' | 'messages' | 'database' | 'destinations';
@@ -86,6 +86,12 @@ export default function AdminPage() {
     const [imageUploadProgress, setImageUploadProgress] = useState(0);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const productImageInputRef = useRef<HTMLInputElement>(null);
+    const destinationImageInputRef = useRef<HTMLInputElement>(null);
+
+    // Destination image upload state
+    const [destImageUploading, setDestImageUploading] = useState(false);
+    const [destImageUploadProgress, setDestImageUploadProgress] = useState(0);
+    const [destImagePreview, setDestImagePreview] = useState<string | null>(null);
 
     // Database Sync State
     const [isSyncing, setIsSyncing] = useState(false);
@@ -328,8 +334,29 @@ export default function AdminPage() {
         });
     };
 
+    const handleDestinationImageUpload = async (file: File) => {
+        setDestImageUploading(true);
+        setDestImageUploadProgress(0);
+        try {
+            const url = await uploadDestinationImage(file, (percent) => {
+                setDestImageUploadProgress(percent);
+            });
+            setDestinationForm(prev => ({ ...prev, coverImage: url }));
+            setDestImagePreview(url);
+        } catch (error: any) {
+            alert('Image upload failed: ' + (error.message || 'Unknown error'));
+        } finally {
+            setDestImageUploading(false);
+            setDestImageUploadProgress(0);
+        }
+    };
+
     const handleDestinationSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!destinationForm.coverImage) {
+            alert('Please upload a cover image first.');
+            return;
+        }
         setProcessing('destination-form');
         try {
             if (editingDestination) {
@@ -341,6 +368,7 @@ export default function AdminPage() {
             }
             setShowDestinationModal(false);
             setEditingDestination(null);
+            setDestImagePreview(null);
             await loadDestinations();
         } catch (error: any) {
             alert(error.message || 'Error saving destination');
@@ -378,7 +406,7 @@ export default function AdminPage() {
             bestTime: dest.bestTime,
             imageCredits: dest.imageCredits || { name: '', url: '' },
         });
-        setImagePreview(dest.coverImage);
+        setDestImagePreview(dest.coverImage || null);
         setShowDestinationModal(true);
     };
 
@@ -845,7 +873,7 @@ export default function AdminPage() {
                                     bestTime: '',
                                     imageCredits: { name: '', url: '' },
                                 });
-                                setImagePreview(null);
+                                setDestImagePreview(null);
                                 setShowDestinationModal(true);
                             }}
                             className="px-6 py-2 bg-desert-gold hover:bg-desert-gold/90 text-white font-bold rounded-lg transition-all"
@@ -1158,41 +1186,75 @@ export default function AdminPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Cover Image URL</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        required
-                                        value={destinationForm.coverImage}
-                                        onChange={(e) => setDestinationForm({ ...destinationForm, coverImage: e.target.value })}
-                                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
-                                    />
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Cover Image</label>
+                                <input
+                                    ref={destinationImageInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleDestinationImageUpload(file);
+                                    }}
+                                />
+                                {destImagePreview || destinationForm.coverImage ? (
+                                    <div className="relative group">
+                                        <img
+                                            src={destImagePreview || destinationForm.coverImage}
+                                            alt="Destination cover preview"
+                                            className="w-full h-48 object-cover rounded-lg border border-white/10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setDestImagePreview(null);
+                                                setDestinationForm(prev => ({ ...prev, coverImage: '' }));
+                                                if (destinationImageInputRef.current) destinationImageInputRef.current.value = '';
+                                            }}
+                                            className="absolute top-2 right-2 w-8 h-8 bg-red-600/80 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            ✕
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => destinationImageInputRef.current?.click()}
+                                            disabled={destImageUploading}
+                                            className="absolute bottom-2 right-2 px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                        >
+                                            {destImageUploading ? `Uploading... ${destImageUploadProgress}%` : 'Change Image'}
+                                        </button>
+                                    </div>
+                                ) : (
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            const input = document.createElement('input');
-                                            input.type = 'file';
-                                            input.accept = 'image/*';
-                                            input.onchange = async (e) => {
-                                                const file = (e.target as HTMLInputElement).files?.[0];
-                                                if (file) {
-                                                    setImageUploading(true);
-                                                    try {
-                                                        const url = await uploadProductImage(file, () => { });
-                                                        setDestinationForm(prev => ({ ...prev, coverImage: url }));
-                                                    } finally {
-                                                        setImageUploading(false);
-                                                    }
-                                                }
-                                            };
-                                            input.click();
+                                        onClick={() => destinationImageInputRef.current?.click()}
+                                        disabled={destImageUploading}
+                                        className="w-full h-48 bg-white/5 border-2 border-dashed border-white/20 hover:border-desert-gold/50 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-desert-gold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-desert-gold', 'bg-desert-gold/5'); }}
+                                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-desert-gold', 'bg-desert-gold/5'); }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.remove('border-desert-gold', 'bg-desert-gold/5');
+                                            const file = e.dataTransfer.files?.[0];
+                                            if (file && file.type.startsWith('image/')) handleDestinationImageUpload(file);
                                         }}
-                                        disabled={imageUploading}
-                                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
                                     >
-                                        Upload
+                                        {destImageUploading ? (
+                                            <>
+                                                <div className="w-8 h-8 border-2 border-desert-gold/30 border-t-desert-gold rounded-full animate-spin" />
+                                                <span className="text-sm">Uploading... {destImageUploadProgress}%</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <span className="text-sm font-medium">Click or drag image here</span>
+                                                <span className="text-xs text-gray-500">PNG, JPG, WEBP up to 20MB</span>
+                                            </>
+                                        )}
                                     </button>
-                                </div>
+                                )}
                             </div>
 
                             <div>
