@@ -268,6 +268,44 @@ export async function fetchAvailableDestinations(): Promise<string[]> {
     }
 }
 
+export async function fetchBlogCountsByCategory(): Promise<Record<string, number>> {
+    try {
+        const result = await db.query(
+            `SELECT category, COUNT(*) as count
+             FROM blogs
+             WHERE status = 'published' AND deleted_at IS NULL AND category IS NOT NULL AND category != ''
+             GROUP BY category
+             ORDER BY count DESC`
+        );
+
+        const counts: Record<string, number> = {};
+        result.rows.forEach((row: any) => {
+            counts[row.category] = parseInt(row.count, 10);
+        });
+        return counts;
+    } catch (error: any) {
+        console.error('[dbBlogs] fetchBlogCountsByCategory error:', error.message);
+        return {};
+    }
+}
+
+export async function fetchBlogsByCategory(category: string): Promise<BlogPost[]> {
+    try {
+        const result = await db.query(
+            `SELECT ${BLOG_SELECT_WITH_AUTHOR}
+             ${FROM_BLOGS_WITH_AUTHOR}
+             WHERE b.status = 'published' AND b.deleted_at IS NULL
+               AND b.category = $1
+             ORDER BY b.created_at DESC`,
+            [category]
+        );
+        return result.rows.map(mapRowToBlog);
+    } catch (error: any) {
+        console.error('[dbBlogs] fetchBlogsByCategory error:', error.message);
+        return [];
+    }
+}
+
 // ─── Write Queries ───────────────────────────────────────────────
 
 export async function createBlog(payload: {

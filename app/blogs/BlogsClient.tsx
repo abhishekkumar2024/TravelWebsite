@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import Link from 'next/link';
 
@@ -9,6 +10,7 @@ import AffiliateProducts from '@/components/AffiliateProducts';
 import BackToTop from '@/components/BackToTop';
 import { BlogPost } from '@/lib/data';
 import { BlogInteractionsProvider } from '@/components/BlogInteractionsProvider';
+import { CATEGORIES } from '@/components/CategoryShowcase';
 
 interface BlogsClientProps {
     initialBlogs: BlogPost[];
@@ -16,15 +18,24 @@ interface BlogsClientProps {
 }
 
 export default function BlogsClient({ initialBlogs, destinations: initialDestinations }: BlogsClientProps) {
-
+    const searchParams = useSearchParams();
 
     // Ensure 'all' is the first option
     const destinations = ['all', ...initialDestinations];
 
     const [filter, setFilter] = useState('all');
+    const [categoryFilter, setCategoryFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [blogs, setBlogs] = useState<BlogPost[]>(initialBlogs);
     const [loading, setLoading] = useState(false);
+
+    // Read ?category= from URL on mount
+    useEffect(() => {
+        const urlCategory = searchParams.get('category');
+        if (urlCategory) {
+            setCategoryFilter(urlCategory);
+        }
+    }, [searchParams]);
 
     // Sync with server data if it changes
     useEffect(() => {
@@ -35,13 +46,14 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
     const filteredBlogs = useMemo(() => {
         return blogs.filter((blog) => {
             const matchesFilter = filter === 'all' || (blog.destination && blog.destination.toLowerCase().includes(filter));
+            const matchesCategory = categoryFilter === 'all' || blog.category === categoryFilter;
             const matchesSearch =
                 !search ||
                 blog.title_en.toLowerCase().includes(search.toLowerCase()) ||
                 blog.excerpt_en.toLowerCase().includes(search.toLowerCase());
-            return matchesFilter && matchesSearch;
+            return matchesFilter && matchesCategory && matchesSearch;
         });
-    }, [blogs, filter, search]);
+    }, [blogs, filter, categoryFilter, search]);
 
 
     return (
@@ -118,6 +130,37 @@ export default function BlogsClient({ initialBlogs, destinations: initialDestina
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                             />
                         </svg>
+                    </div>
+                </div>
+            </section>
+
+            {/* Category Filters */}
+            <section className="py-3 px-4 bg-gray-50/80 border-b">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap flex-shrink-0">Category:</span>
+                        <button
+                            onClick={() => setCategoryFilter('all')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${categoryFilter === 'all'
+                                ? 'bg-royal-blue text-white shadow-md'
+                                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                        >
+                            All Categories
+                        </button>
+                        {CATEGORIES.map((cat) => (
+                            <button
+                                key={cat.value}
+                                onClick={() => setCategoryFilter(cat.value)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 ${categoryFilter === cat.value
+                                    ? 'bg-royal-blue text-white shadow-md'
+                                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                                    }`}
+                            >
+                                <span>{cat.icon}</span>
+                                {cat.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </section>

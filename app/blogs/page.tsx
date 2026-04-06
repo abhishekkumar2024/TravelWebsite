@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { fetchPublishedBlogs, fetchAvailableDestinations } from '@/lib/db/queries';
 import BlogsClient from './BlogsClient';
 import { Metadata } from 'next';
@@ -90,7 +91,9 @@ export default async function BlogsPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
             />
-            <BlogsClient initialBlogs={blogs} destinations={destinations} />
+            <Suspense fallback={<div className="text-center py-12">Loading...</div>}>
+                <BlogsClient initialBlogs={blogs} destinations={destinations} />
+            </Suspense>
         </>
     );
 }

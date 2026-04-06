@@ -15,6 +15,8 @@ export {
     fetchRelatedBlogs,
     fetchBlogCountsByDestination,
     fetchAvailableDestinations,
+    fetchBlogCountsByCategory,
+    fetchBlogsByCategory,
     createBlog,
     updateBlog,
     fetchPendingBlogs,
