@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { fetchTharMatePlans, createTharMatePlan } from '@/lib/db/queries';
 import { getCachedPlans, setCachedPlans, invalidatePlanCache } from '@/lib/redis-tharmate';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { getRedis } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
     try {
@@ -27,12 +28,35 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Cache miss — hit database
+        // Cache miss — prevent Cache Stampede with a Distributed Lock
+        const redis = getRedis();
+        const lockKey = `tharmate:lock:plans:${destination || 'all'}`;
+        let acquiredLock = false;
+
+        if (redis && offset === 0) {
+            // Attempt to acquire lock for 5 seconds
+            const locked = await redis.set(lockKey, '1', { nx: true, ex: 5 });
+            if (!locked) {
+                // Another request is generating cache. Wait 300ms, then check cache again.
+                await new Promise(resolve => setTimeout(resolve, 300));
+                const retryCached = await getCachedPlans(destination || 'all');
+                if (retryCached) {
+                    return NextResponse.json({ plans: retryCached, cached: true }, { status: 200 });
+                }
+            } else {
+                acquiredLock = true;
+            }
+        }
+
+        // Cache miss (or lock failed) — hit database directly
         const plans = await fetchTharMatePlans({ destination, limit, offset });
 
         // Cache the result (only first page)
         if (offset === 0) {
             await setCachedPlans(destination || 'all', plans);
+            if (acquiredLock && redis) {
+                await redis.del(lockKey); // Release lock now that cache is populated
+            }
         }
 
         return NextResponse.json({ plans }, { status: 200 });

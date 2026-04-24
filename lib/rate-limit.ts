@@ -38,12 +38,19 @@ export async function rateLimit(
 
     try {
         const key = `tharmate:rate:${identifier}`;
-        const count = await redis.incr(key);
-
-        // Set expiry only on first request in window
-        if (count === 1) {
-            await redis.expire(key, windowSecs);
-        }
+        
+        // Execute INCR and EXPIRE atomically using a Lua Script
+        // This eliminates race conditions during the initial key creation window
+        const luaScript = `
+            local current = redis.call("INCR", KEYS[1])
+            if current == 1 then
+                redis.call("EXPIRE", KEYS[1], ARGV[1])
+            end
+            return current
+        `;
+        
+        const result = await redis.eval(luaScript, [key], [windowSecs]);
+        const count = Number(result);
 
         const remaining = Math.max(0, limit - count);
         return {
