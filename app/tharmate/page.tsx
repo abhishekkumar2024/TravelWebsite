@@ -137,7 +137,7 @@ const faqJsonLd = {
 
 export default function TharMatePage() {
     return (
-        <main className="min-h-screen bg-white">
+        <main className="min-h-screen" style={{ background: '#FDF6EC' }}>
             {/* JSON-LD for search engines & AI */}
             <script
                 type="application/ld+json"

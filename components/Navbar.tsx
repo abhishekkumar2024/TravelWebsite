@@ -36,7 +36,7 @@ export default function Navbar() {
     }, [mobileMenuOpen]);
 
     return (
-        <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300">
+        <nav ref={navRef} className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300" suppressHydrationWarning>
             <div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-2 md:grid-cols-3 items-center">
                 {/* Logo Section - Left */}
                 <div className="flex justify-start">

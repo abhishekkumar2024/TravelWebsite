@@ -165,30 +165,44 @@ class DBRouter {
 
     /**
      * Execute a WRITE operation (INSERT/UPDATE/DELETE).
-     * Always routes to master. Triggers async replication to slaves.
+     * Routes to master first. If master fails, tries fallback providers.
+     * Triggers async replication to slaves on success.
      */
     async execute<T = any>(sql: string, params?: any[]): Promise<QueryResult<T>> {
         this.ensureInitialized();
 
         const master = this.healthChecker.getMaster();
-        if (!master) {
-            throw new Error('[DBRouter] No master provider available for write');
+
+        // Try master first (if available and healthy)
+        if (master && master.status !== 'unhealthy') {
+            try {
+                const result = await master.execute<T>(sql, params);
+                this.lastWriteAt = Date.now();
+                this.syncEngine.afterWrite(sql, params || []);
+                return result;
+            } catch (error) {
+                console.warn(`[DBRouter] Write failed on master (${master.name}): ${(error as Error).message}`);
+                // Fall through to try fallback
+            }
+        } else if (master) {
+            console.warn(`[DBRouter] Master (${master.name}) is unhealthy, trying fallback...`);
         }
 
-        if (master.status === 'unhealthy') {
-            throw new Error(`[DBRouter] Master (${master.name}) is unhealthy. Write rejected.`);
+        // Fallback: try any other healthy provider for writes
+        const fallback = this.getFallbackProvider(master?.name || '');
+        if (fallback) {
+            console.warn(`[DBRouter] Falling back to ${fallback.name} for write`);
+            try {
+                const result = await fallback.execute<T>(sql, params);
+                this.lastWriteAt = Date.now();
+                return result;
+            } catch (fallbackError) {
+                console.error(`[DBRouter] Fallback write also failed on ${fallback.name}: ${(fallbackError as Error).message}`);
+                throw fallbackError;
+            }
         }
 
-        // Execute on master
-        const result = await master.execute<T>(sql, params);
-
-        // Mark last write time for sticky reads
-        this.lastWriteAt = Date.now();
-
-        // Async replicate to slaves (non-blocking)
-        this.syncEngine.afterWrite(sql, params || []);
-
-        return result;
+        throw new Error('[DBRouter] No providers available for write — both master and fallback failed.');
     }
 
     /**
