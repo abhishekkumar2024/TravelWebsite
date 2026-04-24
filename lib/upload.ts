@@ -144,6 +144,8 @@ export async function uploadProductImage(file: File, onProgress?: (percent: numb
 
 export async function uploadChatImage(file: File, onProgress?: (percent: number) => void): Promise<string> {
     return uploadToCloudinary(file, 'tharmate-chat', onProgress);
+export async function uploadDestinationImage(file: File, onProgress?: (percent: number) => void): Promise<string> {
+    return uploadToCloudinary(file, 'destination-images', onProgress);
 }
 
 export async function uploadAvatar(file: File): Promise<string> {

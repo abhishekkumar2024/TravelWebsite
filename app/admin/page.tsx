@@ -8,10 +8,10 @@ import AdminLogin from '@/components/AdminLogin';
 import ProfileHeader from '@/components/ProfileHeader';
 import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
-import { uploadProductImage } from '@/lib/upload';
+import { uploadProductImage, uploadDestinationImage } from '@/lib/upload';
 
 type BlogStatus = 'pending' | 'published' | 'rejected' | 'draft';
-type MainTab = 'blogs' | 'products' | 'messages' | 'database';
+type MainTab = 'blogs' | 'products' | 'messages' | 'database' | 'destinations';
 
 import {
     fetchAllProductsForAdmin,
@@ -23,7 +23,14 @@ import {
     fetchContactMessages,
     updateMessageStatus
 } from '@/lib/db/queries/contact';
+import {
+    fetchDestinations,
+    createDestination,
+    updateDestination,
+    deleteDestination
+} from '@/lib/db/queries/destinations';
 import { AffiliateProduct } from '@/app/essentials/EssentialsContent';
+import { Destination } from '@/lib/data';
 import { triggerReconciliationAction } from '@/lib/actions/db-sync';
 import { SyncResult } from '@/lib/db/reconciliation';
 
@@ -46,6 +53,24 @@ export default function AdminPage() {
         draft: 0,
     });
     const [processing, setProcessing] = useState<string | null>(null);
+
+    // Destinations State
+    const [destinations, setDestinations] = useState<Destination[]>([]);
+    const [showDestinationModal, setShowDestinationModal] = useState(false);
+    const [editingDestination, setEditingDestination] = useState<Destination | null>(null);
+    const [destinationForm, setDestinationForm] = useState<Omit<Destination, 'blogCount'>>({
+        id: '',
+        name_en: '',
+        name_hi: '',
+        tagline_en: '',
+        tagline_hi: '',
+        description_en: '',
+        description_hi: '',
+        coverImage: '',
+        attractions: [],
+        bestTime: '',
+        imageCredits: { name: '', url: '' },
+    });
     const [showProductModal, setShowProductModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<AffiliateProduct | null>(null);
     const [productForm, setProductForm] = useState<Omit<AffiliateProduct, 'id'>>({
@@ -61,6 +86,12 @@ export default function AdminPage() {
     const [imageUploadProgress, setImageUploadProgress] = useState(0);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const productImageInputRef = useRef<HTMLInputElement>(null);
+    const destinationImageInputRef = useRef<HTMLInputElement>(null);
+
+    // Destination image upload state
+    const [destImageUploading, setDestImageUploading] = useState(false);
+    const [destImageUploadProgress, setDestImageUploadProgress] = useState(0);
+    const [destImagePreview, setDestImagePreview] = useState<string | null>(null);
 
     // Database Sync State
     const [isSyncing, setIsSyncing] = useState(false);
@@ -95,8 +126,10 @@ export default function AdminPage() {
                 loadBlogs();
             } else if (mainTab === 'products') {
                 loadProducts();
-            } else if (mainTab === 'messages') {
+            } else if (authenticated && mainTab === 'messages') {
                 loadMessages();
+            } else if (authenticated && mainTab === 'destinations') {
+                loadDestinations();
             }
         }
     }, [authenticated, mainTab, activeTab]);
@@ -119,6 +152,11 @@ export default function AdminPage() {
     const loadMessages = async () => {
         const messagesData = await fetchContactMessages();
         setMessages(messagesData);
+    };
+
+    const loadDestinations = async () => {
+        const data = await fetchDestinations();
+        setDestinations(data);
     };
 
     const handleUpdateMessageStatus = async (id: string, status: string) => {
@@ -296,6 +334,82 @@ export default function AdminPage() {
         });
     };
 
+    const handleDestinationImageUpload = async (file: File) => {
+        setDestImageUploading(true);
+        setDestImageUploadProgress(0);
+        try {
+            const url = await uploadDestinationImage(file, (percent) => {
+                setDestImageUploadProgress(percent);
+            });
+            setDestinationForm(prev => ({ ...prev, coverImage: url }));
+            setDestImagePreview(url);
+        } catch (error: any) {
+            alert('Image upload failed: ' + (error.message || 'Unknown error'));
+        } finally {
+            setDestImageUploading(false);
+            setDestImageUploadProgress(0);
+        }
+    };
+
+    const handleDestinationSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!destinationForm.coverImage) {
+            alert('Please upload a cover image first.');
+            return;
+        }
+        setProcessing('destination-form');
+        try {
+            if (editingDestination) {
+                const { error } = await updateDestination(editingDestination.id, destinationForm);
+                if (error) throw new Error(error);
+            } else {
+                const { error } = await createDestination(destinationForm);
+                if (error) throw new Error(error);
+            }
+            setShowDestinationModal(false);
+            setEditingDestination(null);
+            setDestImagePreview(null);
+            await loadDestinations();
+        } catch (error: any) {
+            alert(error.message || 'Error saving destination');
+        } finally {
+            setProcessing(null);
+        }
+    };
+
+    const handleDeleteDestination = async (id: string) => {
+        if (!confirm(`Are you sure you want to delete ${id}?`)) return;
+        setProcessing(id);
+        try {
+            const { error } = await deleteDestination(id);
+            if (error) throw new Error(error);
+            await loadDestinations();
+        } catch (error: any) {
+            alert(error.message || 'Error deleting destination');
+        } finally {
+            setProcessing(null);
+        }
+    };
+
+    const openEditDestination = (dest: Destination) => {
+        setEditingDestination(dest);
+        setDestinationForm({
+            id: dest.id,
+            name_en: dest.name_en,
+            name_hi: dest.name_hi,
+            tagline_en: dest.tagline_en,
+            tagline_hi: dest.tagline_hi,
+            description_en: dest.description_en,
+            description_hi: dest.description_hi,
+            coverImage: dest.coverImage,
+            attractions: dest.attractions,
+            bestTime: dest.bestTime,
+            imageCredits: dest.imageCredits || { name: '', url: '' },
+        });
+        setDestImagePreview(dest.coverImage || null);
+        setShowDestinationModal(true);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -383,6 +497,13 @@ export default function AdminPage() {
                             }`}
                     >
                         {t('Messages', 'संदेश')}
+                    </button>
+                    <button
+                        onClick={() => setMainTab('destinations')}
+                        className={`px-6 py-2 rounded-lg font-bold transition-all ${mainTab === 'destinations' ? 'bg-white text-gray-900 shadow-lg' : 'text-white hover:bg-white/10'
+                            }`}
+                    >
+                        {t('Destinations', 'स्थान')}
                     </button>
                     <button
                         onClick={() => setMainTab('database')}
@@ -732,6 +853,73 @@ export default function AdminPage() {
                 </div>
             )}
 
+            {mainTab === 'destinations' && (
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-white">{t('Manage Destinations', 'स्थान प्रबंधित करें')}</h2>
+                        <button
+                            onClick={() => {
+                                setEditingDestination(null);
+                                setDestinationForm({
+                                    id: '',
+                                    name_en: '',
+                                    name_hi: '',
+                                    tagline_en: '',
+                                    tagline_hi: '',
+                                    description_en: '',
+                                    description_hi: '',
+                                    coverImage: '',
+                                    attractions: [],
+                                    bestTime: '',
+                                    imageCredits: { name: '', url: '' },
+                                });
+                                setDestImagePreview(null);
+                                setShowDestinationModal(true);
+                            }}
+                            className="px-6 py-2 bg-desert-gold hover:bg-desert-gold/90 text-white font-bold rounded-lg transition-all"
+                        >
+                            {t('Add New Destination', 'नया स्थान जोड़ें')}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {destinations.map((dest) => (
+                            <div key={dest.id} className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden border border-white/20">
+                                <div className="aspect-video relative">
+                                    <img
+                                        src={dest.coverImage || '/images/jaipur-hawa-mahal.webp'}
+                                        alt={dest.name_en}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-[10px] text-white font-bold uppercase">
+                                        {dest.blogCount} Blogs
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <h3 className="text-white font-bold text-lg mb-1">{dest.name_en}</h3>
+                                    <p className="text-gray-400 text-xs mb-4 line-clamp-2">{dest.tagline_en}</p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => openEditDestination(dest)}
+                                            className="flex-1 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-lg transition-all"
+                                        >
+                                            {t('Edit', 'संपादित करें')}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteDestination(dest.id)}
+                                            disabled={processing === dest.id}
+                                            className="flex-1 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 text-sm font-semibold rounded-lg transition-all disabled:opacity-50"
+                                        >
+                                            {t('Delete', 'हटाएं')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Product Modal */}
             {showProductModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
@@ -901,6 +1089,202 @@ export default function AdminPage() {
                                     className="flex-1 py-3 bg-desert-gold hover:bg-desert-gold/90 text-white font-bold rounded-lg transition-all disabled:opacity-50"
                                 >
                                     {processing === 'product-form' ? 'Saving...' : (editingProduct ? 'Update Product' : 'Create Product')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Destination Modal */}
+            {showDestinationModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
+                    <div className="bg-slate-900 border border-white/20 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-white">
+                                {editingDestination ? t('Edit Destination', 'स्थान संपादित करें') : t('Add New Destination', 'नया स्थान जोड़ें')}
+                            </h2>
+                            <button onClick={() => setShowDestinationModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                        </div>
+
+                        <form onSubmit={handleDestinationSubmit} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">ID / Slug (e.g. jaipur)</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        disabled={!!editingDestination}
+                                        value={destinationForm.id}
+                                        onChange={(e) => setDestinationForm({ ...destinationForm, id: e.target.value.toLowerCase() })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold disabled:opacity-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Best Time to Visit</label>
+                                    <input
+                                        type="text"
+                                        value={destinationForm.bestTime}
+                                        onChange={(e) => setDestinationForm({ ...destinationForm, bestTime: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
+                                        placeholder="e.g. October to March"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Name (English)</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={destinationForm.name_en}
+                                        onChange={(e) => setDestinationForm({ ...destinationForm, name_en: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Name (Hindi)</label>
+                                    <input
+                                        type="text"
+                                        value={destinationForm.name_hi}
+                                        onChange={(e) => setDestinationForm({ ...destinationForm, name_hi: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Tagline (English)</label>
+                                    <input
+                                        type="text"
+                                        value={destinationForm.tagline_en}
+                                        onChange={(e) => setDestinationForm({ ...destinationForm, tagline_en: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Tagline (Hindi)</label>
+                                    <input
+                                        type="text"
+                                        value={destinationForm.tagline_hi}
+                                        onChange={(e) => setDestinationForm({ ...destinationForm, tagline_hi: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Description (English)</label>
+                                <textarea
+                                    required
+                                    value={destinationForm.description_en}
+                                    onChange={(e) => setDestinationForm({ ...destinationForm, description_en: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold min-h-[100px]"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Cover Image</label>
+                                <input
+                                    ref={destinationImageInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleDestinationImageUpload(file);
+                                    }}
+                                />
+                                {destImagePreview || destinationForm.coverImage ? (
+                                    <div className="relative group">
+                                        <img
+                                            src={destImagePreview || destinationForm.coverImage}
+                                            alt="Destination cover preview"
+                                            className="w-full h-48 object-cover rounded-lg border border-white/10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setDestImagePreview(null);
+                                                setDestinationForm(prev => ({ ...prev, coverImage: '' }));
+                                                if (destinationImageInputRef.current) destinationImageInputRef.current.value = '';
+                                            }}
+                                            className="absolute top-2 right-2 w-8 h-8 bg-red-600/80 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            ✕
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => destinationImageInputRef.current?.click()}
+                                            disabled={destImageUploading}
+                                            className="absolute bottom-2 right-2 px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                        >
+                                            {destImageUploading ? `Uploading... ${destImageUploadProgress}%` : 'Change Image'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => destinationImageInputRef.current?.click()}
+                                        disabled={destImageUploading}
+                                        className="w-full h-48 bg-white/5 border-2 border-dashed border-white/20 hover:border-desert-gold/50 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-desert-gold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-desert-gold', 'bg-desert-gold/5'); }}
+                                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-desert-gold', 'bg-desert-gold/5'); }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.remove('border-desert-gold', 'bg-desert-gold/5');
+                                            const file = e.dataTransfer.files?.[0];
+                                            if (file && file.type.startsWith('image/')) handleDestinationImageUpload(file);
+                                        }}
+                                    >
+                                        {destImageUploading ? (
+                                            <>
+                                                <div className="w-8 h-8 border-2 border-desert-gold/30 border-t-desert-gold rounded-full animate-spin" />
+                                                <span className="text-sm">Uploading... {destImageUploadProgress}%</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <span className="text-sm font-medium">Click or drag image here</span>
+                                                <span className="text-xs text-gray-500">PNG, JPG, WEBP up to 20MB</span>
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Attractions (Comma separated)</label>
+                                <input
+                                    type="text"
+                                    value={destinationForm.attractions.join(', ')}
+                                    onChange={(e) => setDestinationForm({
+                                        ...destinationForm,
+                                        attractions: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '')
+                                    })}
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-desert-gold"
+                                    placeholder="Hawa Mahal, City Palace, Amer Fort"
+                                />
+                            </div>
+
+                            <div className="pt-6 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDestinationModal(false)}
+                                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing === 'destination-form'}
+                                    className="flex-1 py-3 bg-desert-gold hover:bg-desert-gold/90 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                                >
+                                    {processing === 'destination-form' ? 'Saving...' : (editingDestination ? 'Update Destination' : 'Create Destination')}
                                 </button>
                             </div>
                         </form>

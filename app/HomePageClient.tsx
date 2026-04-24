@@ -76,21 +76,7 @@ export default function HomePageClient({ destinations, blogs }: HomePageClientPr
                         </Link>
                     </div>
 
-                    {/* Stats */}
-                    <div className="flex justify-center gap-12 mt-12 pt-8 border-t border-white/20 animate-slide-up stagger-3">
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-desert-gold">50+</div>
-                            <div className="text-sm opacity-80">{t('Travel Stories', 'यात्रा कहानियां')}</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-desert-gold">6</div>
-                            <div className="text-sm opacity-80">{t('Destinations', 'स्थान')}</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-desert-gold">10K+</div>
-                            <div className="text-sm opacity-80">{t('Happy Readers', 'खुश पाठक')}</div>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Scroll Indicator */}

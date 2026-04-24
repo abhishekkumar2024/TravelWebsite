@@ -19,7 +19,7 @@ export default async function HomePage() {
     // Fetch data on the server — this HTML is what Google sees
     const [counts, dbBlogs] = await Promise.all([
         fetchBlogCountsByDestination(),
-        fetchPublishedBlogs(3),
+        fetchPublishedBlogs(6),
     ]);
 
     // Merge blog counts into destinations
