@@ -4,6 +4,8 @@ import { destinations as staticDestinations } from '@/lib/data';
 import { getServerSession } from 'next-auth';
 import { isAdmin } from '@/lib/db/queries/admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const session = await getServerSession();
